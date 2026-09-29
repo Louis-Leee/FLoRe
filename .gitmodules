@@ -1,0 +1,3 @@
+[submodule "third_party/holosoma_extensions/thirdparty/holosoma"]
+	path = third_party/holosoma_extensions/thirdparty/holosoma
+	url = https://github.com/Louis-Leee/holosoma.git

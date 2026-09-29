@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "holosoma-ext-common"
+version = "0.1.0"
+description = "Shared helpers for holosoma extension packages."
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    { name = "Amazon FAR Team" },
+]
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["extensions_common*"]

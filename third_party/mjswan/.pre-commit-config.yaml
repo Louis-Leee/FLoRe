@@ -1,0 +1,43 @@
+default_language_version:
+  python: python3
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.14.9
+    hooks:
+      # Run the linter.
+      - id: ruff
+        args: [--fix]
+        exclude: '^typings/'
+      # Run the formatter.
+      - id: ruff-format
+        exclude: '^typings/'
+
+  - repo: local
+    hooks:
+      - id: pytest-fast
+        name: pytest (L1/L2, no slow)
+        entry: .venv/bin/pytest -m "not slow" --tb=short -q
+        language: system
+        pass_filenames: false
+        always_run: true
+
+  # You can disable this block if you don't edit JS/TS files.
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: >
+          npx eslint
+          --config src/mjswan/template/eslint.config.cjs
+          --fix
+        language: node
+        files: ^src/mjswan/template/.*\.(js|jsx|ts|tsx)$
+        exclude: ^src/mjswan/template/src/mujoco/.*\.d\.ts$

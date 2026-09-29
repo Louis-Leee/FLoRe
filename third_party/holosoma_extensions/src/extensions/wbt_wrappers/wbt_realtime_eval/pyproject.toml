@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wbt_realtime_eval"
+version = "0.1.0"
+description = "Browser-based realtime WBT evaluation visualizer (mjswan + holosoma_2pt_wbt)."
+requires-python = ">=3.10"
+dependencies = [
+    "mjswan>=0.5.0",
+    "numpy>=1.24",
+    "onnx>=1.20",
+    "loguru",
+    # Live VIVE-teleop bridge serves the 2pt VR command over a WebSocket.
+    # (pysurvive is NOT a pip dep — it is injected via PYTHONPATH from the
+    # libsurvive build, same as in thirdparty/vive_umi.)
+    "websockets>=11",
+]
+
+[project.scripts]
+wbt-realtime-eval = "wbt_realtime_eval.main:main"
+wbt-realtime-eval-patch-mjswan = "wbt_realtime_eval.patches.apply:main"
+wbt-realtime-eval-serve = "wbt_realtime_eval.serve_bundle:main"
+# Live VIVE-tracker teleop (parallel path): build+launch the viz, and the
+# pysurvive->WebSocket tracker bridge that feeds the live 2pt VR command.
+wbt-vive-teleop = "wbt_realtime_eval.main_vive:main"
+# 3pt teleop of the hybrid UNIFIED anneal policy (the sim twin of the rig's
+# MODE=3pt-unified-anneal). Same bridge process as the 2pt entry, run --mode 3pt.
+wbt-vive-teleop-3pt = "wbt_realtime_eval.main_vive3:main"
+wbt-vive-teleop-5pt = "wbt_realtime_eval.main_vive5:main"
+wbt-vive-teleop-bridge = "wbt_realtime_eval.vive.vive_teleop_bridge:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wbt_realtime_eval"]
+artifacts = ["wbt_realtime_eval/patches/*.patch", "wbt_realtime_eval/vive/*.json"]

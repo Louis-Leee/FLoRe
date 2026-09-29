@@ -1,0 +1,295 @@
+diff --git a/template/src/core/engine/runtime.ts b/template/src/core/engine/runtime.ts
+index 3552ff4..177c3a6 100644
+--- a/template/src/core/engine/runtime.ts
++++ b/template/src/core/engine/runtime.ts
+@@ -31,8 +31,8 @@ import { PolicyRunner } from '../policy/PolicyRunner';
+ import { OnnxModule } from '../policy/OnnxModule';
+ import { PolicyStateBuilder } from '../policy/PolicyStateBuilder';
+ import type { PolicyConfig } from '../policy/types';
+-import { resetPolicyExtras, type SliderConfig } from '../policy/extras';
+-import { mountSliderPanel } from '../policy/SliderPanel';
++import { resetPolicyExtras, getPolicyExtra, type SliderConfig } from '../policy/extras';
++import { mountSliderPanel, resetSlidersToDefault } from '../policy/SliderPanel';
+ import { TrackingPolicy } from '../policy/modules/TrackingPolicy';
+ import { LocomotionPolicy } from '../policy/modules/LocomotionPolicy';
+ import { getCommandManager, type CommandTermContext, type CommandsConfig } from '../command';
+@@ -88,6 +88,16 @@ type BodyState = {
+   quaternion: THREE.Quaternion;
+ };
+ 
++// One external-force (F^ext) injection target. bodyId: -2 = unresolved,
++// -1 = not found, >=0 = resolved (lazy by-name resolution in
++// applyExternalForces). offset = wrist-local contact-point offset (z-up).
++type ForceExtBody = {
++  bodyName: string;
++  bodyId: number;
++  offset: [number, number, number];
++  sliderKeys: [string, string, string];
++};
++
+ export class mjswanRuntime {
+   private mujoco: MainModule;
+   private container: HTMLElement;
+@@ -114,6 +124,12 @@ export class mjswanRuntime {
+   private resizeObserver: ResizeObserver | null;
+   private dragStateManager: DragStateManager | null;
+   private dragForceScale: number;
++  // Optional external-force (F^ext) injection config, populated from
++  // policyConfig.extras.force_ext_bodies (holosoma-2pt-force preset only; null
++  // otherwise so this is a no-op for every other policy). Each entry pins a
++  // body (by resolved id), a wrist-local offset to the contact point, and the
++  // 3 slider keys carrying the pelvis-frame Newtons. See applyExternalForces.
++  private forceExtBodies: ForceExtBody[] | null;
+   private sceneCacheManager: SceneCacheManager;
+   private resourceTracker: SceneResourceTracker;
+   private memoryMonitor: MemoryMonitor;
+@@ -244,6 +260,7 @@ export class mjswanRuntime {
+     this.loadingScene = null;
+     this.dragStateManager = null;
+     this.dragForceScale = 100.0;
++    this.forceExtBodies = null;
+     this.policyRunner = null;
+     this.policyStateBuilder = null;
+     this.policyConfigPath = null;
+@@ -625,6 +642,7 @@ export class mjswanRuntime {
+     this.onnxNormMean = null;
+     this.onnxNormStd = null;
+     this.onnxNormClip = 3.0;
++    this.forceExtBodies = null;
+     this.terminationManager = null;
+     // Note: eventManager and terrainData are scene-level state set in loadEnvironment; do not clear here.
+ 
+@@ -797,6 +815,45 @@ export class mjswanRuntime {
+         } else {
+           mountSliderPanel(undefined);
+         }
++
++        // Optional external-force (F^ext) injection config. Shape:
++        //   force_ext_bodies: [{ body_name: string, offset_b: [x,y,z],
++        //                        slider_keys: [fx_key, fy_key, fz_key] }, ...]
++        // Each lists a body whose rubber-hand contact point receives a real
++        // disturbance wrench injected into xfrc_applied (see
++        // applyExternalForces). Body ids are resolved lazily (mjModel may not
++        // be ready here). Absent => no-op (this.forceExtBodies stays null), so
++        // every non-force policy is unaffected.
++        this.forceExtBodies = null;
++        const fextRaw = extras['force_ext_bodies'];
++        if (Array.isArray(fextRaw) && fextRaw.length > 0) {
++          const parsed: ForceExtBody[] = [];
++          for (const e of fextRaw) {
++            if (
++              e &&
++              typeof e === 'object' &&
++              typeof (e as { body_name?: unknown }).body_name === 'string' &&
++              Array.isArray((e as { offset_b?: unknown }).offset_b) &&
++              Array.isArray((e as { slider_keys?: unknown }).slider_keys)
++            ) {
++              const ent = e as Record<string, unknown>;
++              const off = ent.offset_b as unknown[];
++              const keys = ent.slider_keys as unknown[];
++              parsed.push({
++                bodyName: ent.body_name as string,
++                bodyId: -2,
++                offset: [Number(off[0]) || 0, Number(off[1]) || 0, Number(off[2]) || 0],
++                sliderKeys: [String(keys[0] ?? ''), String(keys[1] ?? ''), String(keys[2] ?? '')],
++              });
++            }
++          }
++          if (parsed.length > 0) {
++            this.forceExtBodies = parsed;
++            console.log('[PolicyRunner] F^ext injection enabled', {
++              bodies: parsed.map((p) => p.bodyName),
++            });
++          }
++        }
+       } else {
+         mountSliderPanel(undefined);
+       }
+@@ -1051,6 +1108,15 @@ export class mjswanRuntime {
+   }
+ 
+   private resetSimulationState(): void {
++    // Zero the live force sliders (F^cmd + F^ext) on EVERY reset. This is the
++    // universal choke point: the Reset button and motion-select reach it via
++    // resetSimulation(), and fall/termination calls it DIRECTLY (so adding this
++    // to resetSimulation() alone would miss terminations). Restores each slider
++    // to its seeded default (0 N) and re-syncs the DOM label + policy-extras
++    // store through the slider's own input listener. Pure DOM — runs ABOVE the
++    // mjModel guard so it never depends on physics readiness; no-op when no
++    // slider panel is mounted (non-force presets).
++    resetSlidersToDefault();
+     if (!this.mjModel || !this.mjData) {
+       return;
+     }
+@@ -1080,8 +1146,11 @@ export class mjswanRuntime {
+     if (!this.mjModel || !this.mjData) {
+       return;
+     }
+-    // Apply drag forces
++    // Apply drag forces (clears ALL xfrc_applied, then writes the dragged body).
+     this.applyDragForces();
++    // Add F^ext on top — must run AFTER applyDragForces' clear, and ADDs (+=)
++    // so a concurrent mouse-drag on the same body still sums correctly.
++    this.applyExternalForces();
+ 
+     for (let substep = 0; substep < this.decimation; substep++) {
+       this.applyPolicyControl();
+@@ -1089,6 +1158,103 @@ export class mjswanRuntime {
+     }
+   }
+ 
++  /**
++   * Inject the UniFP external disturbance force (F^ext) into xfrc_applied,
++   * replicating the headless benchmark's mj_applyFT-at-the-rubber-hand-point
++   * (utils/headless_sim_factory.py:_apply_force_ext / utils/eval_utils.py).
++   *
++   * Frame discipline — this is the PHYSICS path, so EVERYTHING here is native
++   * MuJoCo z-up; do NOT apply the THREE.js y-up swizzle (that swizzle belongs
++   * only to the arrow viz in WbtTrackingCommand). The slider tuple is raw
++   * Newtons in the robot ROOT (pelvis) frame, identical to what the F^cmd obs
++   * stores, so we rotate it to world by the LIVE pelvis quat.
++   *
++   * Equivalence to mj_applyFT: xfrc_applied is a world-frame wrench applied
++   * about the body's CENTER OF MASS (xipos), not its origin (xpos). So a pure
++   * force F_world applied at the world contact point hand_pt becomes the COM
++   * wrench { force = F_world, torque = (hand_pt - xipos) x F_world }. The pivot
++   * is xipos — NOT xpos. (mjswan's mouse-drag code uses xpos as its pivot,
++   * which is an acceptable approximation for hand-tuned dragging but is the
++   * wrong pivot for matching the headless ground truth; we deliberately do not
++   * copy it.) Omitting the torque term would silently drop the ~4.15 cm
++   * moment arm the benchmark and the training-time injector both include.
++   */
++  private applyExternalForces(): void {
++    if (!this.forceExtBodies || !this.mjModel || !this.mjData) {
++      return;
++    }
++    const mjData = this.mjData;
++    const mjModel = this.mjModel;
++    // Live pelvis (root) world rotation from the free-joint quat qpos[3:7]
++    // (wxyz). Same R_root matrix as headless_sim_factory _apply_force_ext.
++    const q = mjData.qpos;
++    const w = q[3] ?? 1.0;
++    const x = q[4] ?? 0.0;
++    const y = q[5] ?? 0.0;
++    const z = q[6] ?? 0.0;
++    // Row-major 3x3.
++    const r00 = 1 - 2 * (y * y + z * z), r01 = 2 * (x * y - w * z), r02 = 2 * (x * z + w * y);
++    const r10 = 2 * (x * y + w * z), r11 = 1 - 2 * (x * x + z * z), r12 = 2 * (y * z - w * x);
++    const r20 = 2 * (x * z - w * y), r21 = 2 * (y * z + w * x), r22 = 1 - 2 * (x * x + y * y);
++
++    for (const fb of this.forceExtBodies) {
++      // Lazy body-id resolve (mjModel may not have been ready at config load).
++      if (fb.bodyId === -2) {
++        fb.bodyId = -1;
++        for (let b = 0; b < mjModel.nbody; b++) {
++          const name = mjModel.body(b).name;
++          if (name === fb.bodyName || name.endsWith(`/${fb.bodyName}`)) {
++            fb.bodyId = b;
++            break;
++          }
++        }
++        if (fb.bodyId < 0) {
++          console.warn(`[PolicyRunner] F^ext body '${fb.bodyName}' not found — skipping`);
++        }
++      }
++      const bid = fb.bodyId;
++      if (bid <= 0) continue;
++
++      // Pelvis-frame Newtons from the live sliders (raw N, NOT obs-scaled).
++      const fpx = getPolicyExtra(fb.sliderKeys[0], 0.0);
++      const fpy = getPolicyExtra(fb.sliderKeys[1], 0.0);
++      const fpz = getPolicyExtra(fb.sliderKeys[2], 0.0);
++      if (fpx === 0 && fpy === 0 && fpz === 0) continue;
++
++      // f_world = R_root @ f_pelvis.
++      const fwx = r00 * fpx + r01 * fpy + r02 * fpz;
++      const fwy = r10 * fpx + r11 * fpy + r12 * fpz;
++      const fwz = r20 * fpx + r21 * fpy + r22 * fpz;
++
++      // Contact point: hand_pt = xpos[bid] + R_wrist(xmat[bid]) @ offset_b.
++      const p3 = bid * 3;
++      const m9 = bid * 9;
++      const xm = mjData.xmat;
++      const o = fb.offset;
++      const hx = mjData.xpos[p3 + 0] + xm[m9 + 0] * o[0] + xm[m9 + 1] * o[1] + xm[m9 + 2] * o[2];
++      const hy = mjData.xpos[p3 + 1] + xm[m9 + 3] * o[0] + xm[m9 + 4] * o[1] + xm[m9 + 5] * o[2];
++      const hz = mjData.xpos[p3 + 2] + xm[m9 + 6] * o[0] + xm[m9 + 7] * o[1] + xm[m9 + 8] * o[2];
++
++      // Moment arm about the body COM (xipos), NOT the origin (xpos).
++      const rx = hx - (mjData.xipos[p3 + 0] ?? mjData.xpos[p3 + 0]);
++      const ry = hy - (mjData.xipos[p3 + 1] ?? mjData.xpos[p3 + 1]);
++      const rz = hz - (mjData.xipos[p3 + 2] ?? mjData.xpos[p3 + 2]);
++      // torque = r x F_world.
++      const tx = ry * fwz - rz * fwy;
++      const ty = rz * fwx - rx * fwz;
++      const tz = rx * fwy - ry * fwx;
++
++      // ADD (not assign) so F^ext coexists with a concurrent mouse drag.
++      const off = bid * 6;
++      mjData.xfrc_applied[off + 0] += fwx;
++      mjData.xfrc_applied[off + 1] += fwy;
++      mjData.xfrc_applied[off + 2] += fwz;
++      mjData.xfrc_applied[off + 3] += tx;
++      mjData.xfrc_applied[off + 4] += ty;
++      mjData.xfrc_applied[off + 5] += tz;
++    }
++  }
++
+   private applyPolicyControl(): void {
+     if (!this.policyControl || !this.mjData) {
+       return;
+diff --git a/template/src/core/policy/SliderPanel.ts b/template/src/core/policy/SliderPanel.ts
+index d998200..3bcf9e3 100644
+--- a/template/src/core/policy/SliderPanel.ts
++++ b/template/src/core/policy/SliderPanel.ts
+@@ -21,6 +21,13 @@ import { setPolicyExtra, type SliderConfig } from './extras';
+ 
+ const PANEL_ID = 'mjswan-slider-panel';
+ 
++// Registry of the currently-mounted slider rows, rebuilt on every
++// mountSliderPanel call. resetSlidersToDefault() walks this to restore each
++// input to its seeded default. Empty for non-force presets (panel removed),
++// so resetSlidersToDefault is a no-op there.
++type SliderEntry = { input: HTMLInputElement; key: string; default: number };
++const _sliderRegistry: SliderEntry[] = [];
++
+ function ensurePanelRoot(): HTMLDivElement {
+   let root = document.getElementById(PANEL_ID) as HTMLDivElement | null;
+   if (root) {
+@@ -122,6 +129,8 @@ function renderSliderRow(cfg: SliderConfig): HTMLElement {
+ 
+   row.appendChild(input);
+   row.appendChild(valEl);
++  // Register so resetSlidersToDefault() can restore this row on reset.
++  _sliderRegistry.push({ input, key: cfg.key, default: initial });
+   return row;
+ }
+ 
+@@ -136,6 +145,9 @@ function formatValue(v: number): string {
+ /** Mount a slider panel from a list of configs. Idempotent — rebuilds the
+  *  panel each call. Pass `[]` (or omit) to remove the panel. */
+ export function mountSliderPanel(sliders: SliderConfig[] | undefined): void {
++  // Rebuild the registry from scratch every mount so a previous scene's rows
++  // (or a removed panel) never linger.
++  _sliderRegistry.length = 0;
+   if (!sliders || sliders.length === 0) {
+     const existing = document.getElementById(PANEL_ID);
+     if (existing) existing.remove();
+@@ -167,3 +179,17 @@ export function mountSliderPanel(sliders: SliderConfig[] | undefined): void {
+     for (const s of groupSliders) root.appendChild(renderSliderRow(s));
+   }
+ }
++
++/** Restore every currently-mounted slider to its seeded default and fire the
++ *  input listener so the value label AND the policy-extras store stay in sync
++ *  via the single existing code path (renderSliderRow's 'input' handler). No-op
++ *  when no panel is mounted (the registry is empty for non-force presets).
++ *  Called on every simulation reset so a lingering F^cmd / F^ext can't carry
++ *  across a Reset / motion-switch / fall. */
++export function resetSlidersToDefault(): void {
++  for (const e of _sliderRegistry) {
++    e.input.value = String(e.default);
++    // Re-runs the 'input' listener: valEl label update + setPolicyExtra(key, default).
++    e.input.dispatchEvent(new Event('input', { bubbles: true }));
++  }
++}

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package fuji_policy;
+
+// Simplified single-embodiment, single-env policy service for the FUJI S1
+// DP-Flow planner. Derived from the rfm_heavy vla_service.proto but stripped of
+// LoadPolicy / multi-backend / N-env camera_<C>_env<E> batching / embodiment:
+// the FUJI server hosts exactly one DP-Flow checkpoint, one camera stream, and
+// one robot, so a request carries a single state vector + a single JPEG image.
+
+service FujiPolicyService {
+  // Drip-feed: returns ONE action step from the RTC scheduler.
+  rpc Predict(PredictRequest) returns (PredictResponse);
+  // Stateless debug: returns the whole predicted chunk in one call.
+  rpc PredictChunk(PredictRequest) returns (ChunkResponse);
+  // Clear per-episode RTC state at an episode boundary.
+  rpc Reset(ResetRequest) returns (ResetResponse);
+  // Static policy metadata for client compatibility checks.
+  rpc GetPolicyInfo(PolicyInfoRequest) returns (PolicyInfoResponse);
+}
+
+message PredictRequest {
+  // Robot state, length == action_dim (32).
+  repeated float state = 1;
+  // Single camera frame, JPEG-encoded bytes.
+  bytes image = 2;
+  // Optional language instruction. Empty => server default_prompt.
+  string prompt = 3;
+}
+
+message PredictResponse {
+  // One action step, length == action_dim (32).
+  repeated float action = 1;
+}
+
+message ChunkResponse {
+  // Flattened chunk, length == horizon * action_dim, C-order (t, dim).
+  repeated float actions = 1;
+  int32 horizon = 2;      // H
+  int32 action_dim = 3;   // D
+}
+
+message ResetRequest {}
+
+message ResetResponse {
+  bool ok = 1;
+}
+
+message PolicyInfoRequest {}
+
+message PolicyInfoResponse {
+  int32 action_dim = 1;
+  int32 action_horizon = 2;
+  string checkpoint = 3;
+  bool rtc_enabled = 4;
+  int32 s_min = 5;
+  int32 delay_estimate = 6;
+}

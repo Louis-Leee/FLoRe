@@ -1,0 +1,145 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+exclude = ["src/mjswan/template/.nodeenv", "src/mjswan/template/node_modules", "**/__pycache__/**"]
+# Client build is in the gitignore, but we still want it in the distribution.
+ignore-vcs = true
+
+[tool.hatch.version]
+path = "src/mjswan/__init__.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/mjswan"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mjswan"]
+
+[project]
+name = "mjswan"
+dynamic = ["version"]
+authors = [
+    {name = "mjswan Developers"},
+]
+description = "Browser-based MuJoCo simulation with real-time policy control"
+readme = "README.md"
+license = { text="Apache-2.0" }
+# labmaze (transitive dep via myosuite -> dm-control) has no pre-built wheel for
+# Python 3.13+, forcing a Bazel source build that fails with Bazel 8.x (WORKSPACE
+# support removed). Pin to <3.13 until labmaze publishes a cp313 wheel.
+# https://github.com/google-deepmind/dm_control/issues/511
+requires-python = ">=3.10, <3.13"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Typing :: Typed",
+    "Topic :: Scientific/Engineering",
+    "Natural Language :: English",
+]
+dependencies = [
+    "mujoco==3.8.1",
+    "nodeenv>=1.9.1",
+    "onnx>=1.20.0",
+    "rich>=13.0.0",
+    "typer>=0.12.0",
+    "wandb>=0.23.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pyright>=1.1.407",
+    "pre-commit>=3.3.2",
+    "ruff>=0.14.9",
+    "pytest>=9.0.2",
+]
+examples = [
+    "mjlab>=1.3.0",
+    "torch>=2.9.1",
+    "robot-descriptions>=1.22.0",
+    "playground>=0.1.0",
+    "myosuite",
+    "gymnasium",
+]
+
+[project.urls]
+"GitHub" = "https://github.com/ttktjmt/mjswan"
+
+[project.scripts]
+mjswan = "mjswan._cli:app"
+main = "mjswan._cli:main"
+simple = "mjswan._cli:simple"
+mjlab = "mjswan._cli:mjlab"
+serve = "mjswan._cli:serve"
+
+[tool.pyright]
+extraPaths = []
+exclude = ["./docs/**/*", "./examples/assets/**/*", "./src/mjswan/template/.nodeenv", "./build"]
+
+[tool.ruff]
+lint.select = [
+    "E",  # pycodestyle errors.
+    "F",  # Pyflakes rules.
+    "PLC",  # Pylint convention warnings.
+    "PLE",  # Pylint errors.
+    "PLR",  # Pylint refactor recommendations.
+    "PLW",  # Pylint warnings.
+    "I",  # Import sorting.
+]
+lint.ignore = [
+    "E731",  # Do not assign a lambda expression, use a def.
+    "E741",  # Ambiguous variable name. (l, O, or I)
+    "E501",  # Line too long.
+    "E721",  # Do not compare types, use `isinstance()`.
+    "F722",  # Forward annotation false positive from jaxtyping. Should be caught by pyright.
+    "F821",  # Forward annotation false positive from jaxtyping. Should be caught by pyright.
+    "PLR2004",  # Magic value used in comparison.
+    "PLR0915",  # Too many statements.
+    "PLR0913",  # Too many arguments.
+    "PLC0414",  # Import alias does not rename variable. (this is used for exporting names)
+    "PLC0415",  # Import should be at the top-level of a file.
+    "PLC1901",  # Use falsey strings.
+    "PLR5501",  # Use `elif` instead of `else if`.
+    "PLR0911",  # Too many return statements.
+    "PLR0912",  # Too many branches.
+    "PLW0603",  # Global statement updates are discouraged.
+    "PLW2901",  # For loop variable overwritten.
+    "PLW0642",  # Reassigned self in instance method.
+]
+exclude = [
+    ".nodeenv",
+    "typings",
+]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+override-dependencies = [
+    "mujoco==3.8.1",
+    "mujoco-mjx==3.8.1",
+    # mujoco-warp 3.7.0.1 references mujoco.mjtEnableBit.mjENBL_MULTICCD which
+    # doesn't exist in stable mujoco 3.8.1. 3.8.0.3 switched to DisableBit.
+    "mujoco-warp>=3.8.0.3",
+    # h5py 3.7.0 has no pre-built wheel for Python 3.12 / macOS arm64.
+    # Newer versions do, so override the version pinned by myosuite.
+    "h5py>=3.8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: triggers frontend build — exclude from pre-commit with -m 'not slow'",
+]

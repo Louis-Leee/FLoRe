@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+/dist/
+/build/
+
+# Data, checkpoints and training outputs (large; never committed)
+/data/
+/checkpoints/
+logs/
+wandb/
+*.zarr.zip
+*.onnx
+*.safetensors
+*.ckpt
+*.pt
+
+# Built browser bundles (regenerable with wbt-realtime-eval)
+third_party/holosoma_extensions/dist/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store

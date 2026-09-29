@@ -1,0 +1,67 @@
+{
+  "name": "mjswan",
+  "type": "module",
+  "version": "0.6.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ttktjmt/mjswan.git"
+  },
+  "files": [
+    "dist",
+    "src/core",
+    "index.html",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    "./observation": "./src/core/observation/index.ts",
+    "./command": "./src/core/command/index.ts",
+    "./math": "./src/core/observation/math.ts",
+    "./types": "./src/core/types.ts",
+    "./scene": "./src/core/scene/scene.ts",
+    "./npz": "./src/core/scene/npz.ts",
+    "./event": "./src/core/event/EventBase.ts",
+    "./termination": "./src/core/termination/TerminationBase.ts",
+    "./coordinate": "./src/core/scene/coordinate.ts"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mujoco/mujoco": "^3.8.1",
+    "@mantine/core": "^8.3.0",
+    "@mantine/hooks": "^8.3.0",
+    "@mantine/vanilla-extract": "^8.3.0",
+    "@sparkjsdev/spark": "^0.1.10",
+    "@tabler/icons-react": "^3.0.0",
+    "jszip": "^3.10.1",
+    "onnxruntime-web": "^1.21.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.181.1"
+  },
+  "overrides": {
+    "minimatch": ">=10.2.1"
+  },
+  "devDependencies": {
+    "mjswan": "*",
+    "@types/node": "^25.0.3",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.181.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
+    "@vanilla-extract/css": "^1.14.1",
+    "@vanilla-extract/vite-plugin": "^5.1.4",
+    "@vitejs/plugin-react": "^4.2.0",
+    "eslint": "^10.0.0",
+    "globals": "^15.11.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}

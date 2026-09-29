@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wbt-wrappers-inference"
+version = "0.1.0"
+description = "Holosoma Inference Extension - TML and BM Whole-Body Tracking Wrappers"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Amazon FAR Team" }]
+dependencies = [
+    "holosoma_inference",
+    "filelock==3.13.1",  # Required by isaacsim-core 5.1.0.0
+    "websockets>=11",  # live VIVE teleop source (ViveLiveSource → run_policy)
+]
+
+[project.entry-points."holosoma.policies.by_type"]
+holosoma_wbt = "wbt_wrappers_inference.policies.holosoma_wbt:HolosomaWBTPolicy"
+tml_wbt = "wbt_wrappers_inference.policies.tml_wbt:TMLWholeBodyTrackingPolicy"
+bm_wbt = "wbt_wrappers_inference.policies.bm_wbt:BMWholeBodyTrackingPolicy"
+holosoma_maskedmimic = "wbt_wrappers_inference.policies:HolosomaMaskedMimicPolicy"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["wbt_wrappers_inference*"]
+
+[project.entry-points."holosoma.config.observation"]
+tml-wbt = "wbt_wrappers_inference.config_values.observation:tml_wbt"
+bm-wbt = "wbt_wrappers_inference.config_values.observation:bm_wbt"
+holosoma-wbt = "wbt_wrappers_inference.config_values.observation:holosoma_wbt"
+holosoma-3pt-wbt = "wbt_wrappers_inference.config_values.observation:holosoma_3pt_wbt"
+holosoma-global-wbt = "wbt_wrappers_inference.config_values.observation:holosoma_global_wbt"
+holosoma-global-vel-wbt = "wbt_wrappers_inference.config_values.observation:holosoma_global_vel_wbt"
+holosoma-maskedmimic = "wbt_wrappers_inference.config_values.observation:holosoma_maskedmimic"
+holosoma-chip-local-wbt = "wbt_wrappers_inference.config_values.observation:holosoma_chip_local_wbt"
+holosoma-chip-global-wbt = "wbt_wrappers_inference.config_values.observation:holosoma_chip_global_wbt"
+
+[project.entry-points."holosoma.config.inference"]
+tml-wbt = "wbt_wrappers_inference.config_values.inference:tml_wbt"
+bm-wbt = "wbt_wrappers_inference.config_values.inference:bm_wbt"
+tml-chip = "wbt_wrappers_inference.config_values.inference:tml_chip"
+g1-wbt = "wbt_wrappers_inference.config_values.inference:g1_wbt"
+g1-wbt-3pt = "wbt_wrappers_inference.config_values.inference:g1_wbt_3pt"
+g1-wbt-2pt-global = "wbt_wrappers_inference.config_values.inference:g1_wbt_2pt_global"
+g1-wbt-3pt-global = "wbt_wrappers_inference.config_values.inference:g1_wbt_3pt_global"
+g1-wbt-global = "wbt_wrappers_inference.config_values.inference:g1_wbt_global"
+g1-wbt-global-vel = "wbt_wrappers_inference.config_values.inference:g1_wbt_global_vel"
+g1-wbt-terrain = "wbt_wrappers_inference.config_values.inference:g1_wbt_terrain"
+g1-wbt-chip-local = "wbt_wrappers_inference.config_values.inference:g1_wbt_chip_local"
+g1-wbt-chip-global = "wbt_wrappers_inference.config_values.inference:g1_wbt_chip_global"
+g1-wbt-maskedmimic-3pt = "wbt_wrappers_inference.config_values.inference:g1_wbt_maskedmimic_3pt"
+g1-wbt-maskedmimic-3pt-real-head = "wbt_wrappers_inference.config_values.inference:g1_wbt_maskedmimic_3pt_real_head"
+g1-wbt-maskedmimic-4pt = "wbt_wrappers_inference.config_values.inference:g1_wbt_maskedmimic_4pt"
+g1-wbt-maskedmimic-5pt = "wbt_wrappers_inference.config_values.inference:g1_wbt_maskedmimic_5pt"
+g1-wbt-maskedmimic-full = "wbt_wrappers_inference.config_values.inference:g1_wbt_maskedmimic_full"
+g1-wbt-maskedmimic-2pt = "wbt_wrappers_inference.config_values.inference:g1_wbt_maskedmimic_2pt"
+
+[tool.setuptools.package-data]
+wbt_wrappers_inference = ["py.typed", "urdf/*.urdf"]

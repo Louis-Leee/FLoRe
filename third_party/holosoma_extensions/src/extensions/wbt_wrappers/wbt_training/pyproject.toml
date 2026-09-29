@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wbt-training"
+version = "0.1.0"
+description = "Holosoma training extension for G1 29-DOF whole-body tracking."
+requires-python = ">=3.10"
+# loguru is imported at module scope by config_values/hybrid.py, which sits on EVERY
+# preset's import path via config_values/experiment.py. It resolves transitively through
+# holosoma today, but relying on that would make a holosoma dep change break every import
+# here (review 2026-08-05).
+dependencies = ["holosoma", "loguru"]
+authors = [{ name = "Amazon FAR Team" }]
+
+[project.optional-dependencies]
+export = ["onnx"]
+
+[tool.setuptools]
+packages = [
+    "wbt_training",
+    "wbt_training.config_values",
+    "wbt_training.utils",
+]
+
+[tool.setuptools.package-dir]
+wbt_training = "."

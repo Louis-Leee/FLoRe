@@ -1,0 +1,80 @@
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/Inter-VariableFont_slnt,wght.ttf") format("truetype");
+  font-weight: 1 100 200 300 400 500 600 700 800 900 1000;
+  font-style: normal italic;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    "Oxygen",
+    "Ubuntu",
+    "Cantarell",
+    "Fira Sans",
+    "Droid Sans",
+    "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+}
+
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.viewer {
+  position: absolute;
+  inset: 0;
+}
+
+.viewer canvas {
+  display: block;
+}
+
+.hud-error {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  padding: 16px 18px;
+  background: rgba(92, 16, 16, 0.9);
+  border: 1px solid rgba(255, 106, 106, 0.45);
+  border-radius: 4px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  max-width: min(420px, calc(100vw - 48px));
+}
+
+.hud-title {
+  margin: 0;
+  font-size: 1.4rem;
+  letter-spacing: 0.02em;
+}
+
+.hud-message {
+  margin: 0;
+  opacity: 0.6;
+}

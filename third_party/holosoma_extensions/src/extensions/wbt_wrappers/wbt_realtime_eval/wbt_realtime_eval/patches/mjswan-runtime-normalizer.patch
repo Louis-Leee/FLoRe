@@ -1,0 +1,123 @@
+--- a/template/src/core/engine/runtime.ts
++++ b/template/src/core/engine/runtime.ts
+@@ -140,6 +140,13 @@
+   private onnxInputDict: Record<string, ort.Tensor> | null;
+   private onnxInferencing: boolean;
+   private onnxTimeStep: number;
++  // Optional pre-clip of observation values before they hit a policy with a
++  // baked-in normalizer (cf. holosoma's wbt_wrappers_inference.utils.normalizer
++  // — `obs' = clip((obs - mean)/std, -clip, clip) * std + mean`). Populated
++  // from policyConfig.extras when present; null disables pre-clip.
++  private onnxNormMean: Float32Array | null;
++  private onnxNormStd: Float32Array | null;
++  private onnxNormClip: number;
+   private terminationManager: TerminationManager | null;
+   private eventManager: EventManager | null;
+   private terrainData: TerrainData | null;
+@@ -244,6 +251,9 @@
+     this.onnxInputDict = null;
+     this.onnxInferencing = false;
+     this.onnxTimeStep = 0;
++    this.onnxNormMean = null;
++    this.onnxNormStd = null;
++    this.onnxNormClip = 3.0;
+     this.terminationManager = null;
+     this.eventManager = null;
+     this.terrainData = null;
+@@ -610,6 +620,9 @@
+     this.onnxInputDict = null;
+     this.onnxInferencing = false;
+     this.onnxTimeStep = 0;
++    this.onnxNormMean = null;
++    this.onnxNormStd = null;
++    this.onnxNormClip = 3.0;
+     this.terminationManager = null;
+     // Note: eventManager and terrainData are scene-level state set in loadEnvironment; do not clear here.
+ 
+@@ -723,6 +736,38 @@
+         this.onnxInputDict = module.initInput();
+       }
+ 
++      // Optional baked-normalizer pre-clip parameters supplied by the policy
++      // exporter (see holosoma_inference's load_normalizer_from_path). Extras
++      // shape: { normalizer_mean: number[], normalizer_std: number[],
++      // normalizer_clip?: number, normalizer_eps?: number }. Empty/missing
++      // disables pre-clip (no-op for policies without baked normalization).
++      this.onnxNormMean = null;
++      this.onnxNormStd = null;
++      this.onnxNormClip = 3.0;
++      const extras = (config as { extras?: Record<string, unknown> }).extras;
++      if (extras && typeof extras === 'object') {
++        const meanRaw = extras['normalizer_mean'];
++        const stdRaw = extras['normalizer_std'];
++        if (Array.isArray(meanRaw) && Array.isArray(stdRaw) && meanRaw.length === stdRaw.length && meanRaw.length > 0) {
++          const eps = typeof extras['normalizer_eps'] === 'number' ? (extras['normalizer_eps'] as number) : 1e-2;
++          const mean = new Float32Array(meanRaw.length);
++          const stdEps = new Float32Array(stdRaw.length);
++          for (let i = 0; i < meanRaw.length; i++) {
++            mean[i] = Number(meanRaw[i]) || 0.0;
++            stdEps[i] = (Number(stdRaw[i]) || 0.0) + eps;
++          }
++          this.onnxNormMean = mean;
++          this.onnxNormStd = stdEps;
++          if (typeof extras['normalizer_clip'] === 'number') {
++            this.onnxNormClip = extras['normalizer_clip'] as number;
++          }
++          console.log('[PolicyRunner] normalizer pre-clip enabled', {
++            dim: mean.length,
++            clip: this.onnxNormClip,
++          });
++        }
++      }
++
+       console.log('[PolicyRunner] config loaded', {
+         obsSize: runner.getObservationSize(),
+         obsLayout: runner.getObservationLayout(),
+@@ -1074,6 +1119,37 @@
+     }
+   }
+ 
++  // Pre-clip the obs vector so the ONNX-baked normalizer produces values in
++  // [-clip, +clip]. Only applied to the primary obs input ('policy' / 'obs');
++  // sidecar inputs (time_step, adapt_hx) pass through untouched. No-op when
++  // normalizer params absent or when the obs length doesn't match mean's.
++  private applyOnnxNormalizerPreClip(key: string, raw: Float32Array): Float32Array {
++    const mean = this.onnxNormMean;
++    const std = this.onnxNormStd;
++    if (!mean || !std) return raw;
++    if (key === 'time_step' || key === 'is_init' || key === 'adapt_hx') return raw;
++    if (raw.length !== mean.length) {
++      // Mismatch is a configuration bug — log once per inference and skip.
++      console.warn('[PolicyRunner] normalizer dim mismatch', {
++        key,
++        obsLen: raw.length,
++        meanLen: mean.length,
++      });
++      return raw;
++    }
++    const clip = this.onnxNormClip;
++    const out = new Float32Array(raw.length);
++    for (let i = 0; i < raw.length; i++) {
++      const m = mean[i];
++      const s = std[i];
++      let n = (raw[i] - m) / s;
++      if (n > clip) n = clip;
++      else if (n < -clip) n = -clip;
++      out[i] = n * s + m;
++    }
++    return out;
++  }
++
+   private async runOnnxInference(obs: Record<string, Float32Array>): Promise<void> {
+     if (!this.onnxModule || !this.policyRunner || this.onnxInferencing) {
+       return;
+@@ -1089,7 +1165,8 @@
+         input.time_step = new ort.Tensor('float32', new Float32Array([this.onnxTimeStep]), [1, 1]);
+       }
+       for (const [key, value] of Object.entries(obs)) {
+-        input[key] = new ort.Tensor('float32', value, [1, value.length]);
++        const tensorData = this.applyOnnxNormalizerPreClip(key, value);
++        input[key] = new ort.Tensor('float32', tensorData, [1, tensorData.length]);
+       }
+       for (const key of this.onnxModule.inKeys) {
+         if (!input[key]) {

@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Verify locked environment plan
+        run: |
+          uv lock --check
+          uv sync --locked --extra dev --dry-run
+
+      - name: Build wheel
+        run: uv build --wheel
+
+      - name: Install wheel and test tools
+        run: |
+          uv venv --python python .venv
+          uv pip install --python .venv/bin/python --torch-backend cpu \
+            dist/*.whl "grpcio-tools==1.82.1" "pytest==9.1.1" "ruff==0.15.22"
+
+      - name: Verify generated protobuf stubs
+        run: |
+          .venv/bin/python -m fuji.s1_policy.serving.compile_protos
+          git diff --exit-code -- fuji/s1_policy/serving/proto
+
+      - name: Verify installed wheel and protobuf imports
+        working-directory: ${{ runner.temp }}
+        run: |
+          FUJI_PACKAGE="$("$GITHUB_WORKSPACE/.venv/bin/python" -I -c \
+            'import pathlib, fuji; print(pathlib.Path(fuji.__file__).resolve().parent)')"
+          chmod -R a-w "$FUJI_PACKAGE"
+          PYTHONDONTWRITEBYTECODE=1 "$GITHUB_WORKSPACE/.venv/bin/python" -I - <<'PY'
+          import os
+          from pathlib import Path
+
+          import fuji
+          import zarr
+          from fuji.s1_policy.data import UMIDataset
+          from fuji.s1_policy.serving.proto import fuji_policy_pb2
+          from fuji.s1_policy.serving.proto import fuji_policy_pb2_grpc
+
+          source_package = (Path(os.environ["GITHUB_WORKSPACE"]) / "fuji").resolve()
+          installed_package = Path(fuji.__file__).resolve().parent
+          assert installed_package != source_package
+          assert UMIDataset is not None
+          assert "FujiPolicyService" in fuji_policy_pb2.DESCRIPTOR.services_by_name
+          assert hasattr(fuji_policy_pb2_grpc, "FujiPolicyServiceStub")
+          PY
+
+      - name: CLI smoke tests
+        run: |
+          git ls-files --error-unmatch \
+            fuji/s1_policy/data/__init__.py \
+            fuji/s1_policy/data/norm_stats.py \
+            fuji/s1_policy/data/transforms.py \
+            fuji/s1_policy/data/umi_dataset.py
+          .venv/bin/python scripts/train_s1.py --help >/dev/null
+          .venv/bin/python scripts/serve_s1.py --help >/dev/null
+          .venv/bin/python scripts/run_client.py --help >/dev/null
+          bash scripts/collect_data.sh --mock --help >/dev/null
+          bash scripts/run_s0.sh --unused --help >/dev/null
+
+      - name: Ruff
+        run: git ls-files -z -- '*.py' | xargs -0 -r .venv/bin/ruff check
+
+      - name: Root pytest suite
+        run: .venv/bin/python -m pytest -ra
+
+      - name: Shell syntax
+        run: git ls-files -z -- '*.sh' | xargs -0 -r -n 1 bash -n

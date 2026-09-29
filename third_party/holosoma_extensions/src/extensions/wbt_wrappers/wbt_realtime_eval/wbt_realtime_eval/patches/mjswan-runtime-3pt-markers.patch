@@ -1,0 +1,28 @@
+diff --git a/template/src/core/command/TrackingCommand.ts b/template/src/core/command/TrackingCommand.ts
+index abbb0cd..4a6beb0 100644
+--- a/template/src/core/command/TrackingCommand.ts
++++ b/template/src/core/command/TrackingCommand.ts
+@@ -152,7 +152,11 @@ export class TrackingCommand implements CommandTerm {
+   private sampleHz: number;
+   private readonly ghostRoot: THREE.Group | null;
+   private readonly ghostBodies: Map<number, THREE.Group>;
+-  private readonly ghostData: import('mujoco').MjData | null;
++  // protected (not private) so a subclass (WbtTrackingCommand) can read the
++  // reference-motion body world poses (ghostData.xpos/xquat, refreshed by
++  // updateGhostPose each frame) to draw reference-side vr_3point markers on the
++  // ghost. Read-only for the subclass — the base class owns all writes.
++  protected readonly ghostData: import('mujoco').MjData | null;
+   private refBodyPosW: Float32Array[];
+   private refBodyQuatW: Float32Array[];
+   private refBodyLinVelW: Float32Array[];
+@@ -164,7 +168,9 @@ export class TrackingCommand implements CommandTerm {
+   private datasetQposAdr: number[];
+   private frameAccumulator: number;
+   private justReset: boolean;
+-  private referenceVisible: boolean;
++  // protected so the subclass can tie the reference-side vr_3point markers'
++  // visibility to the ghost's reference-visible toggle (markers hide with the ghost).
++  protected referenceVisible: boolean;
+   private readonly samplingMode: string;
+   private readonly poseRange: PoseRange;
+   private readonly velocityRange: PoseRange;
