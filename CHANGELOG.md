@@ -32,8 +32,8 @@
   controller tracks the body relative to itself, not its position in the world.
 - The five SONIC clips are third-party motion capture, now downloadable from the page; their
   dataset's terms apply.
-- Motions are fetched when picked, so the download before the demo starts is unchanged at about
-  85 MB.
+- Motions are fetched when picked, so the download before the demo starts is unchanged: 85 MB of
+  files, about 55 MB sent, since GitHub Pages compresses them. The start button now says 55 MB.
 - `h2r_view_to_holosoma.py` now leaves out MuJoCo's `world` body (32 bodies, as in the training
   clips). The builder rejects motions whose body lists differ.
 
