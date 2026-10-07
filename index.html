@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLoRe: Learning Force-Reactive Humanoid Loco-Manipulation</title>
+<meta name="description" content="FLoRe learns force-reactive humanoid loco-manipulation from robot-free demonstrations. A Unitree G1 walks a heavy gantry forward, rotates a crate with both hands, and wipes a whiteboard under steady pressure.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="FLoRe: Learning Force-Reactive Humanoid Loco-Manipulation">
+<meta property="og:description" content="Force-reactive humanoid loco-manipulation learned from robot-free, force-annotated demonstrations.">
+<meta property="og:image" content="https://louis-leee.github.io/FLoRe/static/images/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="./static/fonts/inter.css?v=1">
+<link rel="icon" type="image/png" sizes="64x64" href="./static/images/favicon.png?v=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌿%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="./static/images/apple-touch-icon.png?v=1">
+<!-- What rises into view is hidden only when a script is there to raise it. -->
+<script>document.documentElement.classList.add('js')</script>
+<link rel="stylesheet" href="./static/css/style.css?v=1">
+</head>
+<body>
+
+<nav id="nav">
+  <a class="brand" href="#top">FLoRe</a>
+  <div class="links">
+    <a href="#video">Video</a>
+    <a href="#abstract">Abstract</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#controller">Controller</a>
+    <a href="#experiments">Experiments</a>
+    <a href="#data">Data Collection</a>
+  </div>
+</nav>
+
+<header id="top" class="hero">
+  <!-- The page is drawn on the still; the reel (1.4 MB) is fetched once everything else has arrived. -->
+  <video width="1280" height="720" class="hero-bg" muted loop playsinline preload="none"
+         poster="./static/images/hero.jpg" data-src="./static/videos/hero.mp4"></video>
+  <div class="hero-shade"></div>
+  <div class="hero-body">
+    <h1>FLoRe 🌿</h1>
+    <p class="sub">Learning Force&#8209;Reactive Humanoid Loco&#8209;Manipulation</p>
+
+    <p class="authors">
+      <span>Sihang Li<sup>1,2</sup></span>,
+      <span>Xiaofeng Guo<sup>1</sup></span>,
+      <span>Jinkun Cao<sup>1</sup></span>,
+      <span>Charlie Cheng<sup>1</sup></span>,<br class="brk">
+      <span>Ruihan Yang<sup>1</sup></span>,
+      <span>Chen Feng<sup>1,2</sup></span>,
+      <span>Guanya Shi<sup>1,3</sup></span>,
+      <span>Haozhi Qi<sup>1,4</sup></span>
+    </p>
+    <p class="affil">
+      <span><sup>1</sup>Amazon FAR (Frontier AI &amp; Robotics)</span>
+      <span><sup>2</sup>New York University</span>
+      <span><sup>3</sup>Carnegie Mellon University</span>
+      <span><sup>4</sup>University of Chicago</span>
+    </p>
+
+    <div class="buttons">
+      <a class="btn" href="#video">Video</a>
+      <span class="btn disabled" title="coming soon">Paper</span>
+      <span class="btn disabled" title="coming soon">arXiv</span>
+      <a class="btn" href="https://github.com/Louis-Leee/FLoRe">Code</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section id="video" class="section">
+  <div class="wrap narrow">
+    <figure class="reveal">
+      <video class="frame" width="1280" height="720" controls playsinline preload="none" data-poster="./static/images/posters/supp.jpg">
+        <source src="./static/videos/supp.mp4" type="video/mp4">
+      </video>
+    </figure>
+  </div>
+</section>
+
+<section id="abstract" class="section tight">
+  <div class="wrap narrow">
+    <h2 class="reveal center">Abstract</h2>
+    <p class="reveal">Many everyday tasks require controlling contact force as well as motion. On a
+    humanoid, this force must often be coordinated across both hands and the whole body, and cannot
+    be specified by kinematic trajectories alone. We present FLoRe, a framework for learning
+    force-reactive humanoid loco-manipulation from robot-free demonstrations. A UMI-style handheld
+    interface records hand and torso motion together with the contact wrench applied by the
+    operator. A diffusion policy observes vision, robot state, and measured wrenches, then predicts
+    keypoint motion and per-hand force commands. A unified force&ndash;position whole-body
+    controller executes these commands while maintaining balance, with real force/torque (F/T)
+    feedback in the loop. In simulation, the controller realises commanded forces with a gain of
+    about 1.05 and an in-contact error of about 1&nbsp;N per hand while tracking whole-body motion.
+    Across three contact-rich tasks on the robot, the force-reactive policy succeeds in 80% of
+    rollouts, compared with 26.7% for a position-only policy trained on the same demonstrations and
+    executed by the same controller. Both force commands and force observations contribute to this
+    improvement.</p>
+  </div>
+</section>
+
+<section id="pipeline" class="section alt">
+  <div class="wrap narrow">
+    <h2 class="reveal center">Pipeline</h2>
+    <figure class="reveal bleed">
+      <figcaption><b>Overview of FLoRe.</b> (B) Two handheld UMI-style grippers with F/T sensors and
+        torso trackers record vision, action, and contact force without a robot. (C) A
+        force-reactive diffusion policy takes the images, state and measured force as input and
+        outputs keypoint motion together with the desired force command at 30&nbsp;Hz. (A) A unified
+        force&ndash;position controller converts the force command into a shift of the hand target,
+        so that one RL policy tracks motion and force simultaneously. Deployment: the robot's wrist
+        F/T sensors feed the measured force back into both the controller and the policy.</figcaption>
+      <a href="./static/images/pipeline.jpg" title="Open the full-size figure">
+        <img class="frame paper" loading="lazy" decoding="async" src="./static/images/pipeline.jpg" width="2400" height="797"
+             alt="The FLoRe pipeline: force-annotated demonstrations from two handheld grippers (B) train a
+                  force-reactive diffusion policy (C), whose keypoint and force commands a unified
+                  force-position controller (A) executes on the humanoid, with wrist F/T feedback at deployment.">
+      </a>
+    </figure>
+  </div>
+</section>
+
+<section id="controller" class="section">
+  <div class="wrap narrow">
+    <h2 class="reveal center">Unified Force&ndash;Position Low-Level Controller</h2>
+    <figure class="reveal">
+      <figcaption>One learned policy tracks the five keypoints &ndash; both hands, the torso and both
+        feet &ndash; and the commanded force of each hand. Here it runs in the browser, MuJoCo compiled
+        to WebAssembly, as in the code release: the sliders set each hand's force command live, and
+        the hand pushes against a compliant wall while the robot keeps tracking a recorded motion.</figcaption>
+      <video class="frame" width="1280" height="720" controls data-autoplay muted loop playsinline preload="none"
+             data-poster="./static/images/posters/controller.jpg" aria-label="The controller in the browser simulator">
+        <source src="./static/videos/controller.mp4" type="video/mp4">
+      </video>
+    </figure>
+  </div>
+</section>
+
+<section id="experiments" class="section alt">
+  <div class="wrap narrow">
+    <h2 class="reveal center">Real-world Experiments</h2>
+    <p class="lede center reveal">Three contact-rich tasks on a Unitree G1. Across them, the
+      force-reactive policy succeeds in 80% of rollouts, against 26.7% for a position-only policy
+      trained on the same demonstrations and executed by the same controller.</p>
+
+    <h3 class="reveal">Wipe Board</h3>
+    <p class="figlead reveal">The robot presses an eraser against a whiteboard and wipes a marked
+      strip. Success depends on the normal force, which the images do not show.</p>
+    <div class="grid two reveal">
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_4.jpg" aria-label="Wipe Board, clip 1">
+        <source src="./static/videos/wipe_board_4.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_11.jpg" aria-label="Wipe Board, clip 2">
+        <source src="./static/videos/wipe_board_11.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_13.jpg" aria-label="Wipe Board, clip 3">
+        <source src="./static/videos/wipe_board_13.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_9.jpg" aria-label="Wipe Board, clip 4">
+        <source src="./static/videos/wipe_board_9.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_10.jpg" aria-label="Wipe Board, clip 5">
+        <source src="./static/videos/wipe_board_10.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_1.jpg" aria-label="Wipe Board, clip 6">
+        <source src="./static/videos/wipe_board_1.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_6.jpg" aria-label="Wipe Board, clip 7">
+        <source src="./static/videos/wipe_board_6.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_12.jpg" aria-label="Wipe Board, clip 8">
+        <source src="./static/videos/wipe_board_12.mp4" type="video/mp4"></video></figure>
+    </div>
+    <figure class="plots reveal">
+      <div class="grid two">
+        <img class="paper" loading="lazy" decoding="async" src="./static/images/force_wipe_board_a.png" width="1200" height="345"
+             alt="Force of the wiping hand over time: one stroke, measured and predicted per axis.">
+        <img class="paper" loading="lazy" decoding="async" src="./static/images/force_wipe_board_b.png" width="1200" height="342"
+             alt="Force of the wiping hand over time: two strokes, measured and predicted per axis.">
+      </div>
+      <p class="legend"><span class="ax fx">F<sub>x</sub></span><span class="ax fy">F<sub>y</sub></span><span class="ax fz">F<sub>z</sub></span>
+        <span class="gap" aria-hidden="true"></span><span class="ln">Solid: measured force</span><span class="ln dashed">Dashed: predicted force</span></p>
+    </figure>
+
+    <h3 class="reveal">Rotate Box</h3>
+    <p class="figlead reveal">The robot pinches the rim of a crate with both hands, rotates it by
+      about 50&deg;, drags it about 0.5&nbsp;m across the table and releases it. The hands share an
+      internal force: if one leads the other, the crate tips.</p>
+    <div class="grid two reveal">
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/rotate_box_2.jpg" aria-label="Rotate Box, clip 1">
+        <source src="./static/videos/rotate_box_2.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/rotate_box_5.jpg" aria-label="Rotate Box, clip 2">
+        <source src="./static/videos/rotate_box_5.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/rotate_box_3.jpg" aria-label="Rotate Box, clip 3">
+        <source src="./static/videos/rotate_box_3.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/rotate_box_4.jpg" aria-label="Rotate Box, clip 4">
+        <source src="./static/videos/rotate_box_4.mp4" type="video/mp4"></video></figure>
+    </div>
+    <figure class="plots reveal">
+      <div class="grid two">
+        <img class="paper" loading="lazy" decoding="async" src="./static/images/force_rotate_box_a.png" width="1200" height="678"
+             alt="Force of the left and the right hand over time while the crate is rotated, measured and predicted per axis.">
+        <img class="paper" loading="lazy" decoding="async" src="./static/images/force_rotate_box_b.png" width="1200" height="678"
+             alt="Force of the left and the right hand over time in a second rollout, measured and predicted per axis.">
+      </div>
+      <p class="legend"><span class="ax fx">F<sub>x</sub></span><span class="ax fy">F<sub>y</sub></span><span class="ax fz">F<sub>z</sub></span>
+        <span class="gap" aria-hidden="true"></span><span class="ln">Solid: measured force</span><span class="ln dashed">Dashed: predicted force</span></p>
+    </figure>
+
+    <h3 class="reveal">Push Gantry</h3>
+    <p class="figlead reveal">The robot places both hands on a heavy wheeled frame and walks it
+      forward. The legs and torso produce the push while the arms keep both hands on the frame: too
+      little force does not move it, too much makes the hands slip or the robot lose balance.</p>
+    <div class="grid two reveal">
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/push_gantry_3.jpg" aria-label="Push Gantry, clip 1">
+        <source src="./static/videos/push_gantry_3.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/push_gantry_1.jpg" aria-label="Push Gantry, clip 2">
+        <source src="./static/videos/push_gantry_1.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/push_gantry_4.jpg" aria-label="Push Gantry, clip 3">
+        <source src="./static/videos/push_gantry_4.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/push_gantry_2.jpg" aria-label="Push Gantry, clip 4">
+        <source src="./static/videos/push_gantry_2.mp4" type="video/mp4"></video></figure>
+    </div>
+    <div class="grid reveal">
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/push_gantry_matte.jpg" aria-label="Push Gantry, side view with the background faded">
+        <source src="./static/videos/push_gantry_matte.mp4" type="video/mp4"></video></figure>
+    </div>
+    <figure class="plots reveal">
+      <img class="paper" loading="lazy" decoding="async" src="./static/images/force_push_gantry.png" width="1800" height="942"
+           alt="Force of the left and the right hand over time while the gantry is pushed, measured and predicted per axis.">
+      <p class="legend"><span class="ax fx">F<sub>x</sub></span><span class="ax fy">F<sub>y</sub></span><span class="ax fz">F<sub>z</sub></span>
+        <span class="gap" aria-hidden="true"></span><span class="ln">Solid: measured force</span><span class="ln dashed">Dashed: predicted force</span></p>
+    </figure>
+  </div>
+</section>
+
+<section id="data" class="section">
+  <div class="wrap narrow">
+    <h2 class="reveal center">Robot-free Force-annotated Data Collection System</h2>
+    <figure class="reveal">
+      <figcaption>Two handheld UMI-style grippers, each carrying a 6-axis F/T sensor, and three
+        trackers record hand and torso motion, gripper width and contact force &ndash; with no robot
+        in the loop.</figcaption>
+      <img class="frame paper" loading="lazy" decoding="async" src="./static/images/device.jpg" width="2110" height="1500"
+           alt="A demonstrator holding the two handheld grippers and wearing a torso tracker, beside a close-up of one
+                gripper with its Vive Tracker 3.0, RealSense D405 camera, F/T sensor, YAM linear gripper and USB 2-key.">
+    </figure>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>The paper and arXiv links follow shortly.</p>
+  <p>Page design adapted from <a href="https://hybridrobotics.github.io/workhorse/">Workhorse</a>.</p>
+</footer>
+
+<script src="./static/js/site.js?v=1"></script>
+</body>
+</html>

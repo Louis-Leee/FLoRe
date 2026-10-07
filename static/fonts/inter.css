@@ -1,0 +1,5 @@
+/* The latin subset of Inter (v4, variable 400-700), fetched once from Google Fonts and served
+   from this page's own origin, so that opening the page does not wait on two other hosts.
+   SIL Open Font License 1.1, see OFL.txt. */
+@font-face { font-family: Inter; font-style: normal; font-weight: 400 700;
+  font-display: swap; src: url('./inter.woff2') format('woff2'); }
