@@ -1,3 +1,37 @@
+## [1.3.0] - 2026-10-07
+### Features
+- The Controller section explains the controller before its demo, with two diagrams: the unified
+  reference generator, which moves a hand's target from the motion's reference into the surface
+  (p^tgt = p* + Δx, Δx = (f^cmd + I)/K), and the soft contact phase with its integrator, as one
+  press over time (the command and the measured force, the contact phase c switching at 2.0 and
+  1.5 N, and the shift split into f^cmd/K and I/K). `scripts/draw_controller.py` writes both into
+  `index.html`.
+- The running text of the Pipeline, Controller, Real-world Experiments and Data Collection
+  sections fills the column and is justified, as the abstract is. Below 700 px it stays
+  ragged-right.
+### Design Rationale
+- The diagrams are inline SVG, as on the Workhorse page: they use the page's font and colours,
+  follow the dark theme and stay sharp. On a phone each keeps a width of 640 px and scrolls sideways
+  in its own box, so its labels stay readable; while it scrolls, the box takes keyboard focus.
+- Variables are set in a serif italic and Δ in the upright serif, as in the paper: Inter's italic
+  capital I is a bare slanted stroke, and I / K read as // K. Inter's latin subset has no Δ either.
+- The press is a toy 1-D model, not a recording, but it uses all of the paper's constants,
+  K_I = 0.5 s^-1 included; the hold is long enough for the integral to settle. The integral can
+  pull the target back as well as push it further, as in the demo when the hand first presses
+  harder than commanded, so the caption says both. Its curves are thinned to within 0.2 px of the
+  simulated ones, which keeps the page at 31 KB instead of 100 KB.
+- The colours follow the demo's arrows: violet for f^cmd and cyan for f^meas, darkened to #0b7285
+  for 5.6:1 on white, with the page's green for the integral. Tints are opacities rather than
+  `color-mix()`, so a browser without it still draws them.
+- Plain justification, without hyphenation: Chrome's automatic hyphenation broke three words in
+  the six lines of the pipeline caption, and `text-wrap: pretty` opened wide gaps in the first line
+  of the experiments' summary to avoid a one-word last line.
+### Notes & Caveats
+- The Controller section's opening line is now a muted summary like the Experiments section's;
+  the demo keeps its own lead-in.
+- The diagrams' captions are hand-written in `index.html`; rerunning the script replaces only the
+  drawings between the markers, and stops if the markers are missing, doubled or out of order.
+
 ## [1.2.1] - 2026-10-07
 ### Features
 - The demo's motion list holds `idle_default` and the five SONIC clips only. The push-gantry clip

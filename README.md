@@ -27,6 +27,20 @@ of the narrated video. The sources, encodings and the reason for each choice are
 of the script. All clips are single H.264 files (1080p trial clips at CRF 24, the narrated video at
 720p CRF 20), so every browser plays them without a second codec.
 
+## Redraw the controller diagrams
+
+The Controller section's two diagrams are inline SVG in `index.html`, written between marker
+comments by a script that needs only the standard library; their captions stay hand-written:
+
+```bash
+python3 scripts/draw_controller.py
+```
+
+The reference generator is drawn to scale (a 15 N command and K = 200 N/m make a 7.5 cm shift).
+The press is a toy 1-D run of the paper's law with all of its constants; a hand that lags its
+target and a surface that stops it stand in for the robot, so it is not a recording. The script
+refuses to write unless each diagram has exactly one pair of markers.
+
 ## Rebuild the interactive demo
 
 `demo/` is the static browser bundle of the 5-keypoint controller, built by the code release's own

@@ -379,3 +379,14 @@ addEventListener(
   },
   { passive: true },
 );
+
+// --- a diagram too wide for the screen scrolls sideways in its own box; while it does, the
+// keyboard can reach it too ---
+const wides = document.querySelectorAll(".wide");
+const reachable = () =>
+  wides.forEach((w) => {
+    if (w.scrollWidth > w.clientWidth + 1) w.tabIndex = 0;
+    else w.removeAttribute("tabindex");
+  });
+addEventListener("resize", reachable);
+reachable();
