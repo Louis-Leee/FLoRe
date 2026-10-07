@@ -101,20 +101,43 @@ def ffmpeg_bin() -> str:
     sys.exit("ffmpeg not found (brew install ffmpeg-full)")
 
 
+def need(out: Path, force: bool) -> bool:
+    """Whether an output is to be (re)built; each output of a job is checked on its own, so a
+    missing poster is made again without re-encoding its clip."""
+    if force or not out.exists():
+        log.info("> %s", out.relative_to(SITE))
+        return True
+    log.info("= %s (exists)", out.relative_to(SITE))
+    return False
+
+
+def encode(cmd: list, out: Path) -> None:
+    """Runs an ffmpeg command whose last argument is the output into a temporary file next to it,
+    so that an interrupted encode never leaves a truncated clip that a later run would keep."""
+    tmp = out.with_name(f"{out.stem}.part{out.suffix}")
+    try:
+        run([*cmd, tmp])
+        tmp.replace(out)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 def poster(ff: str, video: Path, out: Path, width: int, at: float = 0.0) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
-    run([ff, "-v", "error", "-y", "-ss", f"{at:.3f}", "-i", video, "-frames:v", "1",
-         "-vf", f"scale={width}:-2:flags=lanczos", "-q:v", "3", out])
+    encode([ff, "-v", "error", "-y", "-ss", f"{at:.3f}", "-i", video, "-frames:v", "1",
+            "-vf", f"scale={width}:-2:flags=lanczos", "-q:v", "3"], out)
 
 
-def build_clip(ff: str, src_root: Path, c: Clip) -> None:
+def build_clip(ff: str, src_root: Path, c: Clip, force: bool) -> None:
     out = VIDEOS / f"{c.name}.mp4"
-    run([ff, "-v", "error", "-stats", "-y", "-i", src_root / c.src, "-map", "0:v:0", "-an",
-         "-vf", f"scale=-2:{c.height}:flags=lanczos,{TAGS}", *X264, "-crf", f"{c.crf:g}", *MP4, out])
-    poster(ff, out, POSTERS / f"{c.name}.jpg", c.poster_width)
+    if need(out, force):
+        encode([ff, "-v", "error", "-stats", "-y", "-i", src_root / c.src, "-map", "0:v:0", "-an",
+                "-vf", f"scale=-2:{c.height}:flags=lanczos,{TAGS}", *X264, "-crf", f"{c.crf:g}", *MP4], out)
+    if need(POSTERS / f"{c.name}.jpg", force):
+        poster(ff, out, POSTERS / f"{c.name}.jpg", c.poster_width)
 
 
-def build_hero(ff: str, src_root: Path) -> None:
+def build_hero(ff: str, src_root: Path, force: bool) -> None:
     """A loop with no visible seam: the first HERO_SEAM seconds are cut from the head and
     faded in over the tail, so the last frame leads straight into the first."""
     out = VIDEOS / "hero.mp4"
@@ -123,13 +146,16 @@ def build_hero(ff: str, src_root: Path) -> None:
              f"[a]trim=start={HERO_SEAM},setpts=PTS-STARTPTS[body];"
              f"[b]trim=end={HERO_SEAM},setpts=PTS-STARTPTS[head];"
              f"[body][head]xfade=transition=fade:duration={HERO_SEAM}:offset={body - HERO_SEAM:.3f}[v]")
-    run([ff, "-v", "error", "-stats", "-y", "-t", f"{HERO_LEN}", "-i", src_root / HERO_SRC,
-         "-filter_complex", graph, "-map", "[v]", "-an", *X264, "-crf", "28", *MP4, out])
-    poster(ff, out, IMAGES / "hero.jpg", 1280)
-    # the link preview: the hero's first frame, cropped to 1200 x 630
-    with Image.open(IMAGES / "hero.jpg") as im:
-        im = im.convert("RGB").resize((1200, 675), Image.LANCZOS).crop((0, 22, 1200, 652))
-        im.save(IMAGES / "og.jpg", quality=86, optimize=True, progressive=True)
+    if need(out, force):
+        encode([ff, "-v", "error", "-stats", "-y", "-t", f"{HERO_LEN}", "-i", src_root / HERO_SRC,
+                "-filter_complex", graph, "-map", "[v]", "-an", *X264, "-crf", "28", *MP4], out)
+    if need(IMAGES / "hero.jpg", force):
+        poster(ff, out, IMAGES / "hero.jpg", 1280)
+    if need(IMAGES / "og.jpg", force):
+        # the link preview: the hero's first frame, cropped to 1200 x 630
+        with Image.open(IMAGES / "hero.jpg") as im:
+            im = im.convert("RGB").resize((1200, 675), Image.LANCZOS).crop((0, 22, 1200, 652))
+            im.save(IMAGES / "og.jpg", quality=86, optimize=True, progressive=True)
 
 
 def filter_path(p: Path) -> str:
@@ -141,15 +167,17 @@ def filter_path(p: Path) -> str:
     return s
 
 
-def build_supp(ff: str, src_root: Path) -> None:
+def build_supp(ff: str, src_root: Path, force: bool) -> None:
     out = VIDEOS / "supp.mp4"
     vf = f"ass={filter_path(src_root / SUPP_SUBS)}:fontsdir={filter_path(src_root / SUPP_FONTS)},{TAGS}"
-    run([ff, "-v", "error", "-stats", "-y", "-i", src_root / SUPP_SRC, "-i", src_root / SUPP_AUDIO,
-         "-map", "0:v:0", "-map", "1:a:0", "-vf", vf, *X264, "-crf", f"{SUPP_CRF:g}",
-         "-c:a", "aac", "-b:a", "128k", "-ac", "1", "-ar", "48000", "-shortest", *MP4, out])
-    # the title card once the robot has walked past it, taken from the recording itself so no
-    # subtitle sits on it
-    poster(ff, src_root / SUPP_SRC, POSTERS / "supp.jpg", 1280, at=18.5)
+    if need(out, force):
+        encode([ff, "-v", "error", "-stats", "-y", "-i", src_root / SUPP_SRC, "-i", src_root / SUPP_AUDIO,
+                "-map", "0:v:0", "-map", "1:a:0", "-vf", vf, *X264, "-crf", f"{SUPP_CRF:g}",
+                "-c:a", "aac", "-b:a", "128k", "-ac", "1", "-ar", "48000", "-shortest", *MP4], out)
+    if need(POSTERS / "supp.jpg", force):
+        # the title card once the robot has walked past it, taken from the recording itself so
+        # no subtitle sits on it
+        poster(ff, src_root / SUPP_SRC, POSTERS / "supp.jpg", 1280, at=18.5)
 
 
 def flatten(path: Path) -> Image.Image:
@@ -172,22 +200,27 @@ def save_jpg(im: Image.Image, out: Path, quality: int = 90) -> None:
     im.save(out, quality=quality, subsampling=0, optimize=True, progressive=True)   # 4:4:4 keeps text crisp
 
 
-def build_plots(src_root: Path) -> None:
+def build_plots(src_root: Path, force: bool) -> None:
     for name, (src, width) in PLOTS.items():
-        im = fit(flatten(src_root / src), width)
-        im.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(
-            IMAGES / f"{name}.png", optimize=True)
+        if need(IMAGES / f"{name}.png", force):
+            im = fit(flatten(src_root / src), width)
+            im.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(
+                IMAGES / f"{name}.png", optimize=True)
 
 
-def build_pipeline(src_root: Path) -> None:
-    save_jpg(fit(flatten(src_root / PIPELINE_SRC), 2400), IMAGES / "pipeline.jpg")
+def build_pipeline(src_root: Path, force: bool) -> None:
+    if need(IMAGES / "pipeline.jpg", force):
+        save_jpg(fit(flatten(src_root / PIPELINE_SRC), 2400), IMAGES / "pipeline.jpg")
 
 
-def build_device(src_root: Path) -> None:
-    save_jpg(flatten(src_root / DEVICE_SRC), IMAGES / "device.jpg")
+def build_device(src_root: Path, force: bool) -> None:
+    if need(IMAGES / "device.jpg", force):
+        save_jpg(flatten(src_root / DEVICE_SRC), IMAGES / "device.jpg")
 
 
-def build_icons() -> None:
+def build_icons(force: bool) -> None:
+    if not (need(IMAGES / "favicon.png", force) | need(IMAGES / "apple-touch-icon.png", force)):
+        return
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "leaf.png"
         urllib.request.urlretrieve(LEAF_URL, path)
@@ -212,27 +245,22 @@ def main() -> int:
     for d in (VIDEOS, IMAGES, POSTERS):
         d.mkdir(parents=True, exist_ok=True)
 
-    # name -> (output that marks it done, builder)
-    jobs = {c.name: (VIDEOS / f"{c.name}.mp4", lambda c=c: build_clip(ff, src_root, c)) for c in CLIPS}
+    # name -> builder; each builder checks its own outputs one by one
+    jobs = {c.name: (lambda f, c=c: build_clip(ff, src_root, c, f)) for c in CLIPS}
     jobs |= {
-        "hero": (VIDEOS / "hero.mp4", lambda: build_hero(ff, src_root)),
-        "supp": (VIDEOS / "supp.mp4", lambda: build_supp(ff, src_root)),
-        "plots": (IMAGES / "force_push_gantry.png", lambda: build_plots(src_root)),
-        "pipeline": (IMAGES / "pipeline.jpg", lambda: build_pipeline(src_root)),
-        "device": (IMAGES / "device.jpg", lambda: build_device(src_root)),
-        "icons": (IMAGES / "favicon.png", build_icons),
+        "hero": lambda f: build_hero(ff, src_root, f),
+        "supp": lambda f: build_supp(ff, src_root, f),
+        "plots": lambda f: build_plots(src_root, f),
+        "pipeline": lambda f: build_pipeline(src_root, f),
+        "device": lambda f: build_device(src_root, f),
+        "icons": build_icons,
     }
     unknown = set(args.only or ()) - set(jobs)
     if unknown:
         sys.exit(f"unknown outputs: {', '.join(sorted(unknown))}")
-    for name, (done, build) in jobs.items():
-        if args.only and name not in args.only:
-            continue
-        if done.exists() and not args.force:
-            log.info("= %s (exists)", name)
-            continue
-        log.info("> %s", name)
-        build()
+    for name, build in jobs.items():
+        if not args.only or name in args.only:
+            build(args.force)
     return 0
 
 

@@ -14,8 +14,10 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./static/images/favicon.png?v=1">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌿%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="./static/images/apple-touch-icon.png?v=1">
-<!-- What rises into view is hidden only when a script is there to raise it. -->
-<script>document.documentElement.classList.add('js')</script>
+<!-- What rises into view is hidden only when a script is there to raise it; if site.js fails to
+     load or to start, everything is shown again after 3 s. -->
+<script>document.documentElement.classList.add('js');
+  setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
 <link rel="stylesheet" href="./static/css/style.css?v=1">
 </head>
 <body>
@@ -32,7 +34,8 @@
   </div>
 </nav>
 
-<header id="top" class="hero">
+<!-- no element is called "top", so the brand link #top scrolls to the very top of the page -->
+<header id="hero" class="hero">
   <!-- The page is drawn on the still; the reel (1.4 MB) is fetched once everything else has arrived. -->
   <video width="1280" height="720" class="hero-bg" muted loop playsinline preload="none"
          poster="./static/images/hero.jpg" data-src="./static/videos/hero.mp4"></video>
@@ -250,6 +253,6 @@
   <p>Page design adapted from <a href="https://hybridrobotics.github.io/workhorse/">Workhorse</a>.</p>
 </footer>
 
-<script src="./static/js/site.js?v=2"></script>
+<script src="./static/js/site.js?v=3" onerror="document.documentElement.classList.remove('js')"></script>
 </body>
 </html>

@@ -5,6 +5,25 @@
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 const DWELL = 500; // ms a figure stays on screen before it starts, so a page jump starts nothing
 
+// --- things rise into place the first time they are seen ---
+// Set up first: until it runs, the inline script in <head> has them hidden, and it shows them
+// again by itself if this never gets here.
+const rise = new IntersectionObserver(
+  (entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      e.target.classList.add("in");
+      rise.unobserve(e.target);
+    }
+  },
+  { rootMargin: "0px 0px -12% 0px", threshold: 0.08 },
+);
+document.querySelectorAll(".reveal").forEach((el, i) => {
+  el.style.transitionDelay = `${Math.min(i % 4, 3) * 70}ms`; // a short stagger inside a group
+  rise.observe(el);
+});
+window.revealReady = true;
+
 // Runs `fn` once `el` is about a screen away: posters are fetched then, ahead of the figure,
 // and not as the page opens.
 const nearBy = new Map();
@@ -44,11 +63,15 @@ const attach = (v) => {
   delete v.dataset.src;
 };
 
+// picture in picture, full screen, or the iPhone's own player: watched, though not on the page
 const watchedElsewhere = (v) =>
-  document.pictureInPictureElement === v || document.fullscreenElement === v;
+  document.pictureInPictureElement === v ||
+  document.fullscreenElement === v ||
+  v.webkitDisplayingFullscreen === true;
 
-// Stops a video's download and frees its decoder.  Its time is kept aside and set again only as
-// it plays: a time set on an emptied video makes the browser fetch it straight back.
+// Stops a video's download and frees its decoder.  Its time is kept aside and set again as it
+// next plays, whichever control starts it: a time set on an emptied video makes the browser
+// fetch it straight back.
 const resumeAt = new WeakMap();
 const release = (v) => {
   if (v.readyState === 0 && v.networkState !== v.NETWORK_LOADING) return; // holds nothing
@@ -62,38 +85,58 @@ const quiet = new WeakSet(); // pauses the page made, which are not the visitor'
 
 function player(v, { auto = true } = {}) {
   let want = auto && !reduced.matches,
+    shown = false,
     start = 0,
     drop = 0;
-  const run = () => {
-    const t = resumeAt.get(v);
-    resumeAt.delete(v);
-    if (t) v.currentTime = t;
-    v.play().catch(() => {}); // a refusal leaves the poster and the play button up
-  };
+  const run = () => v.play().catch(() => {}); // a refusal leaves the poster and the play button up
   const halt = () => {
     if (v.paused || watchedElsewhere(v)) return;
     quiet.add(v);
     v.pause();
   };
+  // whatever starts it -- the page, a click, the browser's own controls -- picks up where the
+  // released clip left off
   v.addEventListener("play", () => {
     want = true;
+    const t = resumeAt.get(v);
+    resumeAt.delete(v);
+    if (t) v.currentTime = t;
   });
   v.addEventListener("pause", () => {
-    if (!quiet.delete(v)) want = false;
+    if (quiet.delete(v)) return;
+    want = false; // the visitor's pause: a start still pending must not undo it
+    clearTimeout(start);
   });
+  const leave = () => {
+    halt();
+    drop = setTimeout(() => release(v), 1000);
+  };
   new IntersectionObserver(
-    ([e]) => {
+    (es) => {
+      const e = es[es.length - 1]; // records can queue up: the last one is where it is now
       clearTimeout(start);
-      if (e.isIntersecting) clearTimeout(drop);
-      if (e.intersectionRatio >= 0.25) {
-        if (want) start = setTimeout(run, DWELL);
+      clearTimeout(drop);
+      shown = e.intersectionRatio >= 0.25;
+      if (shown) {
+        start = setTimeout(() => {
+          if (want) run();
+        }, DWELL);
         return;
       }
-      halt();
-      if (!e.isIntersecting) drop = setTimeout(() => release(v), 1000);
+      if (e.isIntersecting) halt();
+      else leave();
     },
     { threshold: [0, 0.25] },
   ).observe(v);
+  // back from full screen or picture in picture to a place on the page that is out of view
+  for (const ev of ["leavepictureinpicture", "webkitendfullscreen", "fullscreenchange"]) {
+    // checked a moment later, once the observer has seen where the clip is now
+    (ev === "fullscreenchange" ? document : v).addEventListener(ev, () =>
+      setTimeout(() => {
+        if (!shown && !watchedElsewhere(v)) leave();
+      }, 200),
+    );
+  }
   return {
     toggle() {
       if (v.paused) run();
@@ -108,10 +151,7 @@ function player(v, { auto = true } = {}) {
 function byHand(v, p) {
   v.controls = false;
   v.tabIndex = 0;
-  v.setAttribute(
-    "aria-label",
-    `${v.getAttribute("aria-label") || "Clip"}: Space plays or pauses it`,
-  );
+  v.setAttribute("aria-label", `${v.getAttribute("aria-label") || "Clip"}: Space plays or pauses it`);
   v.addEventListener("click", () => p.toggle());
   v.addEventListener("keydown", (e) => {
     if (e.target !== v || (e.key !== " " && e.key !== "Enter")) return;
@@ -143,9 +183,7 @@ function fullScreenButton(v) {
       try {
         v.webkitEnterFullscreen();
       } catch {
-        v.addEventListener("loadedmetadata", () => v.webkitEnterFullscreen(), {
-          once: true,
-        });
+        v.addEventListener("loadedmetadata", () => v.webkitEnterFullscreen(), { once: true });
       }
     }
   });
@@ -196,20 +234,16 @@ const heroArrives = () => {
 addEventListener("load", heroArrives, { once: true });
 setTimeout(heroArrives, 2500);
 
-// --- nav: a border once you leave the hero, and the current section marked ---
+// --- nav: the current section marked, and a border once the page has covered the hero ---
 const nav = document.getElementById("nav");
 const links = [...document.querySelectorAll("#nav .links a")];
-const sections = links
-  .map((a) => document.querySelector(a.getAttribute("href")))
-  .filter(Boolean);
+const sections = links.map((a) => document.querySelector(a.getAttribute("href"))).filter(Boolean);
 
 const spy = new IntersectionObserver(
   (entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
-      links.forEach((a) =>
-        a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id),
-      );
+      links.forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
     }
   },
   { rootMargin: "-45% 0px -50% 0px" },
@@ -217,28 +251,9 @@ const spy = new IntersectionObserver(
 
 sections.forEach((s) => spy.observe(s));
 
-const heroEl = document.getElementById("top"); // not `top`: that name is already window.top
-new IntersectionObserver(
-  ([e]) => nav.classList.toggle("stuck", !e.isIntersecting),
-  { threshold: 0.02 },
-).observe(heroEl);
-
-// --- things rise into place the first time they are seen ---
-const rise = new IntersectionObserver(
-  (entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      e.target.classList.add("in");
-      rise.unobserve(e.target);
-    }
-  },
-  { rootMargin: "0px 0px -12% 0px", threshold: 0.08 },
-);
-
-document.querySelectorAll(".reveal").forEach((el, i) => {
-  el.style.transitionDelay = `${Math.min(i % 4, 3) * 70}ms`; // a short stagger inside a group
-  rise.observe(el);
-});
+// The hero is sticky, so it never leaves the viewport and an observer on it never fires: the
+// page covering it is read from the scroll position instead.
+const mainTop = () => document.querySelector("main").offsetTop;
 
 // --- the teaser gives way to the page: its text fades and it drifts as the first screen scrolls ---
 const hero = document.querySelector(".hero");
@@ -246,28 +261,30 @@ const onScroll = () => {
   const p = Math.min(1, scrollY / Math.max(1, innerHeight * 0.85));
   hero.style.setProperty("--lift", p.toFixed(3));
   hero.style.setProperty("--fade", (1 - Math.min(1, p * 1.35)).toFixed(3));
+  nav.classList.toggle("stuck", scrollY >= mainTop() - nav.offsetHeight);
   syncHero();
 };
-addEventListener("scroll", () => requestAnimationFrame(onScroll), {
-  passive: true,
-});
+addEventListener("scroll", () => requestAnimationFrame(onScroll), { passive: true });
+addEventListener("resize", () => requestAnimationFrame(onScroll));
 onScroll();
 
-// The teaser has no resting place halfway: when the scrolling stops inside the handover, it
-// settles on whichever end is nearer.
-const mainTop = () => document.querySelector("main").offsetTop;
-let settle;
+// The teaser has no resting place halfway: when the scrolling stops inside the handover, it goes
+// on to the end it was heading for, so a single wheel notch or arrow key is enough either way.
+// Under reduced motion the page is left where the visitor put it.
+let settle,
+  rest = scrollY; // where the page last came to rest outside the handover
 addEventListener(
   "scroll",
   () => {
     clearTimeout(settle);
     settle = setTimeout(() => {
       const end = mainTop();
-      if (scrollY <= 4 || scrollY >= end - 4) return;
-      scrollTo({
-        top: scrollY < end * 0.5 ? 0 : end,
-        behavior: reduced.matches ? "auto" : "smooth",
-      });
+      if (scrollY <= 4 || scrollY >= end - 4) {
+        rest = scrollY;
+        return;
+      }
+      if (reduced.matches) return;
+      scrollTo({ top: scrollY > rest ? end : 0, behavior: "smooth" });
     }, 140);
   },
   { passive: true },
