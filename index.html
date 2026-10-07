@@ -18,7 +18,7 @@
      load or to start, everything is shown again after 3 s. -->
 <script>document.documentElement.classList.add('js');
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
-<link rel="stylesheet" href="./static/css/style.css?v=4">
+<link rel="stylesheet" href="./static/css/style.css?v=5">
 </head>
 <body>
 
@@ -131,7 +131,7 @@
       browser, with MuJoCo and the policy compiled to WebAssembly as in the code release, and each hand
       meets the same compliant wall and simulated F/T sensor as in training.</p>
     <figure class="reveal bleed">
-      <!-- The demo is about 80 MB, so the page shows its recording and loads it only when asked. -->
+      <!-- The demo is about 85 MB, so the page shows its recording and loads it only when asked. -->
       <div class="demo frame" id="demo" data-src="./demo/?embed">
         <video class="demo-preview" width="1280" height="720" data-autoplay muted loop playsinline preload="none"
                data-poster="./static/images/posters/controller.jpg" aria-label="A recording of the demo">
@@ -139,21 +139,22 @@
         </video>
         <a class="demo-launch" href="./demo/" target="_blank" rel="noopener">
           <span class="btn">&#9654;&ensp;Start the interactive demo</span>
-          <span class="note">Loads about 80 MB and runs entirely in your browser; best on a computer</span>
+          <span class="note">Loads about 85 MB and runs entirely in your browser; best on a computer</span>
         </a>
       </div>
     </figure>
     <ul class="demo-tips reveal">
-      <li><b>Command a force.</b> The sliders on the left set F<sup>cmd</sup> for either hand along x, y
-        and z, up to 25&nbsp;N. The hand moves out to the spring wall, the badge on top turns green, and
-        the measured force F<sup>meas</sup> (cyan arrow) settles on the command (purple arrow).</li>
-      <li><b>Push the robot.</b> Drag any part of the robot with the mouse, or add an external force
-        F<sup>ext</sup> on a hand with the lower sliders, and watch the controller keep its balance.</li>
-      <li><b>Look around.</b> Drag the floor to turn the view and scroll to zoom. The panel on the top
-        right switches the reference motion; <kbd>R</kbd> resets, and a double-click on a slider's value
-        sets it back to zero.</li>
+      <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        <b>Command a force</b>
+        Set F<sup>cmd</sup> (purple) for a hand with the left sliders, up to 25&nbsp;N; F<sup>meas</sup> (cyan) follows.</li>
+      <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v15l4-3.8 2.6 5.8 2.6-1.2-2.6-5.6H17z"/><path d="M17 5.5l2-2M19.5 9H22"/></svg>
+        <b>Push the robot</b>
+        Drag it with the mouse, or add F<sup>ext</sup> with the lower sliders: it keeps its balance.</li>
+      <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 3.5V8h-4.5"/><circle cx="12" cy="12" r="2.2"/></svg>
+        <b>Look around</b>
+        Drag to orbit, scroll to zoom, and switch the motion at the top right. <kbd>R</kbd> resets.</li>
     </ul>
-    <p class="demo-open reveal"><a href="./demo/" target="_blank" rel="noopener">Open the demo in its own tab</a></p>
+    <p class="demo-open reveal"><a href="./demo/" target="_blank" rel="noopener"><span class="hop">Open the demo in its own tab</span><span class="go" aria-hidden="true">&#8599;</span></a></p>
   </div>
 </section>
 
@@ -269,6 +270,6 @@
   <p>Page design adapted from <a href="https://hybridrobotics.github.io/workhorse/">Workhorse</a>.</p>
 </footer>
 
-<script src="./static/js/site.js?v=5" onerror="document.documentElement.classList.remove('js')"></script>
+<script src="./static/js/site.js?v=6" onerror="document.documentElement.classList.remove('js')"></script>
 </body>
 </html>

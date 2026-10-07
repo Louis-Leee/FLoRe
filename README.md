@@ -31,8 +31,9 @@ of the script. All clips are single H.264 files (1080p trial clips at CRF 24, th
 
 `demo/` is the static browser bundle of the 5-keypoint controller, built by the code release's own
 `wbt-realtime-eval` (mjswan: MuJoCo and ONNX Runtime compiled to WebAssembly), then adapted to this
-page by `scripts/build_demo.py` (sub-path `/FLoRe/demo/`, a closer camera, and
-`scripts/demo_embed.js`, which lets the panels fold away). The page loads it into a frame only when
+page by `scripts/build_demo.py`: the sub-path `/FLoRe/demo/`, a closer camera, the *F meas
+inertial term* switch starting off, scene, policy and motion lists that cannot be emptied, and
+`scripts/demo_embed.js`, which lets the panels fold away. The page loads it into a frame only when
 the visitor presses *Start*.
 
 1. A FLoRe checkout with its submodule, and the release's browser-viz stack. On Linux that is
@@ -42,12 +43,28 @@ the visitor presses *Start*.
    defusedxml websockets filelock importlib_metadata netifaces sshkeyboard wandb pin pyzmq`.
 2. The policy: `model_23000.onnx` of W&B run `far-wandb/Holosoma_sihangli/k7ai0nmv`
    (437 MB; the build strips it to the 38.8 MB obs→action graph).
-3. The reference clips: any directory of holosoma clips. The page uses
-   `umi3pt_push_gantry_new_ep025`, converted back from its qpos-only `.h2r` view with
+3. The reference clips: a directory of holosoma clips, which all need the same body list.
+   `python scripts/prepare_demo_motions.py <motion_dir> <name>=<clip.npz> ...` copies each under
+   the name the demo lists and turns it to face the camera. `idle_default` is added by the
+   builder. The page uses six clips:
+
+   | Name in the demo | Source clip |
+   | --- | --- |
+   | `carry_crate_walk_forward` | SONIC manipulation `lift_crate_walk_ff_loop_180_R_002__A163` |
+   | `carry_crate_walk_sideways` | SONIC manipulation `lift_crate_walk_ff_loop_270_R_003__A203` |
+   | `two_hands_pick_up_box` | SONIC manipulation `medium_light_two_hands_pick_up_front_medium_R_002__A511` |
+   | `two_hands_put_down_box` | SONIC manipulation `big_heavy_two_hands_put_down_front_medium_R_001__A509` |
+   | `two_hands_lift_heavy_box` | SONIC manipulation `medium_heavy_two_hands_pick_up_front_medium_R_001__A508` |
+   | `push_gantry` | `umi3pt_push_gantry_new_ep025`, converted from its qpos-only `.h2r` view |
+
+   The SONIC clips are already holosoma NPZ files. Of 586 crate-carrying and two-handed clips, 62
+   were shortlisted on their kinematics and played through the demo itself in headless Chrome;
+   these five tracked best (mean joint error 3.4–4.4°, hand error 1.4–1.6 cm). The push-gantry
+   clip is converted with
    `python scripts/h2r_view_to_holosoma.py <view_dir> <scene.xml> <out_dir> umi3pt_push_gantry_new_ep025`
-   (scene: holosoma's `scene_g1_29dof_wbt_plane_yam.xml`). `idle_default` is added by the builder.
-4. `python scripts/build_demo.py --model-path model_23000.onnx --motion-dir <out_dir>` (with the
-   viz-stack Python) rewrites `demo/`.
+   (scene: holosoma's `scene_g1_29dof_wbt_plane_yam.xml`).
+4. `python scripts/build_demo.py --model-path model_23000.onnx --motion-dir <motion_dir>` (with
+   the viz-stack Python) rewrites `demo/`.
 
 ## Credits
 

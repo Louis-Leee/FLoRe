@@ -3,7 +3,9 @@
 The view's manifest says joint_pos = MuJoCo qpos [root xyz, root wxyz, 29 joints] at 50 Hz. The
 fields its converter dropped are recomputed: joint velocities by finite differences, and the
 per-body world poses (body_pos_w / body_quat_w, plus their velocities) by MuJoCo forward
-kinematics on the scene the browser bundle uses, in that scene's body order.
+kinematics on the scene the browser bundle uses, in that scene's body order. MuJoCo's `world`
+body is left out, as in the training clips: the bundle builder wants one body list for all of
+its motions.
 
     python h2r_view_to_holosoma.py <view_dir> <scene.xml> <out_dir> <motion> [<motion> ...]
 """
@@ -38,17 +40,17 @@ def convert(src: Path, dst: Path, fps: float, joint_names: list[str], model: muj
     qpos = np.load(src)["qpos"].astype(np.float64)
     data = mujoco.MjData(model)
     T = qpos.shape[0]
-    pos = np.zeros((T, model.nbody, 3))
-    quat = np.zeros((T, model.nbody, 4))
+    pos = np.zeros((T, model.nbody - 1, 3))
+    quat = np.zeros((T, model.nbody - 1, 4))
     for t in range(T):
         data.qpos[:] = model.qpos0
         data.qpos[: qpos.shape[1]] = qpos[t]
         mujoco.mj_kinematics(model, data)
-        pos[t], quat[t] = data.xpos, data.xquat
+        pos[t], quat[t] = data.xpos[1:], data.xquat[1:]   # body 0 is the world
     lin = np.gradient(pos, 1.0 / fps, axis=0)
     ang = angular_velocity(quat, fps)
     dof_vel = np.gradient(qpos[:, 7:], 1.0 / fps, axis=0)
-    body_names = [model.body(i).name for i in range(model.nbody)]
+    body_names = [model.body(i).name for i in range(1, model.nbody)]
     np.savez(dst, joint_pos=qpos.astype(np.float32), joint_vel=dof_vel.astype(np.float32),
              fps=np.array([fps], dtype=np.float32), joint_names=np.array(joint_names),
              body_names=np.array(body_names), body_pos_w=pos.astype(np.float32),
@@ -70,7 +72,7 @@ def main() -> None:
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     for n in names:
         convert(Path(view_dir) / manifest["motions_subdir"] / f"{n}.npz", Path(out_dir) / f"{n}.npz", fps, joint_names, model)
-        print(f"{n}: {fps:g} Hz, {len(joint_names)} joints, {model.nbody} bodies")
+        print(f"{n}: {fps:g} Hz, {len(joint_names)} joints, {model.nbody - 1} bodies")
 
 
 if __name__ == "__main__":

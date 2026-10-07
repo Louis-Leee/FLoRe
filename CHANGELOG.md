@@ -1,3 +1,42 @@
+## [1.2.0] - 2026-10-07
+### Features
+- Five more reference motions in the demo, from the SONIC manipulation set: two walking with a
+  crate held in both hands (`carry_crate_walk_forward`, `carry_crate_walk_sideways`) and three
+  standing two-handed ones (`two_hands_pick_up_box`, `two_hands_put_down_box`,
+  `two_hands_lift_heavy_box`). The push-gantry clip is now listed as `push_gantry`.
+- The demo's *F meas inertial term* switch starts off.
+- The Controller section's three tips are tinted cards with an icon and a short line each. The link
+  to the demo's own tab is a solid pill whose letters hop in a wave every 4 s. Its lines break
+  between words when the text is enlarged. The motion stops under reduced motion.
+- `scripts/prepare_demo_motions.py` copies clips into a demo motion directory under readable names,
+  each turned to face the camera.
+### Design Rationale
+- The clips were picked by tracking, measured with the bundle itself. 586 candidates were screened
+  on kinematics to 62 (3–12 s; feet still for the standing kind, at least 1.8 m of walking for the
+  walking kind). Each was then played in headless Chrome while the tracking panel was recorded at
+  every step. All five keep a mean joint error of 3.4–4.4° and a hand error of 1.4–1.6 cm, close
+  to the push-gantry clip's 4.6° and 1.5 cm. The two walks drift least from the reference: 0.3 m
+  after 2.5 m, where most other walks drift 0.4–2 m. The three standing clips are the best-tracked of
+  three different actions.
+- The inertial term is a double finite difference of the hand position. It makes F^meas flicker in
+  free space, and the policy observes that F^meas. With it off, F^meas is the wall reaction plus
+  F^ext. A 15 N command still settles at 14.8 N. Only the switch's default changes.
+- The SONIC clips start facing every which way, and the camera keeps one bearing, so most were seen
+  from behind. Each clip is turned to start at the origin facing +x, as `idle_default` does. The
+  errors measured before and after turning agree.
+- Picking the current entry of a list again, or its x, emptied it. With no motion the robot sinks to
+  the floor. `build_demo.py` now turns off `clearable` and `allowDeselect` on the scene, policy and
+  motion lists of the built client. It fails if it does not find all three.
+### Notes & Caveats
+- On the walking clips the robot ends 0.3 m from the reference ghost after about 2.5 m. The
+  controller tracks the body relative to itself, not its position in the world.
+- The five SONIC clips are third-party motion capture, now downloadable from the page; their
+  dataset's terms apply.
+- Motions are fetched when picked, so the download before the demo starts is unchanged at about
+  85 MB.
+- `h2r_view_to_holosoma.py` now leaves out MuJoCo's `world` body (32 bodies, as in the training
+  clips). The builder rejects motions whose body lists differ.
+
 ## [1.1.0] - 2026-10-06
 ### Features
 - Interactive controller demo: the 5-keypoint unified force–position controller (W&B run

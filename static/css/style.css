@@ -215,13 +215,40 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
   width: 32px; height: 32px; padding: 0; border: 0; border-radius: 7px; background: var(--chip); color: #fff; cursor: pointer; }
 .demo .full svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .demo:fullscreen { max-height: none; border: 0; border-radius: 0; }
-.demo-tips { margin: 1.3rem 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 1.2rem 1.6rem; font-size: .98rem; line-height: 1.6; }
-.demo-tips b { display: block; margin-bottom: .2rem; }
-.demo-open { margin: 1.1rem 0 0; text-align: center; font-size: .95rem; }
+/* what to try, one tinted card each */
+.demo-tips { margin: 1.4rem 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: .9rem; }
+.demo-tips li { padding: 1rem 1.1rem 1.05rem; border-radius: var(--radius); background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--muted); font-size: .92rem; line-height: 1.5; }
+.demo-tips .ico { display: block; width: 22px; height: 22px; margin-bottom: .5rem; fill: none; stroke: var(--accent);
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.demo-tips b { display: block; margin-bottom: .2rem; color: var(--fg); font-size: 1rem; }
+.demo-tips sup { line-height: 0; }      /* or a line with an F^cmd stands taller than the rest */
+@media (max-width: 900px) {
+  .demo-tips { grid-template-columns: 1fr; }
+  .demo-tips .ico { float: left; margin: 1px .55rem 0 0; }   /* stacked, the icon sits by its title */
+}
 kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
-  font: 600 .85em/1.4 Inter, sans-serif; background: var(--bg-alt); }
-@media (max-width: 900px) { .demo-tips { grid-template-columns: 1fr; } }
+  font: 600 .85em/1.4 Inter, sans-serif; color: var(--fg); background: var(--bg); }
+
+/* The demo's own tab, where its panels have room: a solid pill whose letters hop in a wave every
+   few seconds, the arrow last. */
+.demo-open { margin: 1.4rem 0 0; text-align: center; }
+.demo-open a { display: inline-flex; align-items: center; gap: .5rem; max-width: 100%; padding: .8rem 1.5rem;
+  border-radius: 999px; background: var(--accent); color: var(--bg); font-weight: 600; font-size: 1rem;
+  line-height: 1.3; text-decoration: none;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 32%, transparent); transition: transform .15s, box-shadow .15s; }
+.demo-open a:hover { transform: translateY(-2px); box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 42%, transparent); }
+.demo-open a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.demo-open .w { white-space: nowrap; }
+.demo-open .ch, .demo-open .go { display: inline-block; animation: 4s calc(var(--i, 0) * 40ms) infinite both; }
+.demo-open .ch { animation-name: hop; }
+.demo-open .go { animation-name: nudge; font-size: 1.1em; }
+@keyframes hop { 0%, 11%, 100% { transform: none; } 5.5% { transform: translateY(-.24em); } }
+@keyframes nudge { 0%, 13%, 100% { transform: none; } 6.5% { transform: translate(.2em, -.2em); } }
+@media (prefers-reduced-motion: reduce) { .demo-open .ch, .demo-open .go { animation: none; } }
+@media (max-width: 400px) { .demo-open a { padding: .72rem 1.1rem; font-size: .92rem; } }
 
 /* the plots under a task: commanded and measured force per hand and axis */
 .plots img { border-radius: 8px; }

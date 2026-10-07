@@ -208,7 +208,7 @@ document
   .forEach((v) => player(v, { auto: false }));
 
 // --- the interactive controller ---
-// The bundle is about 80 MB, so it is loaded only when asked for.  On a narrow screen the start
+// The bundle is about 85 MB, so it is loaded only when asked for.  On a narrow screen the start
 // link opens it in a tab of its own, where its panels have room.  Inside the page a veil covers
 // it until it is clicked and comes back once the pointer is on the page again, so scrolling the
 // page past the demo never zooms its camera.
@@ -270,6 +270,32 @@ demo?.querySelector(".demo-launch").addEventListener("click", (e) => {
   e.preventDefault();
   startDemo();
 });
+
+// The link to the demo's own tab hops letter by letter (style.css): each letter gets its place in
+// the wave, the arrow comes last, and a word stays in one piece while the line can still break
+// between words.  The link is named by its words, not by its many letters.
+const hop = document.querySelector(".demo-open .hop");
+if (hop) {
+  const text = hop.textContent;
+  hop.closest("a").setAttribute("aria-label", text);
+  let beat = 0;
+  hop.replaceChildren(
+    ...text.split(" ").flatMap((word, k) => {
+      const w = document.createElement("span");
+      w.className = "w";
+      for (const c of word) {
+        const s = document.createElement("span");
+        s.className = "ch";
+        s.style.setProperty("--i", beat++);
+        s.textContent = c;
+        w.append(s);
+      }
+      beat++; // the space between words takes a beat too
+      return k ? [" ", w] : [w];
+    }),
+  );
+  hop.nextElementSibling?.style.setProperty("--i", beat);
+}
 
 // --- the hero reel ---
 // Its still is drawn with the page, and the reel is fetched once the rest has arrived -- or after
