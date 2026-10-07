@@ -207,6 +207,70 @@ document
   .querySelectorAll("video[controls]:not([data-autoplay])")
   .forEach((v) => player(v, { auto: false }));
 
+// --- the interactive controller ---
+// The bundle is about 80 MB, so it is loaded only when asked for.  On a narrow screen the start
+// link opens it in a tab of its own, where its panels have room.  Inside the page a veil covers
+// it until it is clicked and comes back once the pointer is on the page again, so scrolling the
+// page past the demo never zooms its camera.
+const demo = document.getElementById("demo");
+const wide = matchMedia("(min-width: 761px)");
+
+function startDemo() {
+  const preview = demo.querySelector(".demo-preview");
+  preview.pause();
+  preview.querySelectorAll("source").forEach((s) => s.remove());
+  preview.load(); // drops what the recording had downloaded
+  preview.remove();
+  demo.querySelector(".demo-launch").remove();
+
+  const frame = document.createElement("iframe");
+  frame.src = demo.dataset.src;
+  frame.title = "Interactive demo of the FLoRe controller";
+  frame.allow = "fullscreen";
+
+  const veil = document.createElement("button");
+  veil.type = "button";
+  veil.className = "demo-veil";
+  veil.innerHTML = "<span>Click to interact</span>";
+  veil.setAttribute("aria-label", "Interact with the demo");
+  veil.hidden = true; // the visitor has just clicked: the demo has the mouse
+  veil.addEventListener("click", () => {
+    veil.hidden = true;
+    frame.focus();
+  });
+  // Over the demo the pointer's moves go to its own document; any move this page sees outside
+  // the demo means the visitor is back on the page.  (A pointerleave fires as soon as the
+  // pointer enters the frame, so it cannot tell the two apart.)
+  document.addEventListener(
+    "pointermove",
+    (e) => {
+      if (!demo.contains(e.target) && document.fullscreenElement !== demo) veil.hidden = false;
+    },
+    { passive: true },
+  );
+
+  const full = document.createElement("button");
+  full.type = "button";
+  full.className = "full";
+  full.innerHTML = FULL;
+  full.title = "Full screen";
+  full.setAttribute("aria-label", "Show the demo in full screen");
+  full.addEventListener("click", () => {
+    if (document.fullscreenElement === demo) document.exitFullscreen();
+    else if (demo.requestFullscreen) demo.requestFullscreen().catch(() => {});
+    else window.open(frame.src.replace("?embed", ""), "_blank", "noopener"); // iPhone: no element full screen
+  });
+
+  demo.append(frame, veil, full);
+  frame.focus();
+}
+
+demo?.querySelector(".demo-launch").addEventListener("click", (e) => {
+  if (!wide.matches) return; // the link opens its own tab
+  e.preventDefault();
+  startDemo();
+});
+
 // --- the hero reel ---
 // Its still is drawn with the page, and the reel is fetched once the rest has arrived -- or after
 // 2.5 s on a slow line, where the load event can be minutes away.  It plays only while the teaser

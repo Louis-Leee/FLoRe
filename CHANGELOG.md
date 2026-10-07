@@ -1,3 +1,26 @@
+## [1.1.0] - 2026-10-06
+### Features
+- Interactive controller demo: the 5-keypoint unified force–position controller (W&B run
+  k7ai0nmv, iteration 23000) runs in the visitor's browser in the Controller section. A visitor can
+  command a force with either hand, push the robot by dragging it or with F^ext, and switch
+  between `idle_default` and a push-gantry reference clip. The recording stays as the preview
+  until *Start* is pressed. On phones the button opens the demo in a tab of its own.
+- `scripts/build_demo.py`, `scripts/demo_embed.js` and `scripts/h2r_view_to_holosoma.py` rebuild
+  `demo/` from the code release.
+### Design Rationale
+- The bundle is the release's own mjswan build (same browser physics: spring wall, simulated F/T,
+  contact phase, integrator), so the demo is the release's evaluation, not a re-implementation.
+- It is about 80 MB, so it loads only on request. A veil keeps page scrolling from zooming the
+  demo until the visitor clicks into it.
+- The build targets the absolute sub-path `/FLoRe/demo/`: with a relative base, mjswan reads the
+  first path segment as a project id.
+- The FLoRe sources stay untouched. Folding, scaling and the camera are applied to the built
+  bundle only.
+### Notes & Caveats
+- This publishes the stripped low-level policy ONNX (38.8 MB) and one reference clip. The README
+  of the release still lists checkpoints as unreleased.
+- If the page moves to another path or domain, rebuild with `MJSWAN_DEMO_BASE=/new/path/`.
+
 ## [1.0.0] - 2026-10-06
 ### Features
 - First version of the FLoRe project page on an orphan `gh-pages` branch: full-screen hero with a

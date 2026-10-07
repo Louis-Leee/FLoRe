@@ -18,7 +18,7 @@
      load or to start, everything is shown again after 3 s. -->
 <script>document.documentElement.classList.add('js');
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
-<link rel="stylesheet" href="./static/css/style.css?v=1">
+<link rel="stylesheet" href="./static/css/style.css?v=4">
 </head>
 <body>
 
@@ -126,18 +126,34 @@
 <section id="controller" class="section">
   <div class="wrap narrow">
     <h2 class="reveal center">Unified Force&ndash;Position Low-Level Controller</h2>
-    <figure class="reveal">
-      <figcaption>One learned policy tracks the five keypoints &ndash; both hands, the torso and both
-        feet &ndash; and the commanded force of each hand. Here it runs in the browser, MuJoCo compiled
-        to WebAssembly, as in the code release: the sliders set each hand's force command live, and
-        the hand pushes against a compliant wall while the robot keeps tracking a recorded motion.</figcaption>
-      <div class="tile">
-        <video class="frame" width="1280" height="720" controls data-autoplay muted loop playsinline preload="none"
-               data-poster="./static/images/posters/controller.jpg" aria-label="The controller in the browser simulator">
+    <p class="figlead reveal">One learned policy tracks the five keypoints &ndash; both hands, the torso and
+      both feet &ndash; and the commanded force of each hand. Try it below: the controller runs in your
+      browser, with MuJoCo and the policy compiled to WebAssembly as in the code release, and each hand
+      meets the same compliant wall and simulated F/T sensor as in training.</p>
+    <figure class="reveal bleed">
+      <!-- The demo is about 80 MB, so the page shows its recording and loads it only when asked. -->
+      <div class="demo frame" id="demo" data-src="./demo/?embed">
+        <video class="demo-preview" width="1280" height="720" data-autoplay muted loop playsinline preload="none"
+               data-poster="./static/images/posters/controller.jpg" aria-label="A recording of the demo">
           <source src="./static/videos/controller.mp4" type="video/mp4">
         </video>
+        <a class="demo-launch" href="./demo/" target="_blank" rel="noopener">
+          <span class="btn">&#9654;&ensp;Start the interactive demo</span>
+          <span class="note">Loads about 80 MB and runs entirely in your browser; best on a computer</span>
+        </a>
       </div>
     </figure>
+    <ul class="demo-tips reveal">
+      <li><b>Command a force.</b> The sliders on the left set F<sup>cmd</sup> for either hand along x, y
+        and z, up to 25&nbsp;N. The hand moves out to the spring wall, the badge on top turns green, and
+        the measured force F<sup>meas</sup> (cyan arrow) settles on the command (purple arrow).</li>
+      <li><b>Push the robot.</b> Drag any part of the robot with the mouse, or add an external force
+        F<sup>ext</sup> on a hand with the lower sliders, and watch the controller keep its balance.</li>
+      <li><b>Look around.</b> Drag the floor to turn the view and scroll to zoom. The panel on the top
+        right switches the reference motion; <kbd>R</kbd> resets, and a double-click on a slider's value
+        sets it back to zero.</li>
+    </ul>
+    <p class="demo-open reveal"><a href="./demo/" target="_blank" rel="noopener">Open the demo in its own tab</a></p>
   </div>
 </section>
 
@@ -253,6 +269,6 @@
   <p>Page design adapted from <a href="https://hybridrobotics.github.io/workhorse/">Workhorse</a>.</p>
 </footer>
 
-<script src="./static/js/site.js?v=3" onerror="document.documentElement.classList.remove('js')"></script>
+<script src="./static/js/site.js?v=5" onerror="document.documentElement.classList.remove('js')"></script>
 </body>
 </html>

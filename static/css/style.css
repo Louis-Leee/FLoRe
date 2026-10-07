@@ -174,14 +174,14 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 .wrap.narrow > :is(figure, .grid, .figlead) { margin-top: 2.2rem; }
 .wrap.narrow > :first-child,
 .wrap.narrow > :is(h2, h3) + :is(figure, .grid, .figlead),
-.wrap.narrow > .figlead + .grid { margin-top: 0; }
+.wrap.narrow > .figlead + :is(.grid, figure) { margin-top: 0; }
 .wrap.narrow > .grid + :is(figure, .grid) { margin-top: 1.1rem; }   /* more of the same task */
 
 /* The pipeline is three times as wide as it is tall: on a wide screen it leaves the text
    column, up to 1240 px, so its labels stay readable.  It links to the full-size file. */
 .bleed { margin-left: calc(50% - min(620px, 50vw - 1.25rem)); margin-right: calc(50% - min(620px, 50vw - 1.25rem)); }
 .bleed figcaption { max-width: 900px; margin-left: auto; margin-right: auto; }
-.bleed a { display: block; }
+.bleed > a { display: block; }
 
 /* A trial clip: muted, looping while it is in view, with a full-screen button on its corner. */
 .tile { position: relative; }
@@ -191,6 +191,37 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 .tile .full svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .tile:hover .full, .tile .full:focus-visible { opacity: 1; }
 @media (hover: none) { .tile .full { opacity: .85; } }
+
+/* The interactive controller: the recording under a start button until it is asked for, then the
+   mjswan bundle in a frame.  A veil over the running demo keeps the page's scrolling from
+   zooming it: one click hands it the mouse, and leaving the frame takes it back. */
+.demo { position: relative; aspect-ratio: 16 / 9; max-height: 82vh; width: 100%;
+  background: linear-gradient(#26405a, #2f4f6d); }
+.demo .demo-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  filter: brightness(.5) saturate(.9); }
+.demo-launch { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: .7rem; text-decoration: none; color: #fff; text-align: center; }
+.demo-launch .btn { font-size: 1.05rem; padding: .75rem 1.4rem; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.demo-launch:hover .btn { transform: translateY(-1px); }
+.demo-launch .note { color: #dde3ec; font-size: .9rem; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+.demo iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.demo-veil { position: absolute; inset: 0; z-index: 2; cursor: pointer; display: flex; align-items: flex-end;
+  justify-content: center; padding-bottom: 14px; background: transparent; border: 0; font: inherit; }
+.demo-veil[hidden] { display: none; }   /* its own display would otherwise win over [hidden] */
+.demo-veil span { padding: .3rem .75rem; border-radius: 8px; background: var(--chip); color: #fff;
+  font: 600 .85rem/1.3 Inter, sans-serif; opacity: 0; transition: opacity .15s; }
+.demo-veil:hover span, .demo-veil:focus-visible span { opacity: 1; }
+.demo .full { position: absolute; right: 10px; bottom: 10px; z-index: 3; display: grid; place-items: center;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 7px; background: var(--chip); color: #fff; cursor: pointer; }
+.demo .full svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.demo:fullscreen { max-height: none; border: 0; border-radius: 0; }
+.demo-tips { margin: 1.3rem 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem 1.6rem; font-size: .98rem; line-height: 1.6; }
+.demo-tips b { display: block; margin-bottom: .2rem; }
+.demo-open { margin: 1.1rem 0 0; text-align: center; font-size: .95rem; }
+kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
+  font: 600 .85em/1.4 Inter, sans-serif; background: var(--bg-alt); }
+@media (max-width: 900px) { .demo-tips { grid-template-columns: 1fr; } }
 
 /* the plots under a task: commanded and measured force per hand and axis */
 .plots img { border-radius: 8px; }
