@@ -120,8 +120,9 @@ function byHand(v, p) {
   });
 }
 
-// The trial clips are small in their grid, and the footage is 1080p: a button on each corner
-// takes it to full screen, where the browser's controls come back for scrubbing.
+// The trial clips are small in their grid while the footage is 1080p, and the controller's screen
+// recording has small labels: a button on the corner of each takes it to full screen, where the
+// browser's controls come back for scrubbing.
 const FULL =
   '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>';
 function fullScreenButton(v) {
@@ -137,9 +138,16 @@ function fullScreenButton(v) {
         .then(() => v.play().catch(() => {}))
         .catch(() => {});
     else if (v.webkitEnterFullscreen) {
+      // iPhone: its own player, which refuses a clip that has no metadata yet
       v.play().catch(() => {});
-      v.webkitEnterFullscreen();
-    } // iPhone
+      try {
+        v.webkitEnterFullscreen();
+      } catch {
+        v.addEventListener("loadedmetadata", () => v.webkitEnterFullscreen(), {
+          once: true,
+        });
+      }
+    }
   });
   v.after(b);
 }
