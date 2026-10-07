@@ -15,6 +15,10 @@
   --fx: #b71c1c;                /* the force plots' axis colours, sampled from the figures */
   --fy: #43b05c;
   --fz: #2860c4;
+  --violet: #6741d9;            /* the demo tips' own colours, with the accent: violet as the F^cmd arrow */
+  --blue: #1971c2;
+  --amazon: #ff9900;            /* Amazon orange, for the link to the demo's tab; the same in either theme, */
+  --amazon-ink: #232f3e;        /* with Amazon's dark ink on it (6.3:1, where white gets 2.1:1) */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -29,6 +33,8 @@
     --fx: #ef6461;
     --fy: #66c47e;
     --fz: #6c9cf0;
+    --violet: #9775fa;
+    --blue: #4dabf7;
   }
 }
 
@@ -215,13 +221,17 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
   width: 32px; height: 32px; padding: 0; border: 0; border-radius: 7px; background: var(--chip); color: #fff; cursor: pointer; }
 .demo .full svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .demo:fullscreen { max-height: none; border: 0; border-radius: 0; }
-/* what to try, one tinted card each */
+/* what to try, one card each in a colour of its own, mixed into the page's background so that the
+   dark theme gets dark tints */
 .demo-tips { margin: 1.4rem 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr);
   gap: .9rem; }
-.demo-tips li { padding: 1rem 1.1rem 1.05rem; border-radius: var(--radius); background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+.demo-tips li { --tint: var(--accent); padding: 1rem 1.1rem 1.05rem; border-radius: var(--radius);
+  background: color-mix(in srgb, var(--tint) 12%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--tint) 26%, transparent);
   color: var(--muted); font-size: .92rem; line-height: 1.5; }
-.demo-tips .ico { display: block; width: 22px; height: 22px; margin-bottom: .5rem; fill: none; stroke: var(--accent);
+.demo-tips .tip-force { --tint: var(--violet); }
+.demo-tips .tip-push { --tint: var(--blue); }
+.demo-tips .ico { display: block; width: 22px; height: 22px; margin-bottom: .5rem; fill: none; stroke: var(--tint);
   stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .demo-tips b { display: block; margin-bottom: .2rem; color: var(--fg); font-size: 1rem; }
 .demo-tips sup { line-height: 0; }      /* or a line with an F^cmd stands taller than the rest */
@@ -232,15 +242,16 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
   font: 600 .85em/1.4 Inter, sans-serif; color: var(--fg); background: var(--bg); }
 
-/* The demo's own tab, where its panels have room: a solid pill whose letters hop in a wave every
-   few seconds, the arrow last. */
-.demo-open { margin: 1.4rem 0 0; text-align: center; }
-.demo-open a { display: inline-flex; align-items: center; gap: .5rem; max-width: 100%; padding: .8rem 1.5rem;
-  border-radius: 999px; background: var(--accent); color: var(--bg); font-weight: 600; font-size: 1rem;
-  line-height: 1.3; text-decoration: none;
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 32%, transparent); transition: transform .15s, box-shadow .15s; }
-.demo-open a:hover { transform: translateY(-2px); box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 42%, transparent); }
-.demo-open a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* The demo's own tab, where its panels have room: a large orange pill whose letters hop in a wave
+   every few seconds, the arrow last.  Its padding is in em, so the pill scales with its text, and
+   the text shrinks with a narrow screen to keep to one line. */
+.demo-open { margin: 2rem 0 0; text-align: center; }
+.demo-open a { display: inline-flex; align-items: center; gap: .5em; max-width: 100%; padding: .8em 1.5em;
+  border-radius: 999px; background: var(--amazon); color: var(--amazon-ink); font-weight: 700;
+  font-size: clamp(1rem, 4.4vw, 2rem); line-height: 1.25; text-decoration: none;
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--amazon) 38%, transparent); transition: transform .15s, box-shadow .15s; }
+.demo-open a:hover { transform: translateY(-3px); box-shadow: 0 16px 40px color-mix(in srgb, var(--amazon) 48%, transparent); }
+.demo-open a:focus-visible { outline: 3px solid var(--fg); outline-offset: 4px; }
 .demo-open .w { white-space: nowrap; }
 .demo-open .ch, .demo-open .go { display: inline-block; animation: 4s calc(var(--i, 0) * 40ms) infinite both; }
 .demo-open .ch { animation-name: hop; }
@@ -248,7 +259,6 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 @keyframes hop { 0%, 11%, 100% { transform: none; } 5.5% { transform: translateY(-.24em); } }
 @keyframes nudge { 0%, 13%, 100% { transform: none; } 6.5% { transform: translate(.2em, -.2em); } }
 @media (prefers-reduced-motion: reduce) { .demo-open .ch, .demo-open .go { animation: none; } }
-@media (max-width: 400px) { .demo-open a { padding: .72rem 1.1rem; font-size: .92rem; } }
 
 /* the plots under a task: commanded and measured force per hand and axis */
 .plots img { border-radius: 8px; }

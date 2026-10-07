@@ -1,3 +1,23 @@
+## [1.2.1] - 2026-10-07
+### Features
+- The demo's motion list holds `idle_default` and the five SONIC clips only. The push-gantry clip
+  is gone, and so is `scripts/h2r_view_to_holosoma.py`, which only converted that clip (it is in
+  the history at d96cf45).
+- Each of the three tips has a colour of its own: violet for *Command a force*, as the F^cmd
+  arrow, blue for *Push the robot* and the page's green for *Look around*.
+- The link to the demo's tab reads *Try the demo in a new tab!*. It is an Amazon-orange (#FF9900)
+  pill at twice the former size.
+### Design Rationale
+- The pill's text is Amazon's dark ink (#232F3E): white on that orange has a contrast of 2.1:1,
+  below the 3:1 that even large text needs, and the ink has 6.3:1. The tips take cool colours, which
+  leaves the orange to the link.
+- Each tip's tint is its colour mixed into the page background, so the dark theme gets dark tints
+  from the same rule. The pill's padding is in em and its text shrinks with the viewport, down to
+  1 rem, so it keeps to one line on a phone.
+### Notes & Caveats
+- In `demo/`, only the motion lists (`assets/config.json` and the policy's JSON) and the removed
+  clip change; the client, the scene and the ONNX are the same bytes.
+
 ## [1.2.0] - 2026-10-07
 ### Features
 - Five more reference motions in the demo, from the SONIC manipulation set: two walking with a

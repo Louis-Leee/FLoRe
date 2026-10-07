@@ -18,7 +18,7 @@
      load or to start, everything is shown again after 3 s. -->
 <script>document.documentElement.classList.add('js');
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
-<link rel="stylesheet" href="./static/css/style.css?v=5">
+<link rel="stylesheet" href="./static/css/style.css?v=6">
 </head>
 <body>
 
@@ -144,17 +144,17 @@
       </div>
     </figure>
     <ul class="demo-tips reveal">
-      <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+      <li class="tip-force"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
         <b>Command a force</b>
         Set F<sup>cmd</sup> (purple) for a hand with the left sliders, up to 25&nbsp;N; F<sup>meas</sup> (cyan) follows.</li>
-      <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v15l4-3.8 2.6 5.8 2.6-1.2-2.6-5.6H17z"/><path d="M17 5.5l2-2M19.5 9H22"/></svg>
+      <li class="tip-push"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v15l4-3.8 2.6 5.8 2.6-1.2-2.6-5.6H17z"/><path d="M17 5.5l2-2M19.5 9H22"/></svg>
         <b>Push the robot</b>
         Drag it with the mouse, or add F<sup>ext</sup> with the lower sliders: it keeps its balance.</li>
-      <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 3.5V8h-4.5"/><circle cx="12" cy="12" r="2.2"/></svg>
+      <li class="tip-look"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 3.5V8h-4.5"/><circle cx="12" cy="12" r="2.2"/></svg>
         <b>Look around</b>
         Drag to orbit, scroll to zoom, and switch the motion at the top right. <kbd>R</kbd> resets.</li>
     </ul>
-    <p class="demo-open reveal"><a href="./demo/" target="_blank" rel="noopener"><span class="hop">Open the demo in its own tab</span><span class="go" aria-hidden="true">&#8599;</span></a></p>
+    <p class="demo-open reveal"><a href="./demo/" target="_blank" rel="noopener"><span class="hop">Try the demo in a new tab!</span><span class="go" aria-hidden="true">&#8599;</span></a></p>
   </div>
 </section>
 

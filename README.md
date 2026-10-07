@@ -45,24 +45,21 @@ the visitor presses *Start*.
    (437 MB; the build strips it to the 38.8 MB obs→action graph).
 3. The reference clips: a directory of holosoma clips, which all need the same body list.
    `python scripts/prepare_demo_motions.py <motion_dir> <name>=<clip.npz> ...` copies each under
-   the name the demo lists and turns it to face the camera. `idle_default` is added by the
-   builder. The page uses six clips:
+   the name the demo lists and turns it to face the camera. The builder lists every clip in the
+   directory, so start from an empty one; `idle_default` is added by the builder. The page uses five
+   clips of the SONIC manipulation set, two walking and three standing two-handed:
 
-   | Name in the demo | Source clip |
+   | Name in the demo | SONIC manipulation clip |
    | --- | --- |
-   | `carry_crate_walk_forward` | SONIC manipulation `lift_crate_walk_ff_loop_180_R_002__A163` |
-   | `carry_crate_walk_sideways` | SONIC manipulation `lift_crate_walk_ff_loop_270_R_003__A203` |
-   | `two_hands_pick_up_box` | SONIC manipulation `medium_light_two_hands_pick_up_front_medium_R_002__A511` |
-   | `two_hands_put_down_box` | SONIC manipulation `big_heavy_two_hands_put_down_front_medium_R_001__A509` |
-   | `two_hands_lift_heavy_box` | SONIC manipulation `medium_heavy_two_hands_pick_up_front_medium_R_001__A508` |
-   | `push_gantry` | `umi3pt_push_gantry_new_ep025`, converted from its qpos-only `.h2r` view |
+   | `carry_crate_walk_forward` | `lift_crate_walk_ff_loop_180_R_002__A163` |
+   | `carry_crate_walk_sideways` | `lift_crate_walk_ff_loop_270_R_003__A203` |
+   | `two_hands_pick_up_box` | `medium_light_two_hands_pick_up_front_medium_R_002__A511` |
+   | `two_hands_put_down_box` | `big_heavy_two_hands_put_down_front_medium_R_001__A509` |
+   | `two_hands_lift_heavy_box` | `medium_heavy_two_hands_pick_up_front_medium_R_001__A508` |
 
-   The SONIC clips are already holosoma NPZ files. Of 586 crate-carrying and two-handed clips, 62
-   were shortlisted on their kinematics and played through the demo itself in headless Chrome;
-   these five tracked best (mean joint error 3.4–4.4°, hand error 1.4–1.6 cm). The push-gantry
-   clip is converted with
-   `python scripts/h2r_view_to_holosoma.py <view_dir> <scene.xml> <out_dir> umi3pt_push_gantry_new_ep025`
-   (scene: holosoma's `scene_g1_29dof_wbt_plane_yam.xml`).
+   They are already holosoma NPZ files. Of 586 crate-carrying and two-handed clips, 62 were
+   shortlisted on their kinematics and played through the demo itself in headless Chrome; these
+   five tracked best (mean joint error 3.4–4.4°, hand error 1.4–1.6 cm).
 4. `python scripts/build_demo.py --model-path model_23000.onnx --motion-dir <motion_dir>` (with
    the viz-stack Python) rewrites `demo/`.
 
