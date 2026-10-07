@@ -10,9 +10,9 @@
 - `scripts/build_media.py` rebuilds every clip and picture from the ICRA2027 working folder.
 ### Design Rationale
 - This page is not anonymous, so it uses the raw footage: Push Gantry clips without head mosaics,
-  the supplementary video re-rendered from the raw recording with the same subtitles and
-  narration as `supp_v4.mp4`, and the data-collection photo with the face restored from the
-  slide's original cutout.
+  and the supplementary video re-rendered from the raw recording with the same subtitles and
+  narration as `supp_v4.mp4`. The data-collection photo keeps the emoji over the demonstrator's
+  face.
 - One H.264 file per clip instead of Workhorse's HEVC + H.264 pairs: half the storage in a branch
   that every full clone of the code repository also downloads.
 - Trial clips stay 1080p (CRF 24, about 2 Mb/s) because they can be opened full screen; they play

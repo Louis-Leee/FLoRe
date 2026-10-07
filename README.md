@@ -22,7 +22,7 @@ python3 scripts/build_media.py --src ~/Desktop/ICRA2027              # fills in 
 python3 scripts/build_media.py --src ~/Desktop/ICRA2027 --only supp --force
 ```
 
-It needs Pillow and numpy, and an ffmpeg with libass (Homebrew `ffmpeg-full`) for the subtitles
+It needs Pillow, and an ffmpeg with libass (Homebrew `ffmpeg-full`) for the subtitles
 of the narrated video. The sources, encodings and the reason for each choice are listed at the top
 of the script. All clips are single H.264 files (1080p trial clips at CRF 24, the narrated video at
 720p CRF 20), so every browser plays them without a second codec.

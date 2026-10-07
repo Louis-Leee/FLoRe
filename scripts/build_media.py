@@ -7,7 +7,7 @@ re-run fills in what is missing; --force rebuilds, --only limits the run to some
     python3 scripts/build_media.py --src ~/Desktop/ICRA2027
     python3 scripts/build_media.py --src ~/Desktop/ICRA2027 --only supp hero --force
 
-Needs Pillow and numpy, and an ffmpeg with libass (Homebrew: ffmpeg-full) for the
+Needs Pillow, and an ffmpeg with libass (Homebrew: ffmpeg-full) for the
 subtitles of the narrated video.
 """
 from __future__ import annotations
@@ -19,12 +19,10 @@ import subprocess
 import sys
 import tempfile
 import urllib.request
-import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 log = logging.getLogger("build_media")
 
@@ -87,11 +85,8 @@ PLOTS = {
 }
 PIPELINE_SRC = "ppt/main.png"
 
-# supp/device.png has an emoji over the demonstrator's face.  Underneath, in slide 32 of
-# FloRe.pptx, is the cutout image154.png; template matching on the torso placed it in
-# device.png at this scale and offset (mean error 3.9/255 outside the emoji).
-DEVICE_SRC, DEVICE_PPTX, DEVICE_CUTOUT = "supp/device.png", "ppt/FloRe.pptx", "ppt/media/image154.png"
-CUTOUT_SCALE, CUTOUT_X, CUTOUT_Y = 0.98850, -177.75, 24.75
+# the data-collection photo, with the emoji that covers the demonstrator's face
+DEVICE_SRC = "supp/device.png"
 
 
 def run(cmd: list) -> None:
@@ -189,25 +184,7 @@ def build_pipeline(src_root: Path) -> None:
 
 
 def build_device(src_root: Path) -> None:
-    dev = flatten(src_root / DEVICE_SRC)
-    with zipfile.ZipFile(src_root / DEVICE_PPTX) as z, z.open(DEVICE_CUTOUT) as f:
-        cut = Image.open(f).convert("RGBA")
-    a = 1.0 / CUTOUT_SCALE
-    placed = cut.transform(dev.size, Image.AFFINE, (a, 0, -CUTOUT_X * a, 0, a, -CUTOUT_Y * a),
-                           resample=Image.BICUBIC)
-    p = np.asarray(placed).astype(np.float32)
-    alpha = p[..., 3:4] / 255.0
-    person = p[..., :3] * alpha + 255.0 * (1 - alpha)
-    d = np.asarray(dev).astype(np.float32)
-    # the emoji is wherever the export differs from the cutout around the head
-    head = np.zeros(d.shape[:2], dtype=bool)
-    head[40:330, 190:540] = True
-    emoji = (np.abs(d - person).sum(axis=2) > 60) & head
-    m = Image.fromarray((emoji * 255).astype(np.uint8))
-    m = m.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(2.5))
-    w = np.asarray(m).astype(np.float32)[..., None] / 255.0
-    out = np.clip(d * (1 - w) + person * w + 0.5, 0, 255).astype(np.uint8)
-    save_jpg(Image.fromarray(out), IMAGES / "device.jpg")
+    save_jpg(flatten(src_root / DEVICE_SRC), IMAGES / "device.jpg")
 
 
 def build_icons() -> None:
