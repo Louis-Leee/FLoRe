@@ -46,7 +46,8 @@ refuses to write unless each diagram has exactly one pair of markers.
 `demo/` is the static browser bundle of the 5-keypoint controller, built by the code release's own
 `wbt-realtime-eval` (mjswan: MuJoCo and ONNX Runtime compiled to WebAssembly), then adapted to this
 page by `scripts/build_demo.py`: the sub-path `/FLoRe/demo/`, a closer camera, the *F meas
-inertial term* switch starting off, scene, policy and motion lists that cannot be emptied, and
+inertial term* off from the start (its switch and the runtime's fallback for it), scene, policy
+and motion lists that cannot be emptied, and
 `scripts/demo_embed.js`, which lets the panels fold away. The page loads it into a frame only when
 the visitor presses *Start*.
 

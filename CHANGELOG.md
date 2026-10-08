@@ -1,3 +1,19 @@
+## [1.3.1] - 2026-10-07
+### Features
+- The demo's *F meas inertial term* is off from the start, as its switch shows. Before, only the
+  switch started off: the term stayed on until the switch was clicked twice, so the F^meas arrow
+  jittered as soon as the demo opened (up to 11 N with the robot standing).
+### Design Rationale
+- The release's tracking command publishes its switches when it starts, but the runtime wipes
+  those values as it loads, and a newly built panel does not publish them again. Until a switch is
+  touched, the runtime goes by its own fallbacks, which the release keeps equal to the switches'
+  defaults. `build_demo.py` changed only the switch, so the fallback (on) and the switch (off)
+  disagreed. It now turns the fallback off in the built client too, and stops unless it finds
+  exactly one.
+### Notes & Caveats
+- In `demo/`, only one constant in `assets/index-BRqdi99b.js` changes. The file keeps its name, so
+  a browser that cached it in the last ten minutes keeps the old copy until that cache expires.
+
 ## [1.3.0] - 2026-10-07
 ### Features
 - The Controller section explains the controller before its demo, with two diagrams: the unified

@@ -9,9 +9,11 @@ controller, then adapts the static bundle to the project page:
   path: with a relative base the client reads the first path segment as a project id;
 * the camera starts closer and in front of the robot. With ``originType: AUTO`` the look-at point
   follows the pelvis, so its height is an offset from the pelvis, not from the floor;
-* the "F meas inertial term" switch starts off. The release starts it on, as in training, but
-  its m·a term is a double finite difference of the hand position that makes F^meas flicker in
-  free space; off, F^meas is the wall reaction plus F^ext, and the arrow holds still;
+* the "F meas inertial term" switch starts off, and so does the term. The release starts it on,
+  as in training, but its m·a term is a double finite difference of the hand position that makes
+  F^meas flicker in free space; off, F^meas is the wall reaction plus F^ext, and the arrow holds
+  still. Until the switch is first touched, the runtime does not read it but its own fallback,
+  so both are set;
 * the scene, policy and motion lists can no longer be emptied. The stock lists clear on their x,
   and also when the current entry is picked again; with no motion, the robot has no reference
   and sinks to the floor;
@@ -53,14 +55,18 @@ INERTIAL_ON = "private hybridFmeasInertial = true;"
 # the props of the three lists in the built client: `clearable:!0` (or `!1`) becomes "no x, and
 # no emptying by picking the current entry again"
 LIST_PROPS = re.compile(r'(id:"(?:scene|policy|motion)-select",placeholder:"[^"]*",[^{}]*?)clearable:!\d')
+# what the built runtime uses for the inertial switch until the switch is first touched: the
+# value its panel writes at start is wiped when the runtime loads, and a new panel does not write
+# it again, so this fallback has to match the switch
+INERTIAL_FALLBACK = re.compile(r'(\w+\("wbt_hybrid_fmeas_inertial",)1(\)>=\.5)')
 log = logging.getLogger("build_demo")
 
 
 def inertial_term_off(tmp: Path) -> None:
     """Register a copy of the tracking command whose F^meas inertial switch starts off.
 
-    Only the switch's starting state changes. On the very first policy step the runtime still
-    falls back to "on" until the panel publishes the switch; the robot is standing still then.
+    This sets the switch only. Until it is first touched, the runtime goes by its own fallback,
+    which `adapt` turns off in the built client.
     """
     source = Path(obs_registry._COMMAND_TS).read_text()
     if source.count(INERTIAL_ON) != 1:
@@ -82,6 +88,9 @@ def adapt(bundle: Path) -> None:
         code, n = LIST_PROPS.subn(r"\1clearable:!1,allowDeselect:!1", client.read_text())
         if n != 3:
             raise SystemExit(f"{client.name}: expected the scene, policy and motion lists, found {n}")
+        code, n = INERTIAL_FALLBACK.subn(r"\g<1>0\2", code)
+        if n != 1:
+            raise SystemExit(f"{client.name}: expected one fallback for the inertial switch, found {n}")
         client.write_text(code)
 
     shutil.copy(SITE / "scripts" / "demo_embed.js", bundle / "flore-embed.js")
