@@ -302,7 +302,6 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 .ctl .base { stroke: var(--line); stroke-width: 1.4; }
 .ctl .base.faint { stroke-dasharray: 2 5; }
 .ctl .axis { stroke: var(--muted); stroke-width: 1.4; }
-.ctl .surf { stroke: var(--muted); stroke-width: 1.4; stroke-dasharray: 2 5; }
 .ctl :is(.phase, .shift) { stroke: var(--fg); stroke-width: 2.8; }
 .ctl .integ-area { fill: var(--accent); fill-opacity: .24; }
 .ctl .ev { fill: var(--bg); stroke: var(--cyan); stroke-width: 2.4; }

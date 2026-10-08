@@ -18,7 +18,7 @@
      load or to start, everything is shown again after 3 s. -->
 <script>document.documentElement.classList.add('js');
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
-<link rel="stylesheet" href="./static/css/style.css?v=7">
+<link rel="stylesheet" href="./static/css/style.css?v=8">
 </head>
 <body>
 
@@ -131,94 +131,87 @@
     <!-- The two diagrams are drawn by scripts/draw_controller.py between its markers. -->
     <figure class="reveal">
       <figcaption><b>Unified reference generator.</b> The policy outputs only joint positions, so a force
-        command has to become a position target. Each hand's target is moved from the reference of the
-        motion, <var>p</var>*, into the surface. In free space the shift is <var>f</var><sup>cmd</sup>/<var>K</var>,
-        7.5&nbsp;cm for a 15&nbsp;N command. In contact the integral <var>I</var> moves the target further, or
-        back, until the measured force balances the command, whatever the stiffness of the
-        surface.</figcaption>
+        command has to become a position target. The motion's reference <var>p</var>* brings the hand to the
+        surface, and the force command then moves the target into it. The hand cannot follow the target
+        there, so in tracking it the hand presses on the surface.</figcaption>
       <div class="wide">
         <!-- begin draw_controller.py: generator -->
-        <svg class="ctl" viewBox="0 0 900 270" role="img" aria-label="A hand presses on a surface. Its target is moved from the motion's reference p-star, past the hand and into the surface, by f-cmd over K and then by the integral I over K. The command f-cmd points into the surface and the measured force f-meas out of it.">
+        <svg class="ctl" viewBox="0 0 900 270" role="img" aria-label="A hand rests on a surface, at the motion's reference p-star. Its target is moved from p-star into the surface, by f-cmd over K and then by the integral I over K; the surface stops the hand at p-star, so it presses. The command f-cmd points into the surface and the measured force f-meas out of it. p-tgt equals p-star plus delta x, and delta x equals f-cmd plus I, over K.">
           <defs><marker id="ctl-cmd" class="cmd" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="12" refX="12" refY="6" orient="auto"><path d="M0,0 L14,6 L0,12 z"/></marker><marker id="ctl-meas" class="meas" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="12" refX="12" refY="6" orient="auto"><path d="M0,0 L14,6 L0,12 z"/></marker><marker id="ctl-integ" class="integ" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="12" refX="12" refY="6" orient="auto"><path d="M0,0 L14,6 L0,12 z"/></marker><pattern id="ctl-hatch" width="11" height="11" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line class="hatch" x1="0" y1="0" x2="0" y2="11"/></pattern></defs>
-          <rect class="wall" x="320.0" y="44" width="300.0" height="200" fill="url(#ctl-hatch)"/>
-          <line class="face" x1="320.0" y1="44" x2="320.0" y2="244"/>
-          <text x="470.0" y="32.0" class="gray" text-anchor="middle">surface</text>
-          <line class="guide" x1="160.0" y1="165.0" x2="160.0" y2="236.0"/>
-          <line class="guide" x1="400.0" y1="165.0" x2="400.0" y2="236.0"/>
-          <line class="guide" x1="480.0" y1="165.0" x2="480.0" y2="236.0"/>
-          <circle class="ref" cx="160.0" cy="150.0" r="9"/>
-          <text x="160.0" y="126.0" text-anchor="middle"><tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">*</tspan></text>
-          <text x="138.0" y="155.0" class="gray note" text-anchor="end">reference</text>
-          <line class="hand" x1="258.0" y1="150.0" x2="224.0" y2="106.0"/><rect class="hand" x="254.0" y="119.0" width="18" height="62" rx="4"/><rect class="hand" x="270.0" y="119.0" width="34" height="10" rx="3"/><rect class="hand" x="270.0" y="171.0" width="34" height="10" rx="3"/><rect class="pad" x="294.0" y="131.0" width="26" height="38" rx="2"/><circle class="tcp" cx="320.0" cy="150.0" r="4.5"/>
-          <text x="284.0" y="206.0" class="gray note" text-anchor="middle">hand</text>
-          <line class="guide" x1="320.0" y1="84.0" x2="320.0" y2="114.0"/>
-          <line class="cmd" x1="320.0" y1="84.0" x2="412.0" y2="84.0" marker-end="url(#ctl-cmd)"/>
-          <line class="meas" x1="320.0" y1="84.0" x2="228.0" y2="84.0" marker-end="url(#ctl-meas)"/>
-          <rect class="chip" x="420.0" y="72.0" width="52.0" height="25" rx="5"/>
-          <text x="424.0" y="90.0" class="cmd"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan></text>
-          <text x="218.0" y="90.0" class="meas" text-anchor="end"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">meas</tspan></text>
-          <path class="tgt" d="M471.0,141.0 L489.0,159.0 M471.0,159.0 L489.0,141.0"/>
-          <rect class="chip" x="496.0" y="138.0" width="50.0" height="25" rx="5"/>
-          <text x="500.0" y="156.0"><tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">tgt</tspan></text>
-          <line class="cmd" x1="160.0" y1="228.0" x2="400.0" y2="228.0" marker-end="url(#ctl-cmd)"/>
-          <line class="integ" x1="400.0" y1="228.0" x2="480.0" y2="228.0" marker-end="url(#ctl-integ)"/>
-          <text x="240.0" y="254.0" class="cmd" text-anchor="middle"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan><tspan dy="6.5"> / </tspan><tspan class="v">K</tspan></text>
-          <rect class="chip" x="413.0" y="236.0" width="54.0" height="25" rx="5"/>
-          <text x="440.0" y="254.0" class="integ" text-anchor="middle"><tspan class="v">I</tspan> / <tspan class="v">K</tspan></text>
-          <text x="660.0" y="112.0"><tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">tgt</tspan><tspan dy="6.5"> = </tspan><tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">*</tspan><tspan dy="6.5"> + </tspan><tspan class="m">Δ</tspan><tspan class="v">x</tspan></text>
-          <text x="660.0" y="146.0"><tspan class="m">Δ</tspan><tspan class="v">x</tspan> = ( <tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan><tspan dy="6.5"> + </tspan><tspan class="v">I</tspan> ) / <tspan class="v">K</tspan></text>
-          <text x="660.0" y="180.0" class="gray"><tspan class="v">K</tspan> = 200 N/m</text>
-          <text x="660.0" y="222.0" class="gray note">The policy tracks <tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">tgt</tspan><tspan dy="6.5">;</tspan></text>
-          <text x="660.0" y="242.0" class="gray note">the surface stops the hand.</text>
+          <rect class="wall" x="200.0" y="44" width="406.0" height="212" fill="url(#ctl-hatch)"/>
+          <line class="face" x1="200.0" y1="44" x2="200.0" y2="256"/>
+          <text x="403.0" y="32.0" class="gray" text-anchor="middle">surface</text>
+          <line class="guide" x1="440.0" y1="165.0" x2="440.0" y2="222.0"/>
+          <line class="guide" x1="520.0" y1="165.0" x2="520.0" y2="222.0"/>
+          <line class="hand" x1="138.0" y1="150.0" x2="104.0" y2="106.0"/><rect class="hand" x="134.0" y="119.0" width="18" height="62" rx="4"/><rect class="hand" x="150.0" y="119.0" width="34" height="10" rx="3"/><rect class="hand" x="150.0" y="171.0" width="34" height="10" rx="3"/><rect class="pad" x="174.0" y="131.0" width="26" height="38" rx="2"/>
+          <text x="164.0" y="206.0" class="gray note" text-anchor="middle">hand</text>
+          <circle class="ref" cx="200.0" cy="150.0" r="10"/>
+          <circle class="tcp" cx="200.0" cy="150.0" r="4.5"/>
+          <rect class="chip" x="214.0" y="138.0" width="28.0" height="25" rx="5"/>
+          <text x="217.0" y="156.0"><tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">*</tspan></text>
+          <line class="guide" x1="200.0" y1="84.0" x2="200.0" y2="114.0"/>
+          <line class="cmd" x1="200.0" y1="84.0" x2="292.0" y2="84.0" marker-end="url(#ctl-cmd)"/>
+          <line class="meas" x1="200.0" y1="84.0" x2="108.0" y2="84.0" marker-end="url(#ctl-meas)"/>
+          <rect class="chip" x="300.0" y="72.0" width="52.0" height="25" rx="5"/>
+          <text x="304.0" y="90.0" class="cmd"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan></text>
+          <text x="98.0" y="90.0" class="meas" text-anchor="end"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">meas</tspan></text>
+          <path class="tgt" d="M511.0,141.0 L529.0,159.0 M511.0,159.0 L529.0,141.0"/>
+          <rect class="chip" x="536.0" y="138.0" width="50.0" height="25" rx="5"/>
+          <text x="540.0" y="156.0"><tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">tgt</tspan></text>
+          <line class="cmd" x1="200.0" y1="214.0" x2="440.0" y2="214.0" marker-end="url(#ctl-cmd)"/>
+          <line class="integ" x1="440.0" y1="214.0" x2="520.0" y2="214.0" marker-end="url(#ctl-integ)"/>
+          <rect class="chip" x="283.0" y="221.0" width="74.0" height="25" rx="5"/>
+          <text x="320.0" y="239.0" class="cmd" text-anchor="middle"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan><tspan dy="6.5"> / </tspan><tspan class="v">K</tspan></text>
+          <rect class="chip" x="453.0" y="221.0" width="54.0" height="25" rx="5"/>
+          <text x="480.0" y="239.0" class="integ" text-anchor="middle"><tspan class="v">I</tspan> / <tspan class="v">K</tspan></text>
+          <text x="642.0" y="138.0"><tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">tgt</tspan><tspan dy="6.5"> = </tspan><tspan class="v">p</tspan><tspan dx="3" dy="-6.5" font-size="12">*</tspan><tspan dy="6.5"> + </tspan><tspan class="m">Δ</tspan><tspan class="v">x</tspan></text>
+          <text x="642.0" y="172.0"><tspan class="m">Δ</tspan><tspan class="v">x</tspan> = ( <tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan><tspan dy="6.5"> + </tspan><tspan class="v">I</tspan> ) / <tspan class="v">K</tspan></text>
         </svg>
         <!-- end draw_controller.py: generator -->
       </div>
     </figure>
     <figure class="reveal">
-      <figcaption><b>Soft contact and integrator.</b> One press of a toy one-dimensional hand, with the
-        paper's constants. The contact phase <var>c</var> comes from the measured force alone: it switches
-        on above 2.0&nbsp;N and off below 1.5&nbsp;N (the shaded band), through a 50&nbsp;ms low-pass. It
-        gates the integral of the force error, clipped at &plusmn;40&nbsp;N, so <var>I</var> builds up only
-        while the hand presses on something and returns to zero once it lets go. The policy observes
-        <var>c</var>, <var>I</var> and <span class="m">&Delta;</span><var>x</var> and is rewarded for tracking
-        the shifted target; the joint command is the policy's alone.</figcaption>
+      <figcaption><b>Soft contact and integrator.</b> How hard a shift presses depends on the stiffness of
+        the contact, which the robot does not know, so an integral <var>I</var> of the force error moves the
+        target until the measured force balances the command. To keep it from winding up in free space, the
+        contact phase <var>c</var>, switched by the measured force with a hysteresis and smoothed, lets it
+        build up only in contact and clears it on release.</figcaption>
       <div class="wide">
         <!-- begin draw_controller.py: press -->
-        <svg class="ctl" viewBox="0 0 900 450" role="img" aria-label="One press over time. The command f-cmd ramps up, holds and ramps down; the measured force rises once the hand reaches the surface. Above 2.0 newtons the contact phase c turns on and the integral I builds up, adding to the shift f-cmd over K until the measured force matches the command; below 1.5 newtons c turns off and I returns to zero.">
+        <svg class="ctl" viewBox="0 0 900 450" role="img" aria-label="An idealised press over time. The reference brings the hand to the surface, the command f-cmd ramps up, holds and ramps down, and the reference retreats. The measured force follows the command. At contact onset the contact phase c turns on and the integral I builds up, adding to the shift f-cmd over K until the measured force balances the command; at release c turns off and I returns to zero.">
           <defs><marker id="ctl-axis" class="axis" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="12" refX="12" refY="6" orient="auto"><path d="M0,0 L14,6 L0,12 z"/></marker></defs>
-          <rect class="band" x="239.7" y="24" width="553.9" height="388"/>
-          <text x="516.6" y="16.0" class="gray note" text-anchor="middle">in contact</text>
-          <text x="194.8" y="16.0" class="gray note" text-anchor="middle">free space</text>
-          <text x="832.8" y="16.0" class="gray note" text-anchor="middle">free space</text>
+          <rect class="band" x="255.3" y="24" width="514.4" height="388"/>
+          <text x="512.5" y="16.0" class="gray note" text-anchor="middle">in contact</text>
+          <text x="202.6" y="16.0" class="gray note" text-anchor="middle">approach</text>
+          <text x="820.9" y="16.0" class="gray note" text-anchor="middle">retreat</text>
           <line class="base" x1="150.0" y1="166.0" x2="872.0" y2="166.0"/>
           <line class="base" x1="150.0" y1="252.0" x2="872.0" y2="252.0"/>
           <line class="base" x1="150.0" y1="400.0" x2="872.0" y2="400.0"/>
           <line class="axis" x1="150.0" y1="420" x2="882.0" y2="420" marker-end="url(#ctl-axis)"/>
           <text x="882.0" y="442.0" class="gray note" text-anchor="end">time</text>
+          <text x="150.0" y="442.0" class="gray note">an idealised press</text>
           <text x="134.0" y="109.0" class="gray note" text-anchor="end">force</text>
-          <path class="cmd dash" d="M150.0,166.0 L183.8,166.0 L240.2,61.0 L747.9,61.0 L804.3,166.0 L872.0,166.0"/>
-          <path class="meas" d="M150.0,166.0 L234.0,166.0 L241.9,144.9 L244.8,138.8 L248.1,133.0 L252.1,127.7 L256.0,123.6 L260.6,119.9 L266.2,116.3 L274.1,112.3 L284.2,108.1 L296.7,103.8 L311.3,99.3 L326.6,95.2 L342.9,91.3 L359.8,87.8 L377.3,84.5 L409.5,79.6 L443.9,75.4 L481.7,71.9 L522.8,69.0 L568.5,66.7 L620.4,64.9 L679.1,63.5 L747.9,62.5 L749.6,62.9 L751.9,64.2 L755.8,68.3 L760.3,75.2 L766.0,86.2 L773.3,103.0 L782.9,127.3 L793.6,155.9 L795.9,164.9 L796.4,166.0 L872.0,166.0"/>
-          <text x="268.5" y="49.0" class="cmd" text-anchor="middle"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan></text>
-          <text x="317.9" y="126.3" class="meas">|<tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">meas</tspan><tspan dy="6.5">|</tspan></text>
-          <circle class="ev" cx="239.7" cy="152.0" r="4.5"/>
-          <text x="248.7" y="187.0" class="gray note">2.0 N</text>
-          <circle class="ev" cx="793.6" cy="155.5" r="4.5"/>
-          <text x="802.6" y="147.5" class="gray note">1.5 N</text>
+          <path class="cmd dash" d="M150.0,166.0 L240.2,166.0 L277.9,61.0 L729.1,61.0 L766.7,166.0 L872.0,166.0"/>
+          <path class="meas" d="M150.0,166.0 L247.4,166.0 L247.8,165.8 L250.0,161.6 L257.2,147.8 L267.3,126.9 L278.6,102.5 L282.4,96.2 L284.6,93.4 L287.3,90.9 L292.9,87.1 L300.0,84.3 L309.1,82.2 L318.8,80.8 L332.8,79.2 L376.4,75.5 L423.8,72.3 L475.3,69.6 L529.0,67.5 L588.5,65.8 L654.6,64.4 L729.1,63.3 L731.0,63.7 L732.9,64.9 L735.1,66.9 L737.4,69.6 L743.8,79.6 L747.5,87.4 L751.7,98.3 L756.6,113.1 L770.5,158.9 L772.3,166.0 L872.0,166.0"/>
+          <text x="296.7" y="49.0" class="cmd" text-anchor="middle"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan></text>
+          <text x="333.0" y="106.3" class="meas">|<tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">meas</tspan><tspan dy="6.5">|</tspan></text>
+          <circle class="ev" cx="255.3" cy="152.0" r="4.5"/>
+          <text x="264.3" y="187.0" class="gray note">onset</text>
+          <circle class="ev" cx="769.7" cy="155.5" r="4.5"/>
+          <text x="778.7" y="147.5" class="gray note">release</text>
           <text x="134.0" y="225.0" class="gray note" text-anchor="end">contact phase</text>
           <text x="134.0" y="245.0" text-anchor="end"><tspan class="v">c</tspan></text>
           <text x="146.0" y="209.0" class="gray note" text-anchor="end">1</text>
           <text x="146.0" y="257.0" class="gray note" text-anchor="end">0</text>
           <line class="base faint" x1="150.0" y1="204.0" x2="872.0" y2="204.0"/>
-          <path class="phase" d="M150.0,252.0 L239.1,252.0 L241.9,233.1 L243.6,225.6 L245.3,220.0 L247.6,214.7 L249.8,211.2 L252.7,208.4 L255.5,206.6 L258.3,205.6 L261.7,204.9 L271.3,204.2 L345.7,204.0 L793.0,204.0 L795.9,222.9 L798.7,234.3 L800.4,238.9 L802.6,243.2 L804.9,246.1 L807.7,248.4 L810.5,249.8 L813.3,250.7 L821.2,251.7 L833.6,252.0 L872.0,252.0"/>
+          <path class="phase" d="M150.0,252.0 L254.9,252.0 L257.2,230.3 L258.3,223.5 L259.8,217.1 L261.3,212.8 L263.2,209.3 L265.4,206.9 L268.1,205.4 L273.0,204.4 L280.9,204.0 L376.8,204.0 L769.3,204.0 L771.2,222.9 L772.3,230.4 L773.9,237.5 L775.4,242.3 L777.2,246.1 L779.1,248.4 L781.8,250.2 L786.3,251.5 L793.8,251.9 L872.0,252.0"/>
           <text x="134.0" y="340.0" class="gray note" text-anchor="end">target shift</text>
           <text x="134.0" y="360.0" text-anchor="end"><tspan class="m">Δ</tspan><tspan class="v">x</tspan></text>
-          <line class="surf" x1="150.0" y1="348.2" x2="872.0" y2="348.2"/>
-          <text x="156.0" y="341.2" class="gray note">surface</text>
-          <path class="integ-area" d="M150.0,400.0 L183.8,400.0 L240.2,322.3 L249.8,321.8 L258.9,321.0 L306.8,314.0 L346.3,309.6 L389.2,306.0 L437.7,303.1 L496.3,300.7 L564.6,299.0 L645.8,297.8 L747.9,297.0 L793.6,360.4 L796.4,383.5 L797.5,389.1 L799.2,392.9 L804.3,400.0 L872.0,400.0 L872.0,400.0 L804.3,400.0 L747.9,322.3 L240.2,322.3 L183.8,400.0 L150.0,400.0 z"/>
-          <path class="cmd dash" d="M150.0,400.0 L183.8,400.0 L240.2,322.3 L747.9,322.3 L804.3,400.0 L872.0,400.0"/>
-          <path class="shift" d="M150.0,400.0 L183.8,400.0 L240.2,322.3 L249.8,321.8 L258.9,321.0 L306.8,314.0 L346.3,309.6 L389.2,306.0 L437.7,303.1 L496.3,300.7 L564.6,299.0 L645.8,297.8 L747.9,297.0 L793.6,360.4 L796.4,383.5 L797.5,389.1 L799.2,392.9 L804.3,400.0 L872.0,400.0"/>
-          <text x="533.6" y="317.0" class="integ" text-anchor="middle"><tspan class="v">I</tspan> / <tspan class="v">K</tspan></text>
-          <text x="533.6" y="343.3" class="cmd" text-anchor="middle"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan><tspan dy="6.5"> / </tspan><tspan class="v">K</tspan></text>
+          <path class="integ-area" d="M150.0,400.0 L240.2,400.0 L262.8,353.1 L277.9,320.0 L281.2,319.3 L292.5,317.7 L308.7,315.8 L354.9,311.6 L404.2,308.1 L458.0,305.3 L514.8,303.0 L577.9,301.1 L648.6,299.6 L729.1,298.5 L741.1,324.0 L766.7,379.8 L769.7,380.0 L771.6,395.6 L772.3,398.8 L773.1,399.8 L775.0,400.0 L872.0,400.0 L872.0,400.0 L766.7,400.0 L729.1,322.3 L277.9,322.3 L240.2,400.0 L150.0,400.0 z"/>
+          <path class="cmd dash" d="M150.0,400.0 L240.2,400.0 L277.9,322.3 L729.1,322.3 L766.7,400.0 L872.0,400.0"/>
+          <path class="shift" d="M150.0,400.0 L240.2,400.0 L262.8,353.1 L277.9,320.0 L281.2,319.3 L292.5,317.7 L308.7,315.8 L354.9,311.6 L404.2,308.1 L458.0,305.3 L514.8,303.0 L577.9,301.1 L648.6,299.6 L729.1,298.5 L741.1,324.0 L766.7,379.8 L769.7,380.0 L771.6,395.6 L772.3,398.8 L773.1,399.8 L775.0,400.0 L872.0,400.0"/>
+          <text x="578.7" y="317.7" class="integ" text-anchor="middle"><tspan class="v">I</tspan> / <tspan class="v">K</tspan></text>
+          <text x="578.7" y="343.3" class="cmd" text-anchor="middle"><tspan class="v">f</tspan><tspan dx="3" dy="-6.5" font-size="12">cmd</tspan><tspan dy="6.5"> / </tspan><tspan class="v">K</tspan></text>
         </svg>
         <!-- end draw_controller.py: press -->
       </div>

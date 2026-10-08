@@ -36,10 +36,12 @@ comments by a script that needs only the standard library; their captions stay h
 python3 scripts/draw_controller.py
 ```
 
-The reference generator is drawn to scale (a 15 N command and K = 200 N/m make a 7.5 cm shift).
-The press is a toy 1-D run of the paper's law with all of its constants; a hand that lags its
-target and a surface that stops it stand in for the robot, so it is not a recording. The script
-refuses to write unless each diagram has exactly one pair of markers.
+In both, the motion's reference p* has put the hand on the surface. The press is a toy 1-D run of
+the paper's law with all of its constants, not a recording: the reference brings a hand that lags
+its target to the surface, holds it there while the command presses, and retreats. The reference
+generator is drawn to scale for that press once it has settled. Captions and figures give no
+physical constants. The script refuses to write unless each diagram has exactly one pair of
+markers.
 
 ## Rebuild the interactive demo
 

@@ -1,3 +1,26 @@
+## [1.3.2] - 2026-10-08
+### Features
+- The unified reference generator's diagram puts the motion's reference p* on the surface, where
+  position control brings the hand, and the force command moves the target from there into the
+  surface. Before, p* sat in front of the surface, behind the hand.
+- The press follows it: the reference brings the hand to the surface, holds it there while the
+  command presses, and retreats as the command ramps down. The figure names these phases and calls
+  itself an idealised press.
+- Both captions say why the part is needed and then how it works, without numbers. The press marks
+  where the contact phase switches as *onset* and *release* instead of in newtons; the generator no
+  longer gives K, nor repeats its caption in a note.
+### Design Rationale
+- With p* on the surface, the force command alone makes the hand press, which is how the controller
+  is used: the motion puts the hand on the surface and the command sets the force.
+- In the toy, the surface stops the hand, which presses the harder the further its lagging target
+  lies beyond the surface, at a contact stiffness (150 N/m) below K. The integral therefore moves
+  the target further in, as the paper describes, and the generator, drawn to scale, shows the
+  settled press. Left on the surface after the command, the hand would go on pressing on what the
+  integral holds until it decayed, so the reference retreats during the ramp-down, and the figure
+  says so.
+### Notes & Caveats
+- `style.css?v=8` only drops the rule of the press's old surface line.
+
 ## [1.3.1] - 2026-10-07
 ### Features
 - The demo's *F meas inertial term* is off from the start, as its switch shows. Before, only the
