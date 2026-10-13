@@ -1,3 +1,16 @@
+## [1.5.1] - 2026-10-13
+### Features
+- The Rotate Box teaser plays at 2× from 10.45 s, through the camera's circuit as well as the drag,
+  instead of 1.6× from 20 s. The reel is 71 s instead of 79 s.
+### Design Rationale
+- The speed doubles where the camera's first swing round the robot comes to rest. At 10.0 s, the
+  time asked for, the camera is still in that swing, and doubling it there would make it lurch;
+  across 10.45 s its drift runs on unchanged, and only the robot moves faster.
+- At 2× the reel keeps every other frame, an even cadence.
+### Notes & Caveats
+- The reel is 10.2 MB. Its poster and the link preview are unchanged; the reel is now
+  `hero.mp4?v=3`.
+
 ## [1.5.0] - 2026-10-13
 ### Features
 - The hero reel plays three teaser clips, one per task in the page's order (Wipe Board, Rotate

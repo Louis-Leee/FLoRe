@@ -80,16 +80,17 @@ class Shot:
 
 
 # The hero reel: one teaser clip per task, in the page's order, then the side view of the gantry
-# push that opens the supplementary video.  The rotate-box clip's drag, filmed from behind once
-# the camera has come round, plays faster.
+# push that opens the supplementary video.  The rotate-box clip plays faster once the camera
+# sets off round the robot, from where its first swing comes to rest: the camera's circuit and
+# then the drag, filmed from behind.
 TEASER = SITE / "teaser"    # the raw clips, which git ignores
 HERO_SHOTS = (
     Shot(TEASER / "1.MP4"),                    # wipe board
-    Shot(TEASER / "2.MP4", fast_from=20.0),    # rotate box
+    Shot(TEASER / "2.MP4", fast_from=10.45),   # rotate box
     Shot(TEASER / "3.MP4"),                    # push gantry
     Shot("supp/push_gantry/IMG_3352.MOV", length=16.0),
 )
-HERO_FAST = 1.6
+HERO_FAST = 2.0
 HERO_RATE = (30000, 1001)   # the teaser clips' rate; the side view is resampled to it
 HERO_SEAM = 18              # frames of each cross-fade, 0.6 s
 HERO_CRF = 28
