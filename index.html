@@ -18,7 +18,7 @@
      load or to start, everything is shown again after 3 s. -->
 <script>document.documentElement.classList.add('js');
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
-<link rel="stylesheet" href="./static/css/style.css?v=9">
+<link rel="stylesheet" href="./static/css/style.css?v=10">
 </head>
 <body>
 
@@ -36,16 +36,17 @@
 
 <!-- no element is called "top", so the brand link #top scrolls to the very top of the page -->
 <header id="hero" class="hero">
-  <!-- The page is drawn on the still; the reel (1.4 MB) is fetched once everything else has arrived. -->
+  <!-- The page is drawn on the still; the reel (11 MB, 79 s) streams in once everything else has
+       arrived. -->
   <video width="1280" height="720" class="hero-bg" muted loop playsinline preload="none"
-         poster="./static/images/hero.jpg" data-src="./static/videos/hero.mp4"></video>
+         poster="./static/images/hero.jpg?v=2" data-src="./static/videos/hero.mp4?v=2"></video>
   <div class="hero-shade"></div>
   <div class="hero-body">
     <h1>FLoRe 🌺</h1>
     <p class="sub">Learning Force&#8209;Reactive Humanoid Loco&#8209;Manipulation</p>
 
     <p class="authors">
-      <span>Sihang Li<sup>1,2</sup></span>,
+      <span>Sihang Li<sup>1,2§</sup></span>,
       <span>Xiaofeng Guo<sup>1</sup></span>,
       <span>Jinkun Cao<sup>1</sup></span>,
       <span>Charlie Cheng<sup>1</sup></span>,<br class="brk">
@@ -60,6 +61,7 @@
       <span><sup>3</sup>Carnegie Mellon University</span>
       <span><sup>4</sup>University of Chicago</span>
     </p>
+    <p class="note"><sup>§</sup>Work done while interning at Amazon FAR</p>
 
     <div class="buttons">
       <a class="btn" href="#video">Video</a>

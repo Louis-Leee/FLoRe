@@ -31,6 +31,10 @@ each choice are listed at the top of the script. All clips are single H.264 file
 clips at CRF 24, the narrated video at 720p CRF 20), so every browser plays them without a second
 codec.
 
+The hero reel is cut from three teaser clips, one per task, and the side view of the gantry push.
+The script reads the teaser clips from this folder's `teaser/`, which git ignores: they are
+200 MB, and one of them is over GitHub's 100 MB limit.
+
 The narrated video's title slide is made again from the clip it plays, rendered with the title
 alone; the rest of the recording keeps its frames, and the narration its timing. That clip is made
 beside its source in the working folder, with numpy, Pillow and OpenCV:

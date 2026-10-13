@@ -1,3 +1,35 @@
+## [1.5.0] - 2026-10-13
+### Features
+- The hero reel plays three teaser clips, one per task in the page's order (Wipe Board, Rotate
+  Box, Push Gantry), and then the side view of the gantry push that was the whole reel before. The
+  Rotate Box clip plays its drag, filmed from behind, at 1.6× from 20 s in.
+- Sihang Li's name carries a §, and a line under the affiliations reads "§Work done while
+  interning at Amazon FAR".
+### Design Rationale
+- One file rather than four played in turn: the hero's logic (fetched after the page has loaded,
+  played only while the teaser is on screen, looped) stays as it was, and the file streams, so the
+  first clip plays before the rest has arrived.
+- The clips cross-fade over 0.6 s, as the old reel's loop did, and the loop still has no seam: the
+  first clip's opening 0.6 s fade in over the side view's end, so the last frame leads into the
+  first.
+- Each clip is cut to a whole number of frames that its source is sure to fill, and the fades'
+  offsets are sums of those counts, so every fade starts on a known frame.
+- The speed changes at 20.0 s, where the camera has just come to rest behind the robot, so the
+  change does not show; the faster part keeps 29.97 fps by dropping frames rather than blending
+  them, and stays sharp.
+- The link preview (`og.jpg`) is still the side view, now taken from its source: the reel's new
+  first frame is a dark close-up of the wiping. The poster is that first frame, so the reel starts
+  without a jump.
+### Notes & Caveats
+- The reel is 11 MB for 79 s, at the old reel's 1280×720 and CRF 28; the old one was 1.4 MB for
+  15 s.
+- The teaser clips (DJI Osmo Pocket 3, 200 MB, one over GitHub's 100 MB file limit) stay out of
+  git, in `teaser/` beside the page; the build script reads them from there, not from the
+  paper's folder, so that a checkout under another name finds its own.
+- At 320×568 the hero's text was already taller than the hero, and its title slid under the nav;
+  the new line adds 14 px to that. Every size from 360×640 up fits.
+- `style.css?v=10`, and `?v=2` on the reel and its poster.
+
 ## [1.4.0] - 2026-10-13
 ### Features
 - The page's emoji is 🌺 instead of 🌿: in the title, the SVG icon, and the PNG favicon and touch
@@ -46,8 +78,8 @@
   Collection has an audio track; only the narrated video has sound, its narration.
 - The data-collection clip shows the demonstrator's face, as the narrated video already does; the
   photo above it keeps its emoji.
-- The branch's history still holds the earlier video with the venue line. The repository is
-  private, and Pages serves only the current files.
+- The branch's history still holds the earlier video with the venue line; Pages serves only the
+  current files.
 - Python's `http.server` does not answer byte-range requests, so the clips cannot be sought behind
   it; the README now previews with `npx http-server`.
 - `style.css?v=9`, `site.js?v=8`, and `?v=2` on the favicons and on the narrated video and its

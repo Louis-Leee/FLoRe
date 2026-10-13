@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Build every clip and picture of the FLoRe project page from the paper's working folder.
+"""Build every clip and picture of the FLoRe project page from the paper's working folder, and
+the hero reel's teaser clips from this site's own teaser/, which git ignores.
 
 The paper's working folder is only read.  An output that already exists is skipped, so a
 re-run fills in what is missing; --force rebuilds, --only limits the run to some outputs.
@@ -14,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import math
 import shutil
 import subprocess
 import sys
@@ -69,8 +71,29 @@ CLIPS = (
     Clip("data_collection", "supp/data_collection.MP4", 1080, 24, poster_width=1280),
 )
 
-# The hero reel: the side view of the gantry push that opens the supplementary video.
-HERO_SRC, HERO_LEN, HERO_SEAM = "supp/push_gantry/IMG_3352.MOV", 16.0, 0.6
+
+@dataclass(frozen=True)
+class Shot:
+    src: str | Path                 # relative to --src; an absolute path is taken as it is
+    length: float | None = None     # seconds from its start; None for all of it
+    fast_from: float | None = None  # from this second on it plays HERO_FAST times as fast
+
+
+# The hero reel: one teaser clip per task, in the page's order, then the side view of the gantry
+# push that opens the supplementary video.  The rotate-box clip's drag, filmed from behind once
+# the camera has come round, plays faster.
+TEASER = SITE / "teaser"    # the raw clips, which git ignores
+HERO_SHOTS = (
+    Shot(TEASER / "1.MP4"),                    # wipe board
+    Shot(TEASER / "2.MP4", fast_from=20.0),    # rotate box
+    Shot(TEASER / "3.MP4"),                    # push gantry
+    Shot("supp/push_gantry/IMG_3352.MOV", length=16.0),
+)
+HERO_FAST = 1.6
+HERO_RATE = (30000, 1001)   # the teaser clips' rate; the side view is resampled to it
+HERO_SEAM = 18              # frames of each cross-fade, 0.6 s
+HERO_CRF = 28
+OG_AT = 0.6                 # the link preview's frame of the side view, where the reel once began
 
 # The narrated supplementary video, rendered from the raw screen recording (no mosaics) with
 # the subtitles and narration that supp/narration/render_narration.py last wrote.  The recording's
@@ -150,25 +173,70 @@ def build_clip(ff: str, src_root: Path, c: Clip, force: bool) -> None:
         poster(ff, out, POSTERS / f"{c.name}.jpg", c.poster_width)
 
 
+def video_length(ff: str, path: Path) -> float:
+    """The length in seconds of a file's first video stream, read by the ffprobe beside ffmpeg.
+    A stream that also belongs to a stream group (the DJI files) is listed twice."""
+    probe = [Path(ff).with_name("ffprobe"), "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=duration", "-of", "default=nw=1:nk=1", path]
+    out = subprocess.run([str(c) for c in probe], check=True, capture_output=True, text=True).stdout
+    return float(out.split()[0])
+
+
+def hero_graph(ff: str, src_root: Path) -> tuple[list, str]:
+    """The inputs and filter graph of the reel.  Each shot is cut to a whole number of frames that
+    its source is sure to fill, so that every fade starts on a known frame; the shots then fade
+    into one another over HERO_SEAM frames.  The loop has no visible seam: the first shot's head
+    is cut and faded in over the last one's tail, so the last frame leads straight into the first."""
+    num, den = HERO_RATE
+
+    def sec(frames: int) -> str:
+        return f"{frames * den / num:.6f}"
+
+    inputs, chains, length = [], [], 0
+    for i, s in enumerate(HERO_SHOTS):
+        src = src_root / s.src
+        used = min(s.length or math.inf, video_length(ff, src))
+        speed, plays = "", used
+        if s.fast_from is not None:
+            t0 = s.fast_from
+            speed = f"setpts='if(lt(T,{t0}),PTS,({t0}+(T-{t0})/{HERO_FAST})/TB)',"
+            plays = min(used, t0) + max(0.0, used - t0) / HERO_FAST
+        frames = math.floor(plays * num / den) - 1
+        if frames <= 2 * HERO_SEAM:
+            raise ValueError(f"{s.src}: {frames} frames, too few for two fades of {HERO_SEAM}")
+        inputs += ["-t", f"{used:.3f}", "-i", src]
+        chains.append(f"[{i}:v]setpts=PTS-STARTPTS,{speed}fps={num}/{den},trim=end_frame={frames},"
+                      f"scale=1280:720:flags=lanczos,format=yuv420p,setsar=1[s{i}]")
+        if i == 0:
+            chains.append(f"[s0]split[b][h];[b]trim=start_frame={HERO_SEAM},setpts=PTS-STARTPTS[x0];"
+                          f"[h]trim=end_frame={HERO_SEAM}[head]")
+            length = frames - HERO_SEAM
+            continue
+        fade = f"xfade=transition=fade:duration={sec(HERO_SEAM)}:offset={sec(length - HERO_SEAM)}"
+        chains.append(f"[x{i - 1}][s{i}]{fade}[x{i}]")
+        length += frames - HERO_SEAM
+    fade = f"xfade=transition=fade:duration={sec(HERO_SEAM)}:offset={sec(length - HERO_SEAM)}"
+    chains.append(f"[x{len(HERO_SHOTS) - 1}][head]{fade},{TAGS}[v]")
+    return inputs, ";".join(chains)
+
+
 def build_hero(ff: str, src_root: Path, force: bool) -> None:
-    """A loop with no visible seam: the first HERO_SEAM seconds are cut from the head and
-    faded in over the tail, so the last frame leads straight into the first."""
     out = VIDEOS / "hero.mp4"
-    body = HERO_LEN - HERO_SEAM
-    graph = (f"[0:v]scale=1280:-2:flags=lanczos,{TAGS},split[a][b];"
-             f"[a]trim=start={HERO_SEAM},setpts=PTS-STARTPTS[body];"
-             f"[b]trim=end={HERO_SEAM},setpts=PTS-STARTPTS[head];"
-             f"[body][head]xfade=transition=fade:duration={HERO_SEAM}:offset={body - HERO_SEAM:.3f}[v]")
     if need(out, force):
-        encode([ff, "-v", "error", "-stats", "-y", "-t", f"{HERO_LEN}", "-i", src_root / HERO_SRC,
-                "-filter_complex", graph, "-map", "[v]", "-an", *X264, "-crf", "28", *MP4], out)
+        inputs, graph = hero_graph(ff, src_root)
+        encode([ff, "-v", "error", "-stats", "-y", *inputs, "-filter_complex", graph, "-map", "[v]",
+                "-an", *X264, "-crf", f"{HERO_CRF:g}", *MP4], out)
     if need(IMAGES / "hero.jpg", force):
         poster(ff, out, IMAGES / "hero.jpg", 1280)
     if need(IMAGES / "og.jpg", force):
-        # the link preview: the hero's first frame, cropped to 1200 x 630
-        with Image.open(IMAGES / "hero.jpg") as im:
-            im = im.convert("RGB").resize((1200, 675), Image.LANCZOS).crop((0, 22, 1200, 652))
-            im.save(IMAGES / "og.jpg", quality=86, optimize=True, progressive=True)
+        # the link preview: the side view rather than the reel's first frame, a close-up of the
+        # wiping, cropped to 1200 x 630
+        with tempfile.TemporaryDirectory() as tmp:
+            still = Path(tmp) / "side.png"
+            poster(ff, src_root / HERO_SHOTS[-1].src, still, 1280, at=OG_AT)
+            with Image.open(still) as im:
+                im = im.convert("RGB").resize((1200, 675), Image.LANCZOS).crop((0, 22, 1200, 652))
+                im.save(IMAGES / "og.jpg", quality=86, optimize=True, progressive=True)
 
 
 def filter_path(p: Path) -> str:

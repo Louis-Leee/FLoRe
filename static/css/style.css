@@ -120,10 +120,14 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 .authors > span { white-space: nowrap; }
 .hero .authors sup { font-size: .62em; color: #d5dce6; margin-left: .06em; }
 /* four institutions are too many for a corner note: they sit under the names, one per run */
-.hero .affil { margin: 0 0 1.9rem; max-width: 52em; color: #dde3ec; font-size: 1.05rem; line-height: 1.6;
+.hero .affil { margin: 0 0 .45rem; max-width: 52em; color: #dde3ec; font-size: 1.05rem; line-height: 1.6;
   text-wrap: balance; text-shadow: 2px 2px 4px rgba(0,0,0,.8); }
 .hero .affil span { white-space: nowrap; margin: 0 .55em; }
 .hero .affil sup { font-size: .72em; margin-right: .12em; }
+/* the footnote to the § by a name */
+.hero .note { margin: 0 0 1.9rem; color: #c8d0db; font-size: .95rem; line-height: 1.5;
+  text-shadow: 2px 2px 4px rgba(0,0,0,.8); }
+.hero .note sup { font-size: .72em; margin-right: .12em; }
 @media (max-width: 860px) { .hero .sub .brk { display: none; } }
 @media (max-width: 700px) {
   .authors .brk { display: none; }
@@ -373,6 +377,7 @@ footer a { color: inherit; }
   .hero .sub { font-size: 1.6rem; }
   .hero .authors { font-size: 1rem; }
   .hero .affil { font-size: .85rem; }
+  .hero .note { font-size: .8rem; }
   h2 { font-size: 1.7rem; }
   :is(#abstract p, .lede, .figlead, figcaption) { text-align: left; }   /* a justified line this narrow opens wide gaps */
   .buttons { gap: .5rem; }
