@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Build every clip and picture of the FLoRe project page from the paper's working folder.
 
-The source tree (ICRA2027/) is only read.  An output that already exists is skipped, so a
+The paper's working folder is only read.  An output that already exists is skipped, so a
 re-run fills in what is missing; --force rebuilds, --only limits the run to some outputs.
 
-    python3 scripts/build_media.py --src ~/Desktop/ICRA2027
-    python3 scripts/build_media.py --src ~/Desktop/ICRA2027 --only supp hero --force
+    python3 scripts/build_media.py --src PAPER_DIR
+    python3 scripts/build_media.py --src PAPER_DIR --only supp hero --force
 
 Needs Pillow, and an ffmpeg with libass (Homebrew: ffmpeg-full) for the
 subtitles of the narrated video.
@@ -32,8 +32,8 @@ IMAGES = SITE / "static" / "images"
 POSTERS = IMAGES / "posters"
 
 FFMPEG_CANDIDATES = ("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg", "ffmpeg")
-# 🌿 (U+1F33F) from Noto Emoji, pinned to a tag: its image resources are Apache-2.0.
-LEAF_URL = "https://raw.githubusercontent.com/googlefonts/noto-emoji/v2.047/png/512/emoji_u1f33f.png"
+# 🌺 (U+1F33A) from Noto Emoji, pinned to a tag: its image resources are Apache-2.0.
+ICON_URL = "https://raw.githubusercontent.com/googlefonts/noto-emoji/v2.047/png/512/emoji_u1f33a.png"
 
 # One H.264 file per clip: every browser decodes it, so there is no HEVC twin to keep in step.
 # x264's slow preset picks level 5.0 at 1080p through its five reference frames; four keep it
@@ -54,22 +54,35 @@ class Clip:
     poster_width: int = 960
 
 
-# The order inside each task is the order of the anonymous Google Site.  Trial clips play
-# muted on the page; their camera audio is dropped.
+# The order inside each task is the order of the anonymous Google Site; each task then has one
+# rollout of the position-only baseline, from its failure folder.  Every clip plays muted on the
+# page, and the camera audio is dropped: it carries the lab's voices.
 CLIPS = (
     *(Clip(f"wipe_board_{n}", f"supp/wipe_board/{n}.mp4", 1080, 24) for n in (4, 11, 13, 9, 10, 1, 6, 12)),
+    Clip("wipe_board_baseline", "supp/wipe_board/failure/1.mp4", 1080, 24),
     *(Clip(f"rotate_box_{n}", f"supp/rotate_box/{n}.mp4", 1080, 24) for n in (2, 5, 3, 4)),
+    Clip("rotate_box_baseline", "supp/rotate_box/failure/1.MP4", 1080, 24),
     *(Clip(f"push_gantry_{n}", f"supp/push_gantry/{n}.mp4", 1080, 24) for n in (3, 1, 4, 2)),
+    Clip("push_gantry_baseline", "supp/push_gantry/failure/2.MP4", 1080, 24),
     Clip("push_gantry_matte", "video/IMG_3227_trans.mp4", 1080, 23, poster_width=1280),
     Clip("controller", "supp/2026-09-22 13-31-23.mp4", 720, 22, poster_width=1280),
+    Clip("data_collection", "supp/data_collection.MP4", 1080, 24, poster_width=1280),
 )
 
 # The hero reel: the side view of the gantry push that opens the supplementary video.
 HERO_SRC, HERO_LEN, HERO_SEAM = "supp/push_gantry/IMG_3352.MOV", 16.0, 0.6
 
 # The narrated supplementary video, rendered from the raw screen recording (no mosaics) with
-# the subtitles and narration that supp/narration/render_narration.py last wrote.
+# the subtitles and narration that supp/narration/render_narration.py last wrote.  The recording's
+# title slide is replaced by the clip that slide plays, rendered again with the title alone, in
+# supp/push_gantry: `add_title_reveal.py --occlude --edge-offset 90 --x0 356 --no-subtitle --out
+# IMG_3352_title_occluded_nosub.mp4`.  Like the slide, it holds the clip's first frame for
+# SUPP_TITLE_HOLD seconds, then plays it until the recording's cut to the next slide.  The cut
+# keeps its frame, so the narration and the subtitles keep their times.
 SUPP_SRC = "supp/supp_submission.mov"
+SUPP_TITLE = "supp/push_gantry/IMG_3352_title_occluded_nosub.mp4"
+SUPP_TITLE_HOLD = 2.8
+SUPP_TITLE_CUT = 597            # the recording's first frame of the next slide, at its 30 fps
 SUPP_SUBS = "supp/narration/build/subs.ass"
 SUPP_FONTS = "supp/narration/build/fonts"
 SUPP_AUDIO = "supp/narration/build/narration.wav"
@@ -169,15 +182,21 @@ def filter_path(p: Path) -> str:
 
 def build_supp(ff: str, src_root: Path, force: bool) -> None:
     out = VIDEOS / "supp.mp4"
-    vf = f"ass={filter_path(src_root / SUPP_SUBS)}:fontsdir={filter_path(src_root / SUPP_FONTS)},{TAGS}"
+    subs = f"ass={filter_path(src_root / SUPP_SUBS)}:fontsdir={filter_path(src_root / SUPP_FONTS)}"
+    # The title clip covers the recording's frames before the cut, counted by number, so that every
+    # frame keeps the time the narration was laid on (the recording's clock starts at 0.1 s).  A
+    # title that ended before the cut would hold its last frame rather than uncover the old one.
+    graph = (f"[1:v]tpad=start_duration={SUPP_TITLE_HOLD}:start_mode=clone,fps=30,"
+             f"scale=1280:720:flags=lanczos,setsar=1[title];"
+             f"[0:v][title]overlay=eof_action=repeat:enable='lt(n,{SUPP_TITLE_CUT})',{subs},{TAGS}[v]")
     if need(out, force):
-        encode([ff, "-v", "error", "-stats", "-y", "-i", src_root / SUPP_SRC, "-i", src_root / SUPP_AUDIO,
-                "-map", "0:v:0", "-map", "1:a:0", "-vf", vf, *X264, "-crf", f"{SUPP_CRF:g}",
+        encode([ff, "-v", "error", "-stats", "-y", "-i", src_root / SUPP_SRC, "-i", src_root / SUPP_TITLE,
+                "-i", src_root / SUPP_AUDIO, "-filter_complex", graph, "-map", "[v]", "-map", "2:a:0",
+                *X264, "-crf", f"{SUPP_CRF:g}",
                 "-c:a", "aac", "-b:a", "128k", "-ac", "1", "-ar", "48000", "-shortest", *MP4], out)
     if need(POSTERS / "supp.jpg", force):
-        # the title card once the robot has walked past it, taken from the recording itself so
-        # no subtitle sits on it
-        poster(ff, src_root / SUPP_SRC, POSTERS / "supp.jpg", 1280, at=18.5)
+        # the title once the robot has walked past it, between two subtitles
+        poster(ff, out, POSTERS / "supp.jpg", 1280, at=18.5)
 
 
 def flatten(path: Path) -> Image.Image:
@@ -222,20 +241,20 @@ def build_icons(force: bool) -> None:
     if not (need(IMAGES / "favicon.png", force) | need(IMAGES / "apple-touch-icon.png", force)):
         return
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "leaf.png"
-        urllib.request.urlretrieve(LEAF_URL, path)
+        path = Path(tmp) / "icon.png"
+        urllib.request.urlretrieve(ICON_URL, path)
         with Image.open(path) as im:
-            leaf = im.convert("RGBA")
-    leaf.resize((64, 64), Image.LANCZOS).save(IMAGES / "favicon.png", optimize=True)
+            icon = im.convert("RGBA")
+    icon.resize((64, 64), Image.LANCZOS).save(IMAGES / "favicon.png", optimize=True)
     # iOS fills a transparent touch icon with black
     tile = Image.new("RGBA", (180, 180), (255, 255, 255, 255))
-    tile.alpha_composite(leaf.resize((150, 150), Image.LANCZOS), (15, 15))
+    tile.alpha_composite(icon.resize((150, 150), Image.LANCZOS), (15, 15))
     tile.convert("RGB").save(IMAGES / "apple-touch-icon.png", optimize=True)
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--src", type=Path, required=True, help="the ICRA2027 working folder")
+    ap.add_argument("--src", type=Path, required=True, help="the paper's working folder")
     ap.add_argument("--only", nargs="*", help="output names (e.g. hero supp wipe_board_4 plots device)")
     ap.add_argument("--force", action="store_true", help="rebuild outputs that already exist")
     args = ap.parse_args()

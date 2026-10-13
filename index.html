@@ -11,14 +11,14 @@
 <meta property="og:image" content="https://louis-leee.github.io/FLoRe/static/images/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="./static/fonts/inter.css?v=1">
-<link rel="icon" type="image/png" sizes="64x64" href="./static/images/favicon.png?v=1">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌿%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="./static/images/apple-touch-icon.png?v=1">
+<link rel="icon" type="image/png" sizes="64x64" href="./static/images/favicon.png?v=2">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌺%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="./static/images/apple-touch-icon.png?v=2">
 <!-- What rises into view is hidden only when a script is there to raise it; if site.js fails to
      load or to start, everything is shown again after 3 s. -->
 <script>document.documentElement.classList.add('js');
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
-<link rel="stylesheet" href="./static/css/style.css?v=8">
+<link rel="stylesheet" href="./static/css/style.css?v=9">
 </head>
 <body>
 
@@ -41,7 +41,7 @@
          poster="./static/images/hero.jpg" data-src="./static/videos/hero.mp4"></video>
   <div class="hero-shade"></div>
   <div class="hero-body">
-    <h1>FLoRe 🌿</h1>
+    <h1>FLoRe 🌺</h1>
     <p class="sub">Learning Force&#8209;Reactive Humanoid Loco&#8209;Manipulation</p>
 
     <p class="authors">
@@ -75,8 +75,8 @@
 <section id="video" class="section">
   <div class="wrap narrow">
     <figure class="reveal">
-      <video class="frame" width="1280" height="720" controls playsinline preload="none" data-poster="./static/images/posters/supp.jpg">
-        <source src="./static/videos/supp.mp4" type="video/mp4">
+      <video class="frame" width="1280" height="720" controls playsinline preload="none" data-poster="./static/images/posters/supp.jpg?v=2">
+        <source src="./static/videos/supp.mp4?v=2" type="video/mp4">
       </video>
     </figure>
   </div>
@@ -285,6 +285,15 @@
       <p class="legend"><span class="ax fx">F<sub>x</sub></span><span class="ax fy">F<sub>y</sub></span><span class="ax fz">F<sub>z</sub></span>
         <span class="gap" aria-hidden="true"></span><span class="ln">Solid: measured force</span><span class="ln dashed">Dashed: predicted force</span></p>
     </figure>
+    <div class="baseline reveal">
+      <div>
+        <h4><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>Baseline failure</h4>
+        <p>Without a force command, the position-only baseline brings the eraser to the board but
+          does not press it on: the eraser hovers over the mark and leaves it.</p>
+      </div>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/wipe_board_baseline.jpg" aria-label="Wipe Board, position-only baseline">
+        <source src="./static/videos/wipe_board_baseline.mp4" type="video/mp4"></video></figure>
+    </div>
 
     <h3 class="reveal">Rotate Box</h3>
     <p class="figlead reveal">The robot pinches the rim of a crate with both hands, rotates it by
@@ -310,6 +319,15 @@
       <p class="legend"><span class="ax fx">F<sub>x</sub></span><span class="ax fy">F<sub>y</sub></span><span class="ax fz">F<sub>z</sub></span>
         <span class="gap" aria-hidden="true"></span><span class="ln">Solid: measured force</span><span class="ln dashed">Dashed: predicted force</span></p>
     </figure>
+    <div class="baseline reveal">
+      <div>
+        <h4><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>Baseline failure</h4>
+        <p>Without a force command, the position-only baseline puts both hands on the rim but does
+          not squeeze it, and the heavy crate does not turn.</p>
+      </div>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/rotate_box_baseline.jpg" aria-label="Rotate Box, position-only baseline">
+        <source src="./static/videos/rotate_box_baseline.mp4" type="video/mp4"></video></figure>
+    </div>
 
     <h3 class="reveal">Push Gantry</h3>
     <p class="figlead reveal">The robot places both hands on a heavy wheeled frame and walks it
@@ -335,6 +353,16 @@
       <p class="legend"><span class="ax fx">F<sub>x</sub></span><span class="ax fy">F<sub>y</sub></span><span class="ax fz">F<sub>z</sub></span>
         <span class="gap" aria-hidden="true"></span><span class="ln">Solid: measured force</span><span class="ln dashed">Dashed: predicted force</span></p>
     </figure>
+    <div class="baseline reveal">
+      <div>
+        <h4><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>Baseline failure</h4>
+        <p>Without a force command, the position-only baseline reaches the demonstrated pose, but
+          the frame does not move and the policy has no way to push harder; in the end the robot
+          loses its balance.</p>
+      </div>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/push_gantry_baseline.jpg" aria-label="Push Gantry, position-only baseline">
+        <source src="./static/videos/push_gantry_baseline.mp4" type="video/mp4"></video></figure>
+    </div>
   </div>
 </section>
 
@@ -349,6 +377,12 @@
            alt="A demonstrator holding the two handheld grippers and wearing a torso tracker, beside a close-up of one
                 gripper with its Vive Tracker 3.0, RealSense D405 camera, F/T sensor, YAM linear gripper and USB 2-key.">
     </figure>
+    <p class="figlead reveal">A Rotate Box demonstration: the two grippers pinch the crate&rsquo;s rim,
+      turn it and drag it across the table.</p>
+    <div class="grid reveal">
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/data_collection.jpg" aria-label="Data collection, a Rotate Box demonstration">
+        <source src="./static/videos/data_collection.mp4" type="video/mp4"></video></figure>
+    </div>
   </div>
 </section>
 
@@ -358,6 +392,6 @@
   <p>The paper and arXiv links follow shortly.</p>
 </footer>
 
-<script src="./static/js/site.js?v=7" onerror="document.documentElement.classList.remove('js')"></script>
+<script src="./static/js/site.js?v=8" onerror="document.documentElement.classList.remove('js')"></script>
 </body>
 </html>

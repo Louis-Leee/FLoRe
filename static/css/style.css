@@ -7,7 +7,7 @@
   --fg: #16181d;
   --muted: #5d6470;
   --line: #e2e5ea;
-  --accent: #1f7a4d;            /* leaf green, for the 🌿 */
+  --accent: #1f7a4d;            /* leaf green, as the 🌺's leaves */
   --accent-soft: #e6f3eb;
   --radius: 12px;
   --chip: rgba(16,19,24,.72);   /* a label or button laid on a picture, the same in either theme */
@@ -18,6 +18,7 @@
   --violet: #6741d9;            /* the demo tips' own colours, with the accent: violet as the F^cmd arrow */
   --blue: #1971c2;
   --cyan: #0b7285;              /* f^meas in the controller's diagrams, as the demo's cyan arrow, darkened for text */
+  --red: #b02525;               /* the baseline's failures */
   --math: "Times New Roman", Times, "Nimbus Roman", "Liberation Serif", serif;   /* a variable, as typeset in the paper */
   --amazon: #ff9900;            /* Amazon orange, for the link to the demo's tab; the same in either theme, */
   --amazon-ink: #232f3e;        /* with Amazon's dark ink on it (6.3:1, where white gets 2.1:1) */
@@ -38,6 +39,7 @@
     --violet: #9775fa;
     --blue: #4dabf7;
     --cyan: #3bc9db;
+    --red: #ff8787;
   }
 }
 
@@ -184,7 +186,7 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 
 /* One gap above every figure, and above the lead-in of a row of figures.  A figure right under
    its heading keeps the heading's own distance, and a row keeps its lead-in's. */
-.wrap.narrow > :is(figure, .grid, .figlead) { margin-top: 2.2rem; }
+.wrap.narrow > :is(figure, .grid, .figlead, .baseline) { margin-top: 2.2rem; }
 .wrap.narrow > :first-child,
 .wrap.narrow > :is(h2, h3) + :is(figure, .grid, .figlead),
 .wrap.narrow > .figlead + :is(.grid, figure) { margin-top: 0; }
@@ -204,6 +206,34 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 .tile .full svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .tile:hover .full, .tile .full:focus-visible { opacity: 1; }
 @media (hover: none) { .tile .full { opacity: .85; } }
+/* Its seek bar runs along the foot of the clip beside that button, as tall as the button so that a
+   finger finds it: a thin line at rest, thicker and with a knob under the pointer, while it is
+   dragged or has the focus. */
+.tile .seek { position: absolute; left: 12px; right: 46px; bottom: 8px; z-index: 2; height: 30px;
+  cursor: pointer; touch-action: pan-y; border-radius: 6px; }
+.tile .seek::before, .tile .seek .fill { content: ""; position: absolute; left: 0; top: 50%; height: 3px;
+  margin-top: -1.5px; border-radius: 2px; transition: height .15s, margin-top .15s; }
+.tile .seek::before { right: 0; background: rgba(255,255,255,.3); box-shadow: 0 0 3px rgba(0,0,0,.5); }
+.tile .seek .fill { width: calc(var(--p, 0) * 100%); background: #fff; }
+.tile .seek .knob { position: absolute; top: 50%; left: calc(var(--p, 0) * 100%); width: 13px; height: 13px;
+  margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.55);
+  opacity: 0; transition: opacity .15s; }
+.tile:hover .seek::before, .tile:hover .seek .fill, .tile .seek:focus-visible::before,
+.tile .seek:focus-visible .fill, .tile .seek.drag::before, .tile .seek.drag .fill { height: 5px; margin-top: -2.5px; }
+.tile:hover .seek .knob, .tile .seek:focus-visible .knob, .tile .seek.drag .knob { opacity: 1; }
+@media (hover: none) { .tile .seek .knob { opacity: 1; } }
+
+/* One rollout of the position-only baseline closes each task: a card in the failures' colour, its
+   note beside a clip as large as one of the task's own.  Narrow, the note goes above the clip. */
+.baseline { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.3rem; align-items: center;
+  padding: 1rem; border-radius: var(--radius); background: color-mix(in srgb, var(--red) 8%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); }
+.baseline h4 { display: flex; align-items: center; gap: .45rem; margin: 0 0 .4rem; color: var(--red);
+  font-size: 1.05rem; font-weight: 700; line-height: 1.3; }
+.baseline .ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9;
+  stroke-linecap: round; }
+.baseline p { margin: 0; font-size: 1rem; line-height: 1.6; }
+@media (max-width: 760px) { .baseline { grid-template-columns: 1fr; } }
 
 /* The interactive controller: the recording under a start button until it is asked for, then the
    mjswan bundle in a frame.  A veil over the running demo keeps the page's scrolling from
@@ -320,6 +350,7 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 .legend .gap { width: 1px; height: 1.1em; background: var(--line); }
 
 :is(video, .tile .full, .bleed a, .wide):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.tile .seek:focus-visible { outline: 2px solid #fff; outline-offset: 0; box-shadow: 0 0 0 4px rgba(0,0,0,.55); }
 
 footer {
   padding: 2.5rem 1.25rem 3.5rem; text-align: center;

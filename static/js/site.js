@@ -195,10 +195,172 @@ document.addEventListener("fullscreenchange", () => {
   });
 });
 
+// On the page a trial clip has a seek bar along its foot instead of a control row.  It shows where
+// the clip is, and a click or a drag takes it elsewhere, as do the arrow keys once the bar has the
+// focus.  A playing clip holds still while it is dragged and goes on from where it is let go; one
+// without its data plays from the point picked.
+const lengths = new WeakMap(); // each clip's length, for when it has let go of its data
+const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const KEYS = {
+  // a key's move, from the time the clip is at and its length
+  ArrowLeft: (t) => t - 2,
+  ArrowDown: (t) => t - 2,
+  ArrowRight: (t) => t + 2,
+  ArrowUp: (t) => t + 2,
+  PageDown: (t) => t - 10,
+  PageUp: (t) => t + 10,
+  Home: () => 0,
+  End: (t, len) => len,
+};
+const SLOP = 6; // px a finger moves sideways before it drags, rather than scrolls the page
+
+function seekBar(v, name, p) {
+  const bar = document.createElement("div");
+  bar.className = "seek";
+  bar.tabIndex = 0;
+  bar.setAttribute("role", "slider");
+  bar.setAttribute("aria-label", `Position in ${name}`);
+  bar.setAttribute("aria-valuemin", "0");
+  bar.setAttribute("aria-valuenow", "0");
+  bar.setAttribute("aria-valuetext", "0:00");
+  bar.innerHTML = '<span class="fill"></span><span class="knob"></span>';
+  v.after(bar);
+
+  const length = () => (v.duration > 0 && v.duration < Infinity ? v.duration : lengths.get(v) || 0);
+  const now = () => resumeAt.get(v) ?? v.currentTime; // a released clip goes on from where it let go
+  const show = (f) => bar.style.setProperty("--p", Math.min(1, Math.max(0, f)).toFixed(4));
+  let said = -1; // the second the slider last told assistive technology
+  const draw = (at = now()) => {
+    const len = length();
+    if (!len) return;
+    show(at / len);
+    if (Math.floor(at) === said) return;
+    said = Math.floor(at);
+    bar.setAttribute("aria-valuemax", String(Math.floor(len)));
+    bar.setAttribute("aria-valuenow", String(Math.min(said, Math.floor(len))));
+    bar.setAttribute("aria-valuetext", `${clock(at)} of ${clock(len)}`);
+  };
+  let frame = 0;
+  const follow = () => {
+    draw();
+    frame = v.paused ? 0 : requestAnimationFrame(follow);
+  };
+  v.addEventListener("play", () => {
+    if (!frame) frame = requestAnimationFrame(follow);
+  });
+  v.addEventListener("durationchange", () => {
+    if (v.duration > 0 && v.duration < Infinity) lengths.set(v, v.duration);
+  });
+  for (const ev of ["durationchange", "seeking", "seeked", "pause", "emptied"])
+    v.addEventListener(ev, () => draw());
+
+  // A seek is a rule from the clip's length to a time.  A clip with its data goes there at once; one
+  // without keeps the point and goes there as it plays, which is what fetches it.  It tells whether
+  // the clip has to be played for that.
+  let pending = null;
+  v.addEventListener("loadedmetadata", () => {
+    if (!pending) return;
+    resumeAt.delete(v);
+    v.currentTime = Math.max(0, Math.min(pending(v.duration), v.duration - 0.05));
+    pending = null;
+  });
+  const seek = (to) => {
+    const len = length();
+    if (!len) {
+      pending = to;
+      return true;
+    }
+    const t = Math.max(0, Math.min(to(len), len - 0.05));
+    draw(t);
+    if (v.readyState || !v.paused) {
+      resumeAt.delete(v); // the point picked, not the one it let go at
+      v.currentTime = t;
+      return false;
+    }
+    resumeAt.set(v, t); // where the play handler puts it
+    return true;
+  };
+
+  // While a drag seeks, it owns the playback: the clip holds still, whatever starts it meanwhile,
+  // and plays once it is let go if it was playing or has yet to load.  One pointer at a time.
+  const fraction = (e) => {
+    const r = bar.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  };
+  let drag = null;
+  const hold = () => {
+    if (v.paused) return;
+    quiet.add(v);
+    v.pause();
+    drag.resume = true;
+  };
+  v.addEventListener("play", () => {
+    if (drag?.seeking) hold();
+  });
+  const move = (e) => {
+    const f = fraction(e);
+    show(f);
+    if (seek((len) => f * len)) drag.load = true;
+  };
+  const start = (e) => {
+    drag.seeking = true;
+    drag.from = now();
+    hold();
+    move(e);
+  };
+  bar.addEventListener("pointerdown", (e) => {
+    if (drag || e.button !== 0) return;
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, seeking: false, resume: false, load: false };
+    bar.setPointerCapture(e.pointerId);
+    bar.classList.add("drag");
+    if (e.pointerType !== "touch") start(e); // a finger first shows it is not scrolling the page
+  });
+  bar.addEventListener("pointermove", (e) => {
+    if (drag?.id !== e.pointerId) return;
+    if (drag.seeking) move(e);
+    else if (Math.abs(e.clientX - drag.x) > Math.max(SLOP, Math.abs(e.clientY - drag.y))) start(e);
+  });
+  const end = (e, done) => {
+    if (drag?.id !== e.pointerId) return;
+    const d = drag;
+    if (done) {
+      if (d.seeking) move(e);
+      else start(e); // a tap
+    } else if (d.seeking) {
+      // the gesture went to the page, or the bar lost the pointer: the clip goes back
+      pending = null;
+      d.load = false;
+      if (length()) seek(() => d.from);
+    }
+    drag = null;
+    bar.classList.remove("drag");
+    if (d.load || d.resume) v.play().catch(() => {});
+  };
+  bar.addEventListener("pointerup", (e) => end(e, true));
+  bar.addEventListener("pointercancel", (e) => end(e, false));
+  bar.addEventListener("lostpointercapture", (e) => end(e, false));
+
+  bar.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      p.toggle();
+      return;
+    }
+    const key = Object.hasOwn(KEYS, e.key) && KEYS[e.key];
+    if (!key) return;
+    e.preventDefault();
+    const from = now();
+    if (seek((len) => key(from, len))) v.play().catch(() => {});
+  });
+}
+
 document.querySelectorAll("video[data-autoplay]").forEach((v) => {
+  const name = v.getAttribute("aria-label") || "Clip";
   const p = player(v);
   byHand(v, p);
-  if (v.closest(".tile")) fullScreenButton(v);
+  if (!v.closest(".tile")) return;
+  fullScreenButton(v);
+  seekBar(v, name, p); // between the clip and its button, in the order of the keyboard
 });
 
 // The narrated video is started by hand and keeps the browser's controls, for its sound and full

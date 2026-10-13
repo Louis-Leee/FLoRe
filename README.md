@@ -8,8 +8,11 @@ one stylesheet (`static/css/style.css`) and one script (`static/js/site.js`). Th
 ## Preview locally
 
 ```bash
-python3 -m http.server 8000      # in this folder, then open http://localhost:8000
+npx http-server -p 8000          # in this folder, then open http://localhost:8000
 ```
+
+The server has to answer byte-range requests, as GitHub Pages does, or the clips cannot be sought:
+Python's `http.server` does not.
 
 
 ## Rebuild the media
@@ -18,14 +21,24 @@ Every clip and picture in `static/videos` and `static/images` is made from the p
 folder by one script, which never writes into that folder:
 
 ```bash
-python3 scripts/build_media.py --src ~/Desktop/ICRA2027              # fills in what is missing
-python3 scripts/build_media.py --src ~/Desktop/ICRA2027 --only supp --force
+python3 scripts/build_media.py --src PAPER_DIR                       # fills in what is missing
+python3 scripts/build_media.py --src PAPER_DIR --only supp --force
 ```
 
-It needs Pillow, and an ffmpeg with libass (Homebrew `ffmpeg-full`) for the subtitles
-of the narrated video. The sources, encodings and the reason for each choice are listed at the top
-of the script. All clips are single H.264 files (1080p trial clips at CRF 24, the narrated video at
-720p CRF 20), so every browser plays them without a second codec.
+`PAPER_DIR` is the paper's working folder. It needs Pillow, and an ffmpeg with libass (Homebrew
+`ffmpeg-full`) for the subtitles of the narrated video. The sources, encodings and the reason for
+each choice are listed at the top of the script. All clips are single H.264 files (1080p trial
+clips at CRF 24, the narrated video at 720p CRF 20), so every browser plays them without a second
+codec.
+
+The narrated video's title slide is made again from the clip it plays, rendered with the title
+alone; the rest of the recording keeps its frames, and the narration its timing. That clip is made
+beside its source in the working folder, with numpy, Pillow and OpenCV:
+
+```bash
+cd PAPER_DIR/supp/push_gantry
+python3 add_title_reveal.py --occlude --edge-offset 90 --x0 356 --no-subtitle --out IMG_3352_title_occluded_nosub.mp4
+```
 
 ## Redraw the controller diagrams
 
@@ -83,6 +96,6 @@ the visitor presses *Start*.
 ## Credits
 
 - Font: [Inter](https://github.com/rsms/inter), SIL Open Font License 1.1 (`static/fonts/OFL.txt`).
-- Icon: the 🌿 of [Noto Emoji](https://github.com/googlefonts/noto-emoji) v2.047, Apache License 2.0.
+- Icon: the 🌺 of [Noto Emoji](https://github.com/googlefonts/noto-emoji) v2.047, Apache License 2.0.
 - Page structure: adapted from the [Workhorse](https://hybridrobotics.github.io/workhorse/) project page.
 - Interactive demo: [mjswan](https://github.com/ttktjmt/mjswan) (Apache-2.0, `demo/LICENSE`), as vendored and patched in the FLoRe release; the idea of embedding it follows the [PHP](https://php-parkour.github.io/) page.

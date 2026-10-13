@@ -1,3 +1,58 @@
+## [1.4.0] - 2026-10-13
+### Features
+- The page's emoji is 🌺 instead of 🌿: in the title, the SVG icon, and the PNG favicon and touch
+  icon, made from Noto Emoji's U+1F33A at the same pinned tag.
+- Every trial clip has a seek bar along its foot, a thin line that shows where the clip is. A click
+  or a drag takes the clip there; once the bar has the focus, so do the arrow keys (2 s), Page Up
+  and Page Down (10 s), Home and End, and Space or Enter plays or pauses. It is an ARIA slider
+  that reads, for example, "0:05 of 0:31". A playing clip holds still while it is dragged and goes
+  on from where it is let go.
+- Each task ends with one rollout of the position-only baseline (Wipe Board failure 1, Rotate Box
+  failure 1, Push Gantry failure 2), in a red card that says why it fails and what happens.
+- The data-collection section ends with a Rotate Box demonstration recorded with the system.
+- The narrated video no longer shows the venue and the submission number under its title: the
+  title slide is replaced by the clip it plays, rendered again with the title alone, and the
+  poster is taken from the new video. The README, the build script and the older entries here no
+  longer name the venue either.
+### Design Rationale
+- A seek bar of its own rather than the browser's control row: the clips have no sound, so a
+  volume button would mislead, and the row would cover much of a small tile. In full screen the
+  browser's controls still come back.
+- The bar is always shown, thin, so that a visitor sees the clip can be moved. Its strip is as tall
+  as the full-screen button beside it, so a finger finds it. A finger seeks only once it has moved
+  further sideways than up or down, by 6 px at least, or lifts (`touch-action: pan-y`): a vertical
+  swipe over the bar still scrolls the page, and a gesture the page takes over puts the clip back.
+  The bar follows one pointer at a time.
+- While a drag seeks, it owns the playback: whatever starts the clip in the meantime, its turn to
+  play on screen or its data arriving, waits until it is let go.
+- A clip without its data needs it to show a frame, so a seek there plays it from the point picked;
+  a key pressed before its length is known is kept and applied once it has loaded. The point picked
+  replaces the one the clip saved when it let go of its download: the browsers refill a released
+  clip from their cache, and the saved point would otherwise undo the seek at the next play.
+- The baseline comes last in each task, after the plots, which stay next to the clips they belong
+  to. Its clip is the size of one of the task's own: at full width the failure would be the
+  largest picture of the task.
+- The title clip is laid over the recording's first 597 frames, counted by number, rather than
+  joined to the rest with concat. The recording's clock starts at 0.1 s; a concat starts at 0 and
+  would put every later frame 0.1 s ahead of the narration and the subtitles. The new video has
+  the old one's 5334 frames and timestamps, and every frame after the cut is within 40 dB PSNR of
+  the old render. Should the title clip end before the cut, its last frame holds, so the old title
+  cannot show through.
+- The title is rendered with the settings of the clip that the slide plays (the robot in front of
+  the text, the reveal at its centre, the text 356 px from the left) and without the line under
+  it: the title keeps its place and the reveal its timing.
+### Notes & Caveats
+- The new clips' camera audio is dropped like the others'. No clip under Experiments or Data
+  Collection has an audio track; only the narrated video has sound, its narration.
+- The data-collection clip shows the demonstrator's face, as the narrated video already does; the
+  photo above it keeps its emoji.
+- The branch's history still holds the earlier video with the venue line. The repository is
+  private, and Pages serves only the current files.
+- Python's `http.server` does not answer byte-range requests, so the clips cannot be sought behind
+  it; the README now previews with `npx http-server`.
+- `style.css?v=9`, `site.js?v=8`, and `?v=2` on the favicons and on the narrated video and its
+  poster, so that browsers fetch the new files.
+
 ## [1.3.2] - 2026-10-08
 ### Features
 - The unified reference generator's diagram puts the motion's reference p* on the surface, where
@@ -159,10 +214,10 @@
   looping reel, authors and affiliations, the narrated supplementary video, abstract, pipeline
   figure, low-level controller clip, the three real-world tasks (Wipe Board, Rotate Box, Push
   Gantry) with their force plots, and the robot-free data collection system.
-- Content follows the anonymous Google Site (sites.google.com/view/icra2027-flore) in the same
-  order, with the paper's abstract and task descriptions added; the layout, typography, scroll
-  behaviour and clip handling follow the Workhorse page.
-- `scripts/build_media.py` rebuilds every clip and picture from the ICRA2027 working folder.
+- Content follows the anonymous project site in the same order, with the paper's abstract and
+  task descriptions added; the layout, typography, scroll behaviour and clip handling follow the
+  Workhorse page.
+- `scripts/build_media.py` rebuilds every clip and picture from the paper's working folder.
 ### Design Rationale
 - This page is not anonymous, so it uses the raw footage: Push Gantry clips without head mosaics,
   and the supplementary video re-rendered from the raw recording with the same subtitles and
@@ -177,5 +232,6 @@
 ### Notes & Caveats
 - About 200 MB of media: a plain `git clone` of the repository fetches this branch too; use
   `git clone --single-branch -b main` for the code alone.
-- The supplementary video still shows "ICRA 2027 Submission #8324" on its title card, as recorded.
+- The supplementary video still showed the venue and the submission number on its title card, as
+  recorded (removed in 1.4.0).
 - `og:image` points at https://louis-leee.github.io/FLoRe/, the default Pages address of the repository.
