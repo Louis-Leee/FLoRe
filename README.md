@@ -51,9 +51,10 @@ python3 add_title_reveal.py --occlude --edge-offset 90 --x0 356 --no-subtitle --
 ```
 
 The data-collection clip is made from a master with the two strips of tape taken off the table
-and an arrow drawn round the crate as it turns. That master is made beside its source in the
-working folder, with numpy, OpenCV and Pillow; its constants (the tapes' lines, the frames that
-show them uncovered, the arrow's timing) belong to that one clip:
+and an arrow drawn on the table round the crate as it turns. The arrow stays where it was drawn
+while the crate is dragged off it. That master is made beside its source in the working folder,
+with numpy, OpenCV and Pillow; its constants (the tapes' lines, the frames that show them
+uncovered, the arrow's timing) belong to that one clip:
 
 ```bash
 python3 scripts/clean_data_collection.py --src PAPER_DIR    # writes PAPER_DIR/supp/data_collection_clean.mp4
@@ -156,9 +157,10 @@ python3 scripts/build_media.py --src PAPER_DIR --only controller_x --force
 ```
 
 To embed the full demo again, point the `#demo` frame's `data-src` and its *Start* link back to
-`./demo/`, its preview back to `controller.mp4` and `controller.jpg`, and restore the paragraph and
-the tips above and below it. Reverting the commit that switched the frame to `demo-x/` does all of
-that.
+`./demo/`, its preview back to `controller.mp4` and `controller.jpg`, restore the paragraph and the
+tips above and below it, and name the pill *Try the demo in a new tab!* again. Reverting the commit
+that named the pill's tab the full demo, and then the one that switched the frame to `demo-x/`,
+does all of that.
 
 ## Credits
 

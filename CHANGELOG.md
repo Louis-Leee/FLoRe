@@ -1,3 +1,32 @@
+## [1.7.1] - 2026-10-14
+### Features
+- In the data-collection clip, the arrow lies on the table and stays there. Before, it went along
+  with the crate. It is laid round the crate where the crate stands when the arrow appears, and the
+  crate is turned and dragged left off it. Its direction and timing are unchanged.
+- The pill to the full demo reads "Try the full demo in a new tab!", and the line under it is gone.
+### Design Rationale
+- The ring is laid where the crate starts, not where it comes to rest. Laid at the rest place, its
+  first part would show on the bare table beside the crate, pointing at it, just as the crate moves
+  the other way. Laid at the start, the arrow begins as before, from behind the crate's right end.
+- Lying on the table, the ring is hidden wherever it falls inside the crate's silhouette, since
+  there the crate stands in front of it.
+  - Before, only its far half could be hidden, which was right only while the ring went round the
+    crate.
+  - Now, as the crate is dragged across the ring's front, it hides the arrowhead from 5.5 to 6.2 s.
+    The head then shows beside the crate until the ring fades.
+- The ring moves with the table's drift, as the tapes' fills do: at most 1.6 px over its life.
+- The pill's text may now shrink to 14 px. At 320 px the longer label took two lines at 16 px; it
+  keeps to one line at every width in Chrome, WebKit and Firefox.
+### Notes & Caveats
+- The master and `data_collection.mp4?v=3` are rebuilt.
+  - Away from the arrow's frames (4.78–6.85 s), the master matches the old one at 53 dB or more.
+  - Inside them, only the two rings differ.
+  - The poster has no arrow and is unchanged.
+- The stylesheet is now `style.css?v=14`.
+- The pill's change is a commit of its own. To embed the full demo again, revert it first, then the
+  commit "the page's demo is demo-x; the full demo opens in its own tab". The second revert alone
+  would conflict, since the line it removes is already gone.
+
 ## [1.7.0] - 2026-10-14
 ### Features
 - The demo in the page is now a simpler build, `demo-x/`: the controller on the left hand, along x.

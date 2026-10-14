@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Make the master of the page's data-collection clip: the demonstration as filmed, with the two
-strips of tape on the table taken out and an arrow drawn round the crate as it turns.
+strips of tape on the table taken out and an arrow drawn on the table round the crate as it turns.
 
     python3 scripts/clean_data_collection.py --src PAPER_DIR
 
@@ -76,12 +76,15 @@ TAPES = (
 # frame is the rigid motion that takes their first picture to theirs.
 DRIFT = ((960, 900, 1120, 1040), (1430, 795, 1600, 880))
 
-# The arrow: an orange ring round the crate, in perspective, that grows clockwise as the crate
-# turns (clockwise seen from above, so on screen too), its far side hidden behind the crate.  It
-# comes out from behind the crate's right end, runs along its front and ends pointing left.  The
-# turn takes 4.95 to 5.87 s; the ring then follows the crate as it is dragged left and fades.
+# The arrow: an orange ring on the table round the crate, in perspective, that grows clockwise as
+# the crate turns (clockwise seen from above, so on screen too).  It comes out from behind the
+# crate's right end, runs along its front and ends pointing left.  It lies where the crate stood as
+# it appeared, and stays there, moving only as the table drifts, while the crate is turned (4.95 to
+# 5.87 s) and dragged left off it; wherever the crate stands in front of it, it is hidden.  Then the
+# ring fades.
 ARROW_RGB = (255, 153, 0)       # #ff9900, the page's orange
 ARROW_IN, ARROW_GROW, ARROW_OUT = (4.78, 4.95), (4.95, 5.87), (6.45, 6.85)   # s
+ARROW_AT = ARROW_IN[0]          # s: where the crate stands then is where the ring is laid
 ARROW_TAIL, ARROW_SPAN = -48.0, 216.0   # degrees round the ring, clockwise on screen from its right
 ARROW_SIZE = 0.64               # the ring's half width, as a share of the crate's width
 ARROW_TILT = 0.30               # its height over its width: the camera looks down on it a little
@@ -381,19 +384,36 @@ def arrow_state(i: int) -> tuple[float, float]:
     return alpha, ease((t - ARROW_GROW[0]) / (ARROW_GROW[1] - ARROW_GROW[0]))
 
 
-def draw_arrow(frame: np.ndarray, i: int, track: np.ndarray) -> np.ndarray:
-    """The frame with the arrow drawn on it, if it shows in frame i."""
+def arrow_ring(track: np.ndarray) -> tuple[int, tuple[float, float, float, float]]:
+    """The frame the ring is laid in, and its centre and half axes there, in px: round the crate as
+    it stands then, its centre a little below the crate's."""
+    k = round(ARROW_AT * FPS)
+    cx, cy, bw, bh = track[k]
+    a = ARROW_SIZE * bw
+    return k, (cx, cy + ARROW_DROP * bh, a, ARROW_TILT * a)
+
+
+def table_map(m_from: np.ndarray, m_to: np.ndarray) -> np.ndarray:
+    """The 2 x 3 map, in px of the whole frame, that carries a point of the table from where it is
+    in one frame to where it is in another, given the two frames' drifts (see `drift`)."""
+    o = np.array(ROI[:2], np.float64)
+    lin = m_to[:, :2] @ np.linalg.inv(m_from[:, :2])
+    return np.hstack([lin, (m_to[:, 2] + o - lin @ (m_from[:, 2] + o))[:, None]])
+
+
+def draw_arrow(frame: np.ndarray, i: int, ring: tuple[float, float, float, float], table: np.ndarray) -> np.ndarray:
+    """The frame with the arrow drawn on it, if it shows in frame i: the ring that `arrow_ring`
+    lays, carried to frame i by `table`, the table's map from the frame it was laid in."""
     alpha, grown = arrow_state(i)
     if alpha <= 0.002:
         return frame
-    cx, cy, bw, bh = track[i]
-    a = ARROW_SIZE * bw
-    b = ARROW_TILT * a
-    cy += ARROW_DROP * bh
+    cx, cy, a, b = ring
     span = 24 + (ARROW_SPAN - 24) * grown          # a little of it shows from the start
     th = np.radians(np.linspace(ARROW_TAIL, ARROW_TAIL + span, max(8, int(span * 2))))
-    px, py = cx + a * np.cos(th), cy + b * np.sin(th)
-    tx, ty = -a * np.sin(th), b * np.cos(th)
+    on = np.stack([cx + a * np.cos(th), cy + b * np.sin(th)], 1)
+    along = np.stack([-a * np.sin(th), b * np.cos(th)], 1)
+    px, py = (on @ table[:, :2].T + table[:, 2]).T
+    tx, ty = (along @ table[:, :2].T).T
     tn = np.hypot(tx, ty)
     tx, ty = tx / tn, ty / tn
     u = np.linspace(0, 1, len(th))
@@ -428,17 +448,16 @@ def draw_arrow(frame: np.ndarray, i: int, track: np.ndarray) -> np.ndarray:
     ink = np.asarray(pic, np.float32) / 255
     shadow = np.roll(np.asarray(pic.filter(ImageFilter.GaussianBlur(4)), np.float32) / 255, (3, 2), (0, 1))
 
-    # the half of the ring behind the crate is hidden by it: its silhouette, the convex hull of its
-    # blue grey, above the ring's centre line
+    # The ring lies on the table, so whatever of it falls inside the crate's silhouette (the convex
+    # hull of its blue grey) is behind the crate, and hidden.
     small = cv2.resize(frame, (W // 2, H // 2), interpolation=cv2.INTER_AREA)
     m = crate_mask((np.clip(small, 0, 1) * 255).astype(np.uint8))
     hull = np.zeros(m.shape, np.uint8)
     if m.any():
         cv2.fillConvexPoly(hull, cv2.convexHull(cv2.findNonZero(m)), 1)
     hull = cv2.GaussianBlur(cv2.resize(hull.astype(np.float32), (W, H)), (0, 0), 1.5)[y0:y1, x0:x1]
-    far = np.clip((cy - np.arange(y0, y1, dtype=np.float32)[:, None]) / 6 + 0.5, 0, 1)
-    ink *= (1 - far * hull) * alpha
-    shadow *= (1 - far * hull) * alpha * 0.55
+    ink *= (1 - hull) * alpha
+    shadow *= (1 - hull) * alpha * 0.55
 
     out = frame.copy()
     reg = out[y0:y1, x0:x1] * (1 - shadow[..., None])
@@ -471,7 +490,7 @@ def main() -> int:
     log.info("%d frames read", len(rois))
     motion = drift(rois)
     tapes = [TapeModel(t, rois, motion) for t in TAPES]
-    track = crate_track(smalls, 4)
+    laid, ring = arrow_ring(crate_track(smalls, 4))
     del rois, smalls
 
     # second pass: each frame cleaned, the arrow drawn, into the encoder
@@ -490,7 +509,7 @@ def main() -> int:
                 for t in tapes:
                     t.remove(c, motion[i], o)
                 f[y:y + h, x:x + w] = o
-                f = draw_arrow(f, i, track)
+                f = draw_arrow(f, i, ring, table_map(motion[laid], motion[i]))
                 enc.stdin.write((np.clip(f, 0, 1) * 65535 + 0.5).astype(np.uint16).tobytes())
             enc.stdin.close()
         if enc.returncode:
