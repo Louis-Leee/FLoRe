@@ -1,3 +1,26 @@
+## [1.8.0] - 2026-10-14
+### Features
+- Under the pill to the full demo, the Controller section shows the controller on the robot in two
+  clips side by side, each with its title over it:
+  - "Compliant Behavior": the hands give way when they are pushed and pulled;
+  - "Force Tracking (x direction −10 N)": a force gauge at the hand reads about 10 N.
+### Design Rationale
+- They are made and played as the Experiments clips are:
+  - 1080p H.264 at CRF 24, without their sound;
+  - muted, and looping while they are in view;
+  - with the page's seek bar and full-screen button.
+  On a phone they stack.
+- Each title is its clip's caption, centred over it, bold, at the captions' size. It stays centred
+  on a phone, where the other captions turn flush left.
+- The raw clips stay in this folder, as `compliance.MP4` and `forcetracking.MP4`, and git ignores
+  them, as it does `teaser/`. `compliance.MP4` alone is 105 MB, over GitHub's 100 MB limit.
+### Notes & Caveats
+- `compliance.mp4` is 15.6 MB, and `force_tracking.mp4` is 3.6 MB.
+- The update of I wrote I_max with KaTeX's `\max`. That typesets an operator, so the MathML gave its
+  subscript three parts, which Firefox reported as invalid markup. It is now `\mathrm{max}`, which
+  looks the same on screen.
+- The stylesheet is now `style.css?v=16`.
+
 ## [1.7.2] - 2026-10-14
 ### Features
 - The data-collection arrow is drawn over everything, so the crate no longer hides it. It also lies
