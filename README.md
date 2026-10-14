@@ -112,6 +112,39 @@ the visitor presses *Start*.
 4. `python scripts/build_demo.py --model-path model_23000.onnx --motion-dir <motion_dir>` (with
    the viz-stack Python) rewrites `demo/`.
 
+### The in-page demo (`demo-x/`)
+
+The page embeds a simpler build of the same controller, `demo-x/`, and opens the full one, `demo/`,
+in a tab of its own:
+- only the left hand's command and an extra push on it are offered, both along x;
+- its wall stands in front of the hand from the start;
+- each arrow carries its value along x, in newtons;
+- only the standing motion is kept. The wall stays where the hand started, as in training, and
+  the walking and lifting clips would carry the hand into it.
+
+`scripts/build_demo_x.py` builds it after `demo/`, with the same arguments. It leaves `demo/`,
+`build_demo.py` and the code release's checkout untouched: it builds from a copy of the release's
+mjswan template and command term, changed by `scripts/demo_x.patch`.
+
+```bash
+python scripts/build_demo_x.py --model-path model_23000.onnx --motion-dir <motion_dir>
+```
+
+The preview that the page plays before *Start* is recorded from the built demo by
+`scripts/record_demo_x.mjs`. It needs Playwright and Chrome, and the site served with `FLoRe` as its
+folder's name, since the bundle's base path is `/FLoRe/demo-x/`. It writes a master into the paper's
+folder, which `build_media.py` then encodes as `controller_x`:
+
+```bash
+node scripts/record_demo_x.mjs http://localhost:8765/FLoRe/demo-x/ PAPER_DIR/supp/demo_x_preview.mp4
+python3 scripts/build_media.py --src PAPER_DIR --only controller_x --force
+```
+
+To embed the full demo again, point the `#demo` frame's `data-src` and its *Start* link back to
+`./demo/`, its preview back to `controller.mp4` and `controller.jpg`, and restore the paragraph and
+the tips above and below it. Reverting the commit that switched the frame to `demo-x/` does all of
+that.
+
 ## Credits
 
 - Font: [Inter](https://github.com/rsms/inter), SIL Open Font License 1.1 (`static/fonts/OFL.txt`).

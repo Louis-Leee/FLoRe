@@ -73,6 +73,8 @@ CLIPS = (
     Clip("push_gantry_baseline", "supp/push_gantry/failure/2.MP4", 1080, 24),
     Clip("push_gantry_matte", "video/IMG_3227_trans.mp4", 1080, 23, poster_width=1280),
     Clip("controller", "supp/2026-09-22 13-31-23.mp4", 720, 22, poster_width=1280),
+    # the in-page demo (demo-x/) as scripts/record_demo_x.mjs records it
+    Clip("controller_x", "supp/demo_x_preview.mp4", 720, 22, poster_width=1280),
     Clip("data_collection", "supp/data_collection_clean.mp4", 1080, 24, poster_width=1280),
 )
 

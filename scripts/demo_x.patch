@@ -1,0 +1,779 @@
+The page's in-page demo (demo-x/): changes to copies of the code release's mjswan template
+and command term, applied by scripts/build_demo_x.py with git apply. See that script.
+
+--- a/mjswan/template/src/core/engine/runtime.ts
++++ b/mjswan/template/src/core/engine/runtime.ts
+@@ -141,6 +141,11 @@
+   integratorMax: number; // 40 N — anti-windup clip on I (force units)
+   servoDqMax: number; // 0.15 rad — per-joint |Δq| clamp
+   tcpOffsetX: number; // 0.242 — the SINGLE contact anchor (no lateral y)
++  // The project page's one-axis demo (extras.hybrid.fixed_wall): the walls of these hands
++  // (indices into `hands`) stand from the start of every episode, plane_dist ahead of the
++  // TCP along this pelvis-frame direction, instead of appearing with the first F^cmd.
++  fixedWallHands: number[];
++  fixedWallDirB: [number, number, number];
+   hands: HybridHandCfg[];
+ };
+ // Resolved-once runtime handles + evolving per-hand state for the hybrid sim.
+@@ -1445,7 +1450,14 @@
+       });
+     }
+     if (hands.length === 0) return null;
++    const fixed = (o['fixed_wall'] ?? {}) as Record<string, unknown>;
++    const fixedHandsRaw = fixed['hands'];
++    const fixedDirRaw = fixed['dir_b'];
++    const fixedHands = Array.isArray(fixedHandsRaw) ? fixedHandsRaw.map(Number).filter(Number.isInteger) : [];
++    const fixedDir = Array.isArray(fixedDirRaw) ? fixedDirRaw.map(Number) : [1, 0, 0];
+     return {
++      fixedWallHands: fixedHands,
++      fixedWallDirB: [fixedDir[0] || 0, fixedDir[1] || 0, fixedDir[2] || 0],
+       servoEnabled: o['servo_enabled'] === true,
+       servoObserveOnly: o['servo_observe_only'] === true,
+       contactPhaseThetaOn: num('contact_phase_theta_on', 2.0),
+@@ -1614,6 +1626,8 @@
+         h.depth = 0;
+         h.gate = 0;
+         h.fExtW = [0, 0, 0];
++        this.publishHybridWall(hi, false);
++        if (cfg.fixedWallHands.includes(hi)) continue; // a standing wall keeps its seed
+         // Keep wallSeeded so the servo's episode-fixed F^cmd direction (fcmdDirW,
+         // captured at seed) persists across a toggle; only the reaction FORCE is
+         // suppressed. Re-seed if F^cmd→0 (mirrors the wall-on deadband branch).
+@@ -1648,16 +1662,19 @@
+         R[6] * fcx + R[7] * fcy + R[8] * fcz,
+       ];
+       const fcmdMag = Math.hypot(fcmdW[0], fcmdW[1], fcmdW[2]);
++      const standing = cfg.fixedWallHands.includes(hi);
++      if (standing && !h.wallSeeded && !this.seedStandingWall(hi, tcp, R)) continue;
+ 
+       // Wall exists only while F^cmd is commanded (matches training: the plane
+       // normal = −unit(F_cmd)). Below a small deadband, no wall / no F_ext, and
+       // the wall re-seeds next time F^cmd is pressed.
+-      if (fcmdMag < 1e-6) {
++      if (!standing && fcmdMag < 1e-6) {
+         h.wallSeeded = false;
+         h.seedTcpW = [0, 0, 0];
+         h.depth = 0;
+         h.gate = 0;
+         h.fExtW = [0, 0, 0];
++        this.publishHybridWall(hi, false);
+         continue;
+       }
+       if (!h.wallSeeded) {
+@@ -1679,7 +1696,7 @@
+           tcp[2] - cfg.planeDist * h.normalW[2],
+         ];
+         h.wallSeeded = true;
+-      } else if (wallLive) {
++      } else if (wallLive && !standing) {
+         // LIVE-NORMAL mode (operator opt-in, `wbt_hybrid_wall_live`): re-derive the
+         // plane from the CURRENT F^cmd every substep instead of holding the seeded
+         // direction. This exists purely so the operator can sweep F^cmd across axes in
+@@ -1715,6 +1732,7 @@
+       const depth = Math.min(Math.max(signed, 0), cfg.maxPenetrationM);
+       h.depth = depth;
+       h.gate = depth > 0 ? 1 : 0;
++      this.publishHybridWall(hi, true);
+ 
+       // F_ext = clamp(K_env·depth, max_force_n) · n̂  (compression-only, +normal).
+       const mag = Math.min(cfg.kEnv * depth, cfg.maxForceN);
+@@ -1735,8 +1753,45 @@
+       xfrc[off6 + 4] += rz * fExtW[0] - rx * fExtW[2];
+       xfrc[off6 + 5] += rx * fExtW[1] - ry * fExtW[0];
+     }
++  }
++
++  // Seed hand `hi`'s standing wall (extras.hybrid.fixed_wall): plane_dist ahead of its TCP
++  // along the pelvis-frame direction, levelled so that the wall stands upright. Called on the
++  // first substep of an episode, once the reset has placed the robot, so the wall is in front
++  // of the hand before any command. The command's direction is the wall's, as when F^cmd
++  // seeds it. False if the direction is vertical.
++  private seedStandingWall(hi: number, tcp: [number, number, number], R: number[]): boolean {
++    const cfg = this.hybridConfig!;
++    const h = this.hybridHands![hi];
++    const [bx, by, bz] = cfg.fixedWallDirB;
++    const dx = R[0] * bx + R[1] * by + R[2] * bz;
++    const dy = R[3] * bx + R[4] * by + R[5] * bz;
++    const n = Math.hypot(dx, dy);
++    if (n < 1e-6) return false;
++    h.fcmdDirW = [dx / n, dy / n, 0];
++    h.normalW = [-dx / n, -dy / n, 0];
++    h.seedTcpW = [tcp[0], tcp[1], tcp[2]];
++    h.pointW = [tcp[0] + (cfg.planeDist * dx) / n, tcp[1] + (cfg.planeDist * dy) / n, tcp[2]];
++    h.wallSeeded = true;
++    return true;
+   }
+ 
++  // Each hand's wall on the extras bus (world frame, MuJoCo z-up), so that the drawing shows
++  // the plane the physics reacts on instead of seeding a copy of its own.
++  private publishHybridWall(hi: number, on: boolean): void {
++    const h = this.hybridHands?.[hi];
++    const s = ['l', 'r'][hi] ?? String(hi);
++    setPolicyExtra(`wbt_wall__${s}_on`, on && h ? 1.0 : 0.0);
++    if (!on || !h) return;
++    setPolicyExtra(`wbt_wall__${s}_px`, h.pointW[0]);
++    setPolicyExtra(`wbt_wall__${s}_py`, h.pointW[1]);
++    setPolicyExtra(`wbt_wall__${s}_pz`, h.pointW[2]);
++    setPolicyExtra(`wbt_wall__${s}_nx`, h.normalW[0]);
++    setPolicyExtra(`wbt_wall__${s}_ny`, h.normalW[1]);
++    setPolicyExtra(`wbt_wall__${s}_nz`, h.normalW[2]);
++    setPolicyExtra(`wbt_wall__${s}_depth`, h.depth);
++  }
++
+   // Simulated F/T sensor: F_meas_w = F_ext_w + distal_mass·a_wrist (+ bias/noise).
+   // a_wrist is finite-differenced from the TCP world position across substeps
+   // (mjData exposes no body_lin_acc). Writes the world-frame value to the extras
+@@ -2029,6 +2084,7 @@
+       }
+     }
+     for (const s of ['l', 'r']) {
++      setPolicyExtra(`wbt_wall__${s}_on`, 0.0);
+       setPolicyExtra(`wbt_cphase__${s}`, 0.0);
+       for (const c of ['fx', 'fy', 'fz']) {
+         setPolicyExtra(`wbt_force_meas__${s}_${c}`, 0.0);
+--- a/mjswan/template/src/core/policy/extras.ts
++++ b/mjswan/template/src/core/policy/extras.ts
+@@ -66,4 +66,6 @@
+   step?: number;
+   /** Optional group label — sliders with the same group are rendered together. */
+   group?: string;
++  /** Optional CSS colour of the group's header (the first slider of the group sets it). */
++  group_color?: string;
+ };
+--- a/mjswan/template/src/core/policy/SliderPanel.ts
++++ b/mjswan/template/src/core/policy/SliderPanel.ts
+@@ -58,9 +58,20 @@
+   return root;
+ }
+ 
+-function renderGroupHeader(label: string): HTMLElement {
++function renderGroupHeader(label: string, color?: string): HTMLElement {
+   const h = document.createElement('div');
+-  h.textContent = label;
++  // "F^cmd" sets "cmd" as a superscript.
++  label.split('^').forEach((part, i) => {
++    if (i === 0) {
++      h.append(part);
++      return;
++    }
++    const m = /^(\w*)([\s\S]*)$/.exec(part) ?? ['', '', part];
++    const sup = document.createElement('sup');
++    sup.textContent = m[1];
++    h.append(sup, m[2]);
++  });
++  if (color) h.style.color = color;
+   Object.assign(h.style, {
+     fontWeight: 'bold',
+     marginTop: '6px',
+@@ -135,11 +146,7 @@
+ }
+ 
+ function formatValue(v: number): string {
+-  const abs = Math.abs(v);
+-  if (abs >= 100) return v.toFixed(0);
+-  if (abs >= 10) return v.toFixed(1);
+-  if (abs >= 1) return v.toFixed(2);
+-  return v.toFixed(3);
++  return v.toFixed(1); // newtons, as the arrows' labels give them
+ }
+ 
+ /** Mount a slider panel from a list of configs. Idempotent — rebuilds the
+@@ -156,7 +163,7 @@
+   const root = ensurePanelRoot();
+ 
+   const title = document.createElement('div');
+-  title.textContent = 'Live policy inputs';
++  title.textContent = 'Left hand, along x';
+   Object.assign(title.style, {
+     fontWeight: 'bold',
+     marginBottom: '6px',
+@@ -175,7 +182,7 @@
+   }
+ 
+   for (const [groupName, groupSliders] of groups) {
+-    if (groupName) root.appendChild(renderGroupHeader(groupName));
++    if (groupName) root.appendChild(renderGroupHeader(groupName, groupSliders[0]?.group_color));
+     for (const s of groupSliders) root.appendChild(renderSliderRow(s));
+   }
+ }
+--- a/wbt/WbtTrackingCommand.ts
++++ b/wbt/WbtTrackingCommand.ts
+@@ -149,6 +149,9 @@
+         arrowColorExt: [number, number, number]; // RGB 0-1, orange
+         arrowColorMeas: [number, number, number]; // RGB 0-1, cyan
+         measFrame: 'pelvis' | 'world'; // F^meas native frame (world for hybrid)
++        labels: boolean; // each arrow's value beside its tip (the project page's one-axis demo)
++        triad: boolean; // the wrist's RGB axes
++        extDropM: number; // F^ext's arrow this far below the hand point, clear of F^meas's
+       }>
+     | null = null;
+   private forceVizInitialized = false;
+@@ -158,8 +161,14 @@
+     cmdArrow: WbtForceArrow; // purple — F^cmd intent
+     extArrow: WbtForceArrow; // orange — F^ext real disturbance
+     measArrow: WbtForceArrow | null; // cyan — F^meas (hybrid only; null otherwise)
++    cmdLabel: WbtLabel | null; // the values beside the arrows (null unless config labels)
++    extLabel: WbtLabel | null;
++    measLabel: WbtLabel | null;
+     bodyId: number;
+   }> = [];
++  // The labels on the walls, sized on screen with the value labels.
++  private wallTags: WbtLabel[] = [];
++  private labelFrame = -1;
+ 
+   // Hybrid spring-wall + servo-phase viz (exp:g1-wbt-2pt-hybrid). Populated from
+   // config.hybrid_viz; null (and every hybrid hook a no-op) for non-hybrid presets.
+@@ -179,7 +188,13 @@
+       }
+     | null = null;
+   private hybridWallInitialized = false;
+-  private hybridWallGroups: Array<{ mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; bodyId: number }> = [];
++  private hybridWallGroups: Array<{
++    mesh: THREE.Mesh;
++    mat: THREE.MeshBasicMaterial;
++    edge: THREE.LineBasicMaterial; // the outline's
++    side: string; // 'l' | 'r': the runtime's name for the hand (wbt_wall__<side>_*)
++    bodyId: number;
++  }> = [];
+   // Per-hand wall seed (world frame), mirroring the runtime: normal = −unit(F_cmd_world),
+   // point = TCP − plane_dist·normal, captured when F^cmd first goes non-zero.
+   // `seedTcpW` is the seed-time TCP — the pivot the LIVE-normal mode rotates the plane
+@@ -334,6 +349,9 @@
+             arrowColorExt: this.parseColor(ent.arrow_color_ext, [1.0, 0.45, 0.0]), // orange
+             arrowColorMeas: this.parseColor(ent.arrow_color_meas, [0.0, 0.75, 1.0]), // cyan
+             measFrame,
++            labels: ent.labels === true,
++            triad: ent.triad !== false,
++            extDropM: Number(ent.ext_drop_m) || 0,
+           });
+         }
+       }
+@@ -520,6 +538,16 @@
+     }
+     this.hybridControlsEl = null;
+     this.hybridBadgeEl = null;
++    for (const label of [
++      ...this.forceVizGroups.flatMap((g) => [g.cmdLabel, g.extLabel, g.measLabel]),
++      ...this.wallTags,
++    ]) {
++      if (!label) continue;
++      label.sprite.parent?.remove(label.sprite);
++      label.texture.dispose();
++      label.sprite.material.dispose();
++    }
++    this.wallTags = [];
+     // Explicitly remove the vr_3point tracking-point spheres (real + reference) from
+     // the scene root and free their GPU resources. The runtime tears down the scene
+     // root on a full reload, but on a LIVE preset switch these THREE meshes would
+@@ -917,6 +945,17 @@
+         measArrow = makeForceArrow(cfg.arrowColorMeas, 1003, 0.009);
+         root.add(measArrow.group);
+       }
++
++      triad.visible = cfg.triad;
++      extArrow.group.position.set(0, -cfg.extDropM, 0); // the root is not turned: THREE's −Y is down
++      // Each arrow's value, a sprite riding beyond its tip (laid out on screen by layoutLabels).
++      const label = (arrow: WbtForceArrow | null): WbtLabel | null => {
++        if (!cfg.labels || !arrow) return null;
++        const l = makeLabelSprite();
++        l.sprite.onBeforeRender = (renderer, _scene, camera) => this.layoutLabels(renderer, camera);
++        arrow.group.add(l.sprite);
++        return l;
++      };
+ 
+       sceneRoot.add(root);
+       this.forceVizGroups.push({
+@@ -925,6 +964,9 @@
+         cmdArrow,
+         extArrow,
+         measArrow,
++        cmdLabel: label(cmdArrow),
++        extLabel: label(extArrow),
++        measLabel: label(measArrow),
+         bodyId,
+       });
+     }
+@@ -1557,6 +1599,7 @@
+       if (grp.measArrow && cfg.measSliderKeys) {
+         this.updateForceArrow(grp.measArrow, cfg.measSliderKeys, rootQuatThree, cfg.measFrame);
+       }
++      if (cfg.labels) this.updateValueLabels(grp, cfg);
+     }
+ 
+     // Hybrid live controls panel + spring-wall plane + servo-phase badge
+@@ -1564,8 +1607,126 @@
+     this.ensureHybridControls();
+     this.updateHybridWall();
+     this.updateHybridServoBadge();
++    if (WBT_PROBE) this.publishProbe();
++  }
++
++  // ──────────────────────────────────────────────────────────────────────
++  // Value labels (the project page's one-axis demo)
++  // ──────────────────────────────────────────────────────────────────────
++
++  /** Write each force's value beside its arrow: its component along the wall's axis, the
++   *  direction F^cmd presses in (the pelvis's x while no wall stands), in newtons. A label
++   *  rides its arrow's group, so it hides with the arrow. */
++  private updateValueLabels(
++    grp: WbtTrackingCommand['forceVizGroups'][number],
++    cfg: NonNullable<WbtTrackingCommand['forceVizConfig']>[number],
++  ): void {
++    const side = /right/i.test(cfg.bodyName) ? 'r' : 'l';
++    const qP = this.hybridPelvisQuatWxyz();
++    const pelvisX = wbtQuatApplyWxyz(qP, 1, 0, 0);
++    const standing = getPolicyExtra(`wbt_wall__${side}_on`, 0.0) >= 0.5;
++    const axis = standing
++      ? [`nx`, `ny`, `nz`].map((k) => -getPolicyExtra(`wbt_wall__${side}_${k}`, 0.0))
++      : [pelvisX[0], pelvisX[1], pelvisX[2]];
++    const along = (keys: [string, string, string], frame: 'pelvis' | 'world'): number => {
++      const f = keys.map((k) => getPolicyExtra(k, 0.0));
++      const w = frame === 'world' ? f : wbtQuatApplyWxyz(qP, f[0], f[1], f[2]);
++      return w[0] * axis[0] + w[1] * axis[1] + w[2] * axis[2];
++    };
++    const show = (label: WbtLabel | null, arrow: WbtForceArrow | null, symbol: string, value: number, rgb: [number, number, number]): void => {
++      if (!label || !arrow) return;
++      // Its anchor just beyond the head (whose base sits at the shaft's length).
++      label.sprite.position.set(0, arrow.head.position.y + WBT_FORCE_HEAD_LEN + 0.01, 0);
++      drawLabel(label, [['sym', 'F'], ['sup', symbol], ['txt', ` = ${wbtNewtons(value)}`]], rgb);
++    };
++    // Once a wall stands, the controller holds F^cmd along the wall's axis at the slider's magnitude
++    // (the runtime's fcmdDirW·|F^cmd|), however the pelvis has turned since: so does its label.
++    const cmd = standing
++      ? Math.hypot(...cfg.cmdSliderKeys.map((k) => getPolicyExtra(k, 0.0)))
++      : along(cfg.cmdSliderKeys, 'pelvis');
++    show(grp.cmdLabel, grp.cmdArrow, 'cmd', cmd, cfg.arrowColorCmd);
++    show(grp.extLabel, grp.extArrow, 'ext', along(cfg.extSliderKeys, 'pelvis'), cfg.arrowColorExt);
++    if (cfg.measSliderKeys) {
++      show(grp.measLabel, grp.measArrow, 'meas', along(cfg.measSliderKeys, cfg.measFrame), cfg.arrowColorMeas);
++    }
++  }
++
++  /** Size the labels on screen and lay the value labels out, once per rendered frame: each
++   *  just past the tip of its arrow, in the arrow's direction on screen, and moved a row up or
++   *  down where it would cover one placed before it. Called from the labels' onBeforeRender,
++   *  where the camera is known; their matrices are refreshed so that this frame shows them. */
++  private layoutLabels(renderer: THREE.WebGLRenderer, camera: THREE.Camera): void {
++    const frame = renderer.info.render.frame;
++    if (frame === this.labelFrame) return;
++    this.labelFrame = frame;
++    const view = renderer.getSize(new THREE.Vector2()); // CSS px
++    const px = Math.min(24, Math.max(13, view.y * 0.034)); // a label's height on screen
++    // With sizeAttenuation off, a sprite's height on screen is scale·P[1][1]·view/2.
++    const unit = 2 / (camera.projectionMatrix.elements[5] * view.y);
++    const w = (px * WBT_LABEL_W) / WBT_LABEL_H;
++    for (const tag of this.wallTags) {
++      tag.sprite.scale.set(0.75 * w * unit, 0.75 * px * unit, 1);
++      tag.sprite.updateMatrixWorld();
++    }
++    const onScreen = (obj: THREE.Object3D): THREE.Vector2 => {
++      const v = new THREE.Vector3().setFromMatrixPosition(obj.matrixWorld).project(camera);
++      return new THREE.Vector2(((v.x + 1) / 2) * view.x, ((v.y + 1) / 2) * view.y);
++    };
++    const placed: Array<[number, number, number, number]> = []; // x0, y0, x1, y1
++    for (const grp of this.forceVizGroups) {
++      const pairs: Array<[WbtForceArrow | null, WbtLabel | null]> = [
++        [grp.cmdArrow, grp.cmdLabel],
++        [grp.measArrow, grp.measLabel],
++        [grp.extArrow, grp.extLabel],
++      ];
++      for (const [arrow, label] of pairs) {
++        if (!arrow || !label || !arrow.group.visible) continue;
++        label.sprite.scale.set(w * unit, px * unit, 1);
++        label.sprite.updateMatrixWorld();
++        const tip = onScreen(label.sprite);
++        const dir = tip.clone().sub(onScreen(arrow.group));
++        if (dir.lengthSq() < 1) dir.set(0, 1);
++        else dir.normalize();
++        const bw = (px * label.boxW) / WBT_LABEL_H; // the pill, not the whole canvas
++        const bh = px * WBT_LABEL_PILL;
++        const reach = (Math.abs(dir.x) * bw) / 2 + (Math.abs(dir.y) * bh) / 2 + 3;
++        const cx = tip.x + dir.x * reach;
++        let cy = tip.y + dir.y * reach;
++        for (const row of [0, 1, -1, 2, -2, 3, -3]) {
++          const y = cy + row * (bh + 3);
++          const box: [number, number, number, number] = [cx - bw / 2, y - bh / 2, cx + bw / 2, y + bh / 2];
++          if (!placed.some((b) => b[0] < box[2] && box[0] < b[2] && b[1] < box[3] && box[1] < b[3])) {
++            cy = y;
++            placed.push(box);
++            break;
++          }
++        }
++        // The sprite's anchor is its tip; `center` is the point of the sprite that sits there.
++        label.sprite.center.set(0.5 - (cx - tip.x) / w, 0.5 - (cy - tip.y) / px);
++      }
++    }
+   }
+ 
++  /** `?probe`: the wall and the labels as drawn, for the page's tests. */
++  private publishProbe(): void {
++    const shown = (arrow: WbtForceArrow | null, label: WbtLabel | null): string =>
++      arrow && label && arrow.group.visible ? label.text : '';
++    (window as unknown as Record<string, unknown>).__floreProbe = {
++      time: this.wbtContext.mjData?.time ?? 0,
++      pelvisZ: this.wbtContext.mjData?.qpos[2] ?? 0,
++      walls: this.hybridWallGroups.map((w) => ({
++        side: w.side,
++        visible: w.mesh.visible,
++        depth: getPolicyExtra(`wbt_wall__${w.side}_depth`, 0.0),
++      })),
++      labels: this.forceVizGroups.map((g) => ({
++        cmd: shown(g.cmdArrow, g.cmdLabel),
++        meas: shown(g.measArrow, g.measLabel),
++        ext: shown(g.extArrow, g.extLabel),
++      })),
++    };
++  }
++
+   // ──────────────────────────────────────────────────────────────────────
+   // Hybrid virtual spring wall + servo-phase badge (exp:g1-wbt-2pt-hybrid)
+   // ──────────────────────────────────────────────────────────────────────
+@@ -1609,96 +1770,67 @@
+       mesh.renderOrder = 998; // under the arrows (>=1000)
+       mesh.visible = false;
+       mesh.name = `wbt_hybrid_wall_${hand.bodyName}`;
++      // Its outline, so that the wall reads as one even where it is faint, and its name above it.
++      const edge = new THREE.LineBasicMaterial({ color: mat.color.clone(), transparent: true, opacity: 0.9, depthWrite: false });
++      const outline = new THREE.LineSegments(new THREE.EdgesGeometry(geom), edge);
++      outline.renderOrder = 998;
++      mesh.add(outline);
++      const tag = makeLabelSprite();
++      drawLabel(tag, [['txt', 'virtual wall']], null);
++      tag.sprite.position.set(0, 0.2, 0);
++      tag.sprite.center.set(0.5, -0.1);
++      tag.sprite.onBeforeRender = (renderer, _scene, camera) => this.layoutLabels(renderer, camera);
++      mesh.add(tag.sprite);
++      this.wallTags.push(tag);
+       sceneRoot.add(mesh);
+-      this.hybridWallGroups.push({ mesh, mat, bodyId });
++      const side = /right/i.test(hand.bodyName) ? 'r' : 'l';
++      this.hybridWallGroups.push({ mesh, mat, edge, side, bodyId });
+     }
+     this.hybridWallInitialized = true;
+     return true;
+   }
+ 
+-  /** Reposition + tint each wall plane from the live TCP + F^cmd, mirroring the
+-   *  runtime's seeding (normal=−unit(F_cmd_world), point=TCP−plane_dist·n̂) and
+-   *  reddening as penetration→max. Hidden when F^cmd≈0 (no wall commanded). */
++  /** Place + tint each wall from the plane the runtime publishes (wbt_wall__*), which is the
++   *  plane the physics reacts on. That plane has no edges, so a square of it is drawn, upright
++   *  and centred where the hand meets it, reddening as the hand presses in. Hidden while the
++   *  runtime has no wall for that hand. */
+   private updateHybridWall(): void {
+     if (!this.hybridVizConfig) return;
+     if (!this.hybridWallInitialized && !this.initHybridWall()) return;
+     const mjData = this.wbtContext.mjData;
+     if (!mjData) return;
+-    // Wall toggled OFF (live): hide every plane; no causal contact is applied by
+-    // the runtime, so drawing the plane would misrepresent the physics. The seed
+-    // is preserved (so re-enabling snaps the plane back to the same place).
+-    if (!this.hybridWallOn) {
+-      for (const wall of this.hybridWallGroups) wall.mesh.visible = false;
+-      return;
+-    }
+     const cfg = this.hybridVizConfig;
+-    const planeDist = cfg.planeDist; // seed offset (m), same value the runtime uses
+-    const qP = this.hybridPelvisQuatWxyz();
+-    for (let i = 0; i < this.hybridWallGroups.length; i++) {
+-      const wall = this.hybridWallGroups[i];
+-      const hand = cfg.hands[i];
+-      const seed = this.hybridWallSeed[i];
+-      if (!wall || wall.bodyId < 0) continue;
+-      // Live TCP (world, MuJoCo z-up): xpos + R_wrist @ (tcp_offset,0,0).
++    for (const wall of this.hybridWallGroups) {
++      const s = wall.side;
++      wall.mesh.visible = this.hybridWallOn && wall.bodyId >= 0 && getPolicyExtra(`wbt_wall__${s}_on`, 0.0) >= 0.5;
++      if (!wall.mesh.visible) continue;
++      const p = [`px`, `py`, `pz`].map((k) => getPolicyExtra(`wbt_wall__${s}_${k}`, 0.0));
++      const n = [`nx`, `ny`, `nz`].map((k) => getPolicyExtra(`wbt_wall__${s}_${k}`, 0.0));
++      const depth = getPolicyExtra(`wbt_wall__${s}_depth`, 0.0);
++      // Live TCP (world, MuJoCo z-up): xpos + R_wrist @ (tcp_offset,0,0), then its foot on the plane.
+       const p3 = wall.bodyId * 3;
+       const m9 = wall.bodyId * 9;
+       const xm = mjData.xmat;
+       const off = cfg.tcpOffsetX;
+-      const tcp: [number, number, number] = [
++      const tcp = [
+         (mjData.xpos[p3 + 0] ?? 0) + xm[m9 + 0] * off,
+         (mjData.xpos[p3 + 1] ?? 0) + xm[m9 + 3] * off,
+         (mjData.xpos[p3 + 2] ?? 0) + xm[m9 + 6] * off,
+       ];
+-      // F^cmd (pelvis) → world via the pelvis quat (wxyz), matching the runtime.
+-      const fc = [
+-        getPolicyExtra(hand.cmdSliderKeys[0], 0.0),
+-        getPolicyExtra(hand.cmdSliderKeys[1], 0.0),
+-        getPolicyExtra(hand.cmdSliderKeys[2], 0.0),
+-      ];
+-      const fcW = wbtQuatApplyWxyz(qP, fc[0], fc[1], fc[2]);
+-      const fcMag = Math.hypot(fcW[0], fcW[1], fcW[2]);
+-      if (fcMag < 1e-6) {
+-        wall.mesh.visible = false;
+-        seed.seeded = false;
+-        seed.seedTcpW = [0, 0, 0];
+-        continue;
+-      }
+-      if (!seed.seeded) {
+-        seed.normalW = [-fcW[0] / fcMag, -fcW[1] / fcMag, -fcW[2] / fcMag];
+-        seed.seedTcpW = [tcp[0], tcp[1], tcp[2]];
+-        seed.pointW = [
+-          tcp[0] - planeDist * seed.normalW[0],
+-          tcp[1] - planeDist * seed.normalW[1],
+-          tcp[2] - planeDist * seed.normalW[2],
+-        ];
+-        seed.seeded = true;
+-      } else if (this.hybridWallLive) {
+-        // Mirror the runtime's live-normal branch EXACTLY (same pivot, same formula) so
+-        // the drawn plane keeps matching the plane the physics actually reacts on. Any
+-        // divergence here would make the viz lie about where contact happens.
+-        seed.normalW = [-fcW[0] / fcMag, -fcW[1] / fcMag, -fcW[2] / fcMag];
+-        seed.pointW = [
+-          seed.seedTcpW[0] - planeDist * seed.normalW[0],
+-          seed.seedTcpW[1] - planeDist * seed.normalW[1],
+-          seed.seedTcpW[2] - planeDist * seed.normalW[2],
+-        ];
+-      }
+-      // Penetration depth (world): clamp(max(0, n̂·(point−TCP)), 0, max_pen).
+-      const dx = seed.pointW[0] - tcp[0];
+-      const dy = seed.pointW[1] - tcp[1];
+-      const dz = seed.pointW[2] - tcp[2];
+-      const signed = dx * seed.normalW[0] + dy * seed.normalW[1] + dz * seed.normalW[2];
+-      const depth = Math.min(Math.max(signed, 0), cfg.maxPenetrationM);
+-      const frac = cfg.maxPenetrationM > 0 ? depth / cfg.maxPenetrationM : 0;
+-      // Position the quad at the plane point (swizzled z-up→y-up), orient +Z → n̂.
+-      wall.mesh.visible = true;
+-      const pointThree = new THREE.Vector3(seed.pointW[0], seed.pointW[2], -seed.pointW[1]);
+-      const normalThree = new THREE.Vector3(seed.normalW[0], seed.normalW[2], -seed.normalW[1]).normalize();
+-      wall.mesh.position.copy(pointThree);
+-      wall.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normalThree);
++      const d = (p[0] - tcp[0]) * n[0] + (p[1] - tcp[1]) * n[1] + (p[2] - tcp[2]) * n[2];
++      wall.mesh.position.set(tcp[0] + d * n[0], tcp[2] + d * n[2], -(tcp[1] + d * n[1]));
++      // Upright: the square's y is the world's up (THREE +Y), its x runs along the plane.
++      const normal = new THREE.Vector3(n[0], n[2], -n[1]).normalize();
++      const up = new THREE.Vector3(0, 1, 0).addScaledVector(normal, -normal.y);
++      if (up.lengthSq() < 1e-8) up.set(0, 0, 1);
++      up.normalize();
++      const across = new THREE.Vector3().crossVectors(up, normal);
++      wall.mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(across, up, normal));
+       // Cool grey → red as penetration → max; opacity rises slightly with contact.
++      const frac = cfg.maxPenetrationM > 0 ? Math.min(depth / cfg.maxPenetrationM, 1) : 0;
+       wall.mat.color.setRGB(0.55 + 0.45 * frac, 0.6 - 0.5 * frac, 0.7 - 0.6 * frac);
+       wall.mat.opacity = 0.18 + 0.22 * frac;
++      wall.edge.color.copy(wall.mat.color);
+     }
+   }
+ 
+@@ -1735,24 +1867,11 @@
+     // is ON — with the wall toggled off there is no causal contact at all.
+     const inContact: string[] = [];
+     if (this.hybridWallOn) {
+-      for (let i = 0; i < this.hybridWallSeed.length; i++) {
+-        const seed = this.hybridWallSeed[i];
+-        const wall = this.hybridWallGroups[i];
+-        if (!seed || !seed.seeded || !wall || !this.wbtContext.mjData) continue;
+-        const p3 = wall.bodyId * 3;
+-        const m9 = wall.bodyId * 9;
+-        const xm = this.wbtContext.mjData.xmat;
+-        const off = this.hybridVizConfig.tcpOffsetX;
+-        const tcp = [
+-          (this.wbtContext.mjData.xpos[p3 + 0] ?? 0) + xm[m9 + 0] * off,
+-          (this.wbtContext.mjData.xpos[p3 + 1] ?? 0) + xm[m9 + 3] * off,
+-          (this.wbtContext.mjData.xpos[p3 + 2] ?? 0) + xm[m9 + 6] * off,
+-        ];
+-        const signed =
+-          (seed.pointW[0] - tcp[0]) * seed.normalW[0] +
+-          (seed.pointW[1] - tcp[1]) * seed.normalW[1] +
+-          (seed.pointW[2] - tcp[2]) * seed.normalW[2];
+-        if (signed > 0) inContact.push(i === 0 ? 'L' : 'R');
++      for (const wall of this.hybridWallGroups) {
++        const s = wall.side;
++        if (getPolicyExtra(`wbt_wall__${s}_on`, 0.0) >= 0.5 && getPolicyExtra(`wbt_wall__${s}_depth`, 0.0) > 0) {
++          inContact.push(s.toUpperCase());
++        }
+       }
+     }
+     // Badge reflects the LIVE toggle state (not the baked servo_enabled), so the
+@@ -1849,7 +1968,7 @@
+     } as Partial<CSSStyleDeclaration>);
+ 
+     const title = document.createElement('div');
+-    title.textContent = 'Hybrid controls';
++    title.textContent = 'Wall and sensor';
+     Object.assign(title.style, {
+       fontWeight: 'bold',
+       marginBottom: '6px',
+@@ -1895,46 +2014,26 @@
+       root.appendChild(row);
+     };
+ 
+-    addToggle('wall', 'Spring wall (Layer A)', '', this.hybridWallOn, (v) => {
++    addToggle('wall', 'Virtual wall', 'in front of the left hand', this.hybridWallOn, (v) => {
+       this.hybridWallOn = v;
+       setPolicyExtra('wbt_hybrid_wall_on', v ? 1.0 : 0.0);
+     });
+-    // Live wall normal (diagnostic). Default OFF = training-faithful: hybrid.py fixes
+-    // F_cmd's WORLD direction for the whole episode, so a slider change mid-episode
+-    // does NOT turn the wall. Turn this ON to sweep F^cmd across axes (Fx→Fy → a 45°
+-    // wall) without needing a reset — Reset zeroes the sliders first, so the
+-    // "set both, then Reset" route cannot express a multi-axis command.
+-    addToggle('wall-live', 'Live wall normal', 'follows F^cmd (not training-faithful)', this.hybridWallLive, (v) => {
+-      this.hybridWallLive = v;
+-      setPolicyExtra('wbt_hybrid_wall_live', v ? 1.0 : 0.0);
+-    });
+     // F^meas inertial term. Default ON = the training-time sensor model (include_inertial).
+     // The m·a_wrist term is what makes F^meas flicker in free space (double finite
+     // difference of the TCP position at 5 ms — there is no injected noise to switch off).
+-    // OFF = F^meas is the wall reaction + F^ext only; the obs/contact_phase/e follow too.
+-    addToggle('fmeas-inertial', 'F meas inertial term', 'm·a (FD flicker); off = wall + F^ext only', this.hybridFmeasInertial, (v) => {
++    // OFF = F^meas is the wall's reaction only; the obs/contact_phase/e follow too.
++    addToggle('fmeas-inertial', 'F meas inertial term', 'm·a of the hand; it flickers', this.hybridFmeasInertial, (v) => {
+       this.hybridFmeasInertial = v;
+       setPolicyExtra('wbt_hybrid_fmeas_inertial', v ? 1.0 : 0.0);
+     });
+-    if (this.hybridVizConfig.servoObserveOnly) {
+-      // C1 unified: the runtime IGNORES wbt_hybrid_servo_on in observe-only mode (see
+-      // runtime.ts executeSimulationSteps) — there is no Δq injection to gate, and
+-      // routing to zeroHybridServoState would zero the I/Δx the policy's obs NEED.
+-      // Render a read-only notice instead of a checkbox that silently does nothing.
+-      const note = document.createElement('div');
+-      Object.assign(note.style, { margin: '3px 0', lineHeight: '1.5' } as Partial<CSSStyleDeclaration>);
+-      note.innerHTML =
+-        '<span style="font-weight:bold">J<sup>T</sup> servo (Layer B): observe-only</span>' +
+-        '<div style="color:#9aa4b2;font-size:11px">integrator + I/Δx live (reference), no Δq — the POLICY executes</div>';
+-      root.appendChild(note);
+-    } else {
++    if (!this.hybridVizConfig.servoObserveOnly) {
+       addToggle('servo', 'Force servo (Layer B)', '', this.hybridServoOn, (v) => {
+         this.hybridServoOn = v;
+         setPolicyExtra('wbt_hybrid_servo_on', v ? 1.0 : 0.0);
+       });
+     }
+ 
+-    // Arrow + layer legend.
++    // What the arrows show.
+     const legend = document.createElement('div');
+     Object.assign(legend.style, {
+       marginTop: '6px',
+@@ -1944,16 +2043,12 @@
+       lineHeight: '1.6',
+     } as Partial<CSSStyleDeclaration>);
+     const swatch = (rgb: string, text: string): string =>
+-      `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${rgb};margin-right:6px;vertical-align:middle"></span>${text}`;
++      `<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${rgb};margin-right:6px;vertical-align:middle"></span>${text}</div>`;
+     legend.innerHTML = [
+-      swatch('rgb(158,51,235)', 'F<sup>cmd</sup> — commanded force (intent / servo target)'),
+-      swatch('rgb(255,115,0)', 'F<sup>ext</sup> — manual disturbance (slider)'),
+-      swatch('rgb(0,191,255)', 'F<sup>meas</sup> — felt force (= wall reaction + F<sup>ext</sup> [+ m·a if on])'),
+-      '<div style="margin-top:4px;color:#9aa4b2">Layer A = causal spring wall (both runs)</div>',
+-      this.hybridVizConfig.servoObserveOnly
+-        ? '<div style="color:#9aa4b2">Layer B = J<sup>T</sup> servo as REFERENCE only (no Δq)</div>'
+-        : '<div style="color:#9aa4b2">Layer B = J<sup>T</sup> force servo (adds Δq)</div>',
+-      '<div style="margin-top:4px;color:#cfd6df">Tip: hold an F<sup>cmd</sup>, watch F meas → −F<sup>cmd</sup> and e→0</div>',
++      swatch('rgb(158,51,235)', 'F<sup>cmd</sup> — the force the hand is told to press with'),
++      swatch('rgb(0,191,255)', 'F<sup>meas</sup> — what its wrist sensor reads: the wall pushing back'),
++      swatch('rgb(255,115,0)', 'F<sup>ext</sup> — an extra push on the hand, which the sensor does not read'),
++      '<div style="margin-top:4px;color:#cfd6df">Values along x, in N. Tracking means F<sup>meas</sup> = −F<sup>cmd</sup>.</div>',
+     ].join('');
+     root.appendChild(legend);
+ 
+@@ -2141,8 +2236,100 @@
+   group.add(shaft);
+   group.add(head);
+   return { group, shaft, head, mat };
++}
++
++// ── Value labels (the project page's one-axis demo) ──────────────────────────
++// Text on a sprite that faces the camera and keeps one size on screen. Its canvas keeps one
++// size (three allocates the texture once) and is drawn again only when the text changes.
++const WBT_LABEL_W = 400; // canvas px
++const WBT_LABEL_H = 80;
++const WBT_LABEL_PILL = 0.8; // the pill's share of the canvas height
++const WBT_FORCE_HEAD_LEN = 0.045; // an arrow head's height, as in makeForceArrow
++const WBT_PROBE = typeof location !== 'undefined' && new URLSearchParams(location.search).has('probe');
++
++type WbtLabel = {
++  sprite: THREE.Sprite;
++  canvas: HTMLCanvasElement;
++  texture: THREE.CanvasTexture;
++  text: string; // as drawn
++  boxW: number; // the pill's width, canvas px
++};
++
++function makeLabelSprite(): WbtLabel {
++  const canvas = document.createElement('canvas');
++  canvas.width = WBT_LABEL_W;
++  canvas.height = WBT_LABEL_H;
++  const texture = new THREE.CanvasTexture(canvas);
++  texture.generateMipmaps = false;
++  texture.minFilter = THREE.LinearFilter;
++  // Colours as on the arrows: their linear values, tone-mapped alike.
++  texture.colorSpace = THREE.NoColorSpace;
++  const material = new THREE.SpriteMaterial({
++    map: texture,
++    transparent: true,
++    depthTest: false,
++    depthWrite: false,
++    sizeAttenuation: false,
++  });
++  const sprite = new THREE.Sprite(material);
++  sprite.renderOrder = 1010; // above the arrows and the markers
++  sprite.scale.set(0, 0, 1); // sized on screen by layoutLabels before it is first drawn
++  return { sprite, canvas, texture, text: '', boxW: 0 };
++}
++
++// A force as written beside its arrow: one decimal, a true minus, no "−0.0".
++function wbtNewtons(v: number): string {
++  const r = Math.round(v * 10) / 10;
++  return `${r < 0 ? '\u2212' : ''}${Math.abs(r).toFixed(1)} N`;
+ }
+ 
++// Draw runs of text ('sym' the italic F of the page's maths, 'sup' its superscript, 'txt'
++// plain) on a dark pill, outlined in `rgb` and lettered in a light tint of it; grey without.
++function drawLabel(label: WbtLabel, runs: Array<['sym' | 'sup' | 'txt', string]>, rgb: [number, number, number] | null): void {
++  const text = runs.map((r) => r[1]).join('');
++  if (text === label.text) return;
++  label.text = text;
++  const ctx = label.canvas.getContext('2d');
++  if (!ctx) return;
++  const fonts = {
++    sym: "italic 48px 'Times New Roman', Times, serif",
++    sup: '600 26px ui-sans-serif, system-ui, sans-serif',
++    txt: '600 36px ui-sans-serif, system-ui, sans-serif',
++  };
++  const widths = runs.map(([f, s]) => {
++    ctx.font = fonts[f];
++    return ctx.measureText(s).width + (f === 'sym' ? 3 : 0);
++  });
++  const pad = 20;
++  const pillH = WBT_LABEL_H * WBT_LABEL_PILL;
++  const boxW = Math.min(WBT_LABEL_W - 4, widths.reduce((a, b) => a + b, 0) + 2 * pad);
++  const x0 = (WBT_LABEL_W - boxW) / 2;
++  const y0 = (WBT_LABEL_H - pillH) / 2;
++  label.boxW = boxW;
++  ctx.clearRect(0, 0, WBT_LABEL_W, WBT_LABEL_H);
++  ctx.beginPath();
++  ctx.roundRect(x0, y0, boxW, pillH, pillH / 2);
++  ctx.fillStyle = 'rgba(14, 17, 23, 0.86)';
++  ctx.fill();
++  const c = rgb ? rgb.map((v) => Math.round(255 * v)) : null;
++  if (c) {
++    ctx.lineWidth = 3;
++    ctx.strokeStyle = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
++    ctx.stroke();
++  }
++  // A light tint of the arrow's colour, so that the letters read on the dark pill.
++  ctx.fillStyle = c ? `rgb(${c.map((v) => Math.round(v + 0.45 * (255 - v))).join(', ')})` : 'rgb(214, 219, 227)';
++  ctx.textBaseline = 'alphabetic';
++  const base = y0 + pillH / 2 + 13;
++  let x = x0 + pad;
++  runs.forEach(([f, s], i) => {
++    ctx.font = fonts[f];
++    ctx.fillText(s, x, f === 'sup' ? base - 18 : base);
++    x += widths[i];
++  });
++  label.texture.needsUpdate = true;
++}
++
+ // Inlined rotate-inverse helper. Duplicated from WbtObservations.ts because
+ // the auto-generation pipeline concatenates ts_src files line-by-line and
+ // cross-file relative imports do not resolve in core/command/. Keeping this
