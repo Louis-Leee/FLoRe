@@ -261,6 +261,7 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 
 /* A trial clip: muted, looping while it is in view, with a full-screen button on its corner. */
 .tile { position: relative; }
+.tile > .clip-title { margin: 0 0 .5rem; text-align: center; font-weight: 600; }   /* a clip's title, over it */
 .tile .full { position: absolute; right: 8px; bottom: 8px; z-index: 2; display: grid; place-items: center;
   width: 30px; height: 30px; padding: 0; border: 0; border-radius: 7px; background: var(--chip); color: #fff;
   cursor: pointer; opacity: 0; transition: opacity .15s; }
@@ -450,7 +451,7 @@ footer a { color: inherit; }
   .hero-tasks p { padding-left: 1rem; border-left-width: 6px; font-size: 1.05rem; }
   .hero-tasks b { font-size: 2.3rem; }
   h2 { font-size: 1.7rem; }
-  :is(#abstract p, .lede, .figlead, figcaption, .law p) { text-align: left; }   /* a justified line this narrow opens wide gaps */
+  :is(#abstract p, .lede, .figlead, figcaption:not(.clip-title), .law p) { text-align: left; }   /* a justified line this narrow opens wide gaps */
   .law .eq .katex-display > .katex { font-size: 1.05em; }
   .buttons { gap: .5rem; }
   .btn { padding: .55rem .9rem; font-size: .9rem; }

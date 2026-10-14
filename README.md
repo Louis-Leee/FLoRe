@@ -41,6 +41,9 @@ on its `<video>` in `index.html` (`data-rate`, `data-spans`): the page's script 
 frames by them, and times each task's name by its shot. The run of page that the teaser plays over
 is `--run` screens long, in `style.css`.
 
+The Controller section's two clips of the controller on the robot are made from this folder's
+`compliance.MP4` and `forcetracking.MP4`, which git ignores as well: the first alone is 105 MB.
+
 The narrated video's title slide is made again from the clip it plays, rendered with the title
 alone; the rest of the recording keeps its frames, and the narration its timing. That clip is made
 beside its source in the working folder, with numpy, Pillow and OpenCV:

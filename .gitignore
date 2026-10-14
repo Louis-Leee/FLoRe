@@ -1,6 +1,8 @@
 .DS_Store
 __pycache__/
-# the raw teaser clips the hero's teaser is cut from, and the title's rose as it was handed over;
-# scripts/build_media.py makes what the page serves from them
+# the raw teaser clips the hero's teaser is cut from, the controller's two raw robot clips, and the
+# title's rose as it was handed over; scripts/build_media.py makes what the page serves from them
 teaser/
+/compliance.MP4
+/forcetracking.MP4
 /rose.png

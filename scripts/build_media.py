@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build every clip and picture of the FLoRe project page from the paper's working folder, the
-hero's teaser from this site's own teaser/, and the title's rose from its rose.png; git ignores
-both.
+hero's teaser from this site's own teaser/, the controller's two robot clips from its
+compliance.MP4 and forcetracking.MP4, and the title's rose from its rose.png; git ignores them all.
 
 The paper's working folder is only read.  An output that already exists is skipped, so a
 re-run fills in what is missing; --force rebuilds, --only limits the run to some outputs.
@@ -53,7 +53,7 @@ MP4 = ["-movflags", "+faststart", "-map_metadata", "-1", "-map_chapters", "-1"]
 @dataclass(frozen=True)
 class Clip:
     name: str       # static/videos/<name>.mp4 and static/images/posters/<name>.jpg
-    src: str        # relative to --src
+    src: str | Path  # relative to --src; an absolute path is taken as it is
     height: int     # output height; the width follows the source's 16:9
     crf: float
     poster_width: int = 960
@@ -76,6 +76,9 @@ CLIPS = (
     # the in-page demo (demo-x/) as scripts/record_demo_x.mjs records it
     Clip("controller_x", "supp/demo_x_preview.mp4", 720, 22, poster_width=1280),
     Clip("data_collection", "supp/data_collection_clean.mp4", 1080, 24, poster_width=1280),
+    # the controller on the robot, filmed like the teasers and kept, like them, in this folder
+    Clip("compliance", SITE / "compliance.MP4", 1080, 24),
+    Clip("force_tracking", SITE / "forcetracking.MP4", 1080, 24),
 )
 
 
