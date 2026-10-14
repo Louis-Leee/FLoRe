@@ -20,8 +20,8 @@
   --cyan: #0b7285;              /* f^meas in the controller's diagrams, as the demo's cyan arrow, darkened for text */
   --red: #b02525;               /* the baseline's failures */
   --math: "Times New Roman", Times, "Nimbus Roman", "Liberation Serif", serif;   /* a variable, as typeset in the paper */
-  --amazon: #ff9900;            /* Amazon orange, for the link to the demo's tab; the same in either theme, */
-  --amazon-ink: #232f3e;        /* with Amazon's dark ink on it (6.3:1, where white gets 2.1:1) */
+  --amazon: #ff9900;            /* Amazon orange, the same in either theme: the bars by the teaser's names, and the link */
+  --amazon-ink: #232f3e;        /* to the demo's tab, with Amazon's dark ink on it (6.3:1, where white gets 2.1:1) */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -149,7 +149,7 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 }
 
 /* The teaser's own layers, as on doorman-humanoid.github.io: a light shade where the nav, the
-   names and the hint sit, each task's name on the left by a bar of the leaf green, and the hint
+   names and the hint sit, each task's name on the left by a bar of Amazon orange, and the hint
    to scroll.  They give way to the title as it comes in. */
 .hero-teaser, .hero-tasks, .hero-hint { display: none; }
 .hero-tasks { position: absolute; inset: 0; pointer-events: none;
@@ -157,7 +157,7 @@ footer { position: relative; z-index: 2; background: var(--bg); }
     linear-gradient(0deg, rgba(8,10,14,.5) 0, rgba(8,10,14,0) 180px),
     linear-gradient(90deg, rgba(8,10,14,.45) 0, rgba(8,10,14,0) 60%); }
 .hero-tasks p { position: absolute; top: 50%; left: max(1.25rem, 8vw); max-width: min(34rem, 84vw); margin: 0;
-  padding: .1rem 0 .25rem 1.5rem; border-left: 8px solid #5ccf95; color: #e3e8ef; font-size: 1.55rem;
+  padding: .1rem 0 .25rem 1.5rem; border-left: 8px solid var(--amazon); color: #e3e8ef; font-size: 1.55rem;
   line-height: 1.35; text-shadow: 0 2px 10px rgba(0,0,0,.6);
   opacity: var(--o, 0); transform: translate(calc((var(--o, 0) - 1) * 30px), -50%); }
 .hero-tasks b { display: block; margin-bottom: .3rem; color: #fff; font-size: 4rem; line-height: 1.08;

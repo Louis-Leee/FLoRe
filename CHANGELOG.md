@@ -1,3 +1,12 @@
+## [1.6.1] - 2026-10-14
+### Features
+- The bar by each task's name in the teaser is Amazon orange (#ff9900) instead of the leaf green.
+### Design Rationale
+- It takes `--amazon`, the colour of the link to the demo's tab, so the page has one orange. The
+  bar sits on the dark footage in either theme, so it needs no dark variant.
+### Notes & Caveats
+- The stylesheet is now `style.css?v=12`.
+
 ## [1.6.0] - 2026-10-13
 ### Features
 - The hero follows the DoorMan page (doorman-humanoid.github.io). As the page is scrolled, the
