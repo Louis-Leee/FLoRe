@@ -345,7 +345,7 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 .demo-open { margin: 2rem 0 0; text-align: center; }
 .demo-open a { display: inline-flex; align-items: center; gap: .5em; max-width: 100%; padding: .8em 1.5em;
   border-radius: 999px; background: var(--amazon); color: var(--amazon-ink); font-weight: 700;
-  font-size: clamp(1rem, 4.4vw, 2rem); line-height: 1.25; text-decoration: none;
+  font-size: clamp(.875rem, 4.4vw, 2rem); line-height: 1.25; text-decoration: none;
   box-shadow: 0 10px 32px color-mix(in srgb, var(--amazon) 38%, transparent); transition: transform .15s, box-shadow .15s; }
 .demo-open a:hover { transform: translateY(-3px); box-shadow: 0 16px 40px color-mix(in srgb, var(--amazon) 48%, transparent); }
 .demo-open a:focus-visible { outline: 3px solid var(--fg); outline-offset: 4px; }
@@ -356,7 +356,6 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 @keyframes hop { 0%, 11%, 100% { transform: none; } 5.5% { transform: translateY(-.24em); } }
 @keyframes nudge { 0%, 13%, 100% { transform: none; } 6.5% { transform: translate(.2em, -.2em); } }
 @media (prefers-reduced-motion: reduce) { .demo-open .ch, .demo-open .go { animation: none; } }
-.wrap.narrow > .demo-full { margin: .9rem 0 0; text-align: center; color: var(--muted); font-size: .95rem; }   /* what that tab has */
 
 /* The controller's two diagrams, drawn by scripts/draw_controller.py in the page's own font and
    colours.  On a phone a diagram keeps a readable size and scrolls sideways in its own box. */
