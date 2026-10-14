@@ -63,21 +63,28 @@ show them uncovered, the arrow's timing) belong to that one clip:
 python3 scripts/clean_data_collection.py --src PAPER_DIR    # writes PAPER_DIR/supp/data_collection_clean.mp4
 ```
 
-## Redraw the controller diagrams
+## Redraw the controller's diagram, and its chart
 
-The Controller section's two diagrams are inline SVG in `index.html`, written between marker
-comments by a script that needs only the standard library; their captions stay hand-written:
+The Controller section's diagram of the unified reference generator is inline SVG in `index.html`,
+right under the equations it draws, written between marker comments by a script that needs only
+the standard library; the text around it stays hand-written:
 
 ```bash
 python3 scripts/draw_controller.py
 ```
 
-In both, the motion's reference p* has put the hand on the surface. The press is a toy 1-D run of
-the paper's law with all of its constants, not a recording: the reference brings a hand that lags
-its target to the surface, holds it there while the command presses, and retreats. The reference
-generator is drawn to scale for that press once it has settled. Captions and figures give no
-physical constants. The script refuses to write unless each diagram has exactly one pair of
-markers.
+The motion's reference p*_x has put the hand on the surface, and the labels carry the equations'
+subscript x. The script refuses to write unless the diagram has exactly one pair of markers.
+
+The chart under it, *The integral at work*, is drawn by `site.js` in the browser, at the plot's
+own size. It is a toy 1-D press of the paper's law with all of its constants, not a recording: the
+reference brings a hand that lags its target to the surface, holds it there while the command
+presses, and retreats. The press runs again whenever the dot on the pad beside it moves; the pad
+spans K and K_I on log scales, with the paper's gains at its centre, and two sliders out of sight
+set them from the keyboard. The diagram is drawn to scale for that press once it has settled at
+the paper's gains, so `PRESS` in `site.js` and the constants in `draw_controller.py` change
+together. Captions and figures give no physical constants; the chart's axes are in seconds and
+newtons.
 
 ## Typeset the controller's equations
 

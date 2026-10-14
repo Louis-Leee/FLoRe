@@ -1,3 +1,82 @@
+## [1.9.0] - 2026-10-14
+### Features
+- The Controller section is rewritten around its law:
+  - The heading is "Unified Force–Position Low-Level Controller with Compliant Behavior". The line
+    under it, on the five keypoints, is gone.
+  - The diagram of the unified reference generator now sits right under the two equations. Its
+    labels carry the equations' subscript x: p*_x, p^tgt_x, f^cmd_x, f^meas_x, f^cmd_x/K and I_x/K.
+    So do the formulas beside it.
+  - The text under the diagram says what each symbol is, I_x included: the integral of the force
+    error moves the target further in, or back, until the measured force balances the command.
+  - The policy is "trained to reach p^tgt_x while it balances"; the clause about adding nothing
+    to its joint commands is gone.
+- *The integral at work*: the static press over time ("Soft contact and integrator") is replaced by
+  a chart that runs the press in the browser, laid out as tune-to-learn lays out its gains.
+  - The plot shows f^cmd_x (dashed), −f^meas_x and I_x in newtons over time, with the contact phase
+    shaded.
+  - The pad beside it sets K across and K_I up, both on log scales, with the paper's gains at its
+    centre and marked by a ring.
+  - The pad works by mouse and by touch, without scrolling the page, and by keyboard through two
+    sliders that are out of sight. The focused slider lights its axis on the pad. On a phone the
+    pad goes under the plot.
+  - The approach and the retreat are named over the reference's own times. The shading marks the
+    contact as the hysteresis detects it.
+  - The caption says that −f^meas_x heads for f^cmd_x whatever K: faster for a higher K_I and a
+    lower K. At a low K_I it is still on its way when the command ends.
+  - A screen reader is told what the press comes to at the current gains: the force pressed as the
+    command ends, and the integral.
+- "Force tracking and compliance in one law" becomes *Compliant behavior*. It only says what
+  compliance means: in contact, a measured force along an axis where nothing is commanded is
+  driven to zero, as far as the integral's bound allows. So the hand tracks the force along the
+  force direction and gives way along the others.
+- *The external force* block is gone.
+- The comparison with other learned controllers is boxed. It sets FLoRe's law beside FALCON's
+  (p^tgt_x = p*_x) and the compliance law of FACET, SoftMimic and CHIP (p^tgt_x = p*_x + f^ext_x/K,
+  at rest). It ends: only FLoRe measures the force at each wrist and integrates its error.
+- The note above the in-page demo ("Try it below: …") is in smaller, muted type.
+- The robot clips' titles are a size up, at 1.3rem.
+- The hero's Code button links nowhere for now and reads "Code (coming soon)", as Paper and arXiv
+  do.
+### Design Rationale
+- The chart's press is the one the old figure drew, ported from `draw_controller.py`. At four gains
+  across the pad it gives the same samples to the last bit, and the same onset and release. It
+  runs in well under a millisecond, so it runs again on every frame of a drag.
+- Why K_I is the pad's second gain:
+  - In this toy, K and the contact's stiffness act only through their ratio. A pad of K against
+    the surface's stiffness would therefore give the same curves all along each diagonal.
+  - K and K_I are the law's two gains, as K_p and K_d are tune-to-learn's.
+  - Across the pad's span (K 100–400 N/m, K_I 0.125–2 s⁻¹) the contact never chatters on and off.
+    The integral stays inside its bound.
+- The force axis spans all that the pad can reach, so it stays put while the dot moves.
+- The chart is SVG drawn at the plot's own pixel size, so its text stays legible on a phone. It
+  takes its colours from the page's variables in either theme.
+- The comparison drops UniFP: the request named FALCON, FACET, SoftMimic and CHIP.
+- The curves' colours were checked with the dataviz palette validator:
+  - With the page's f^meas teal, #0b7285, the cyan and green lines failed the normal-vision floor
+    (ΔE 9.8, below 15).
+  - Lines and arrows now take #0891b2 for f^meas, and #2f9e44 for the integral in the dark theme.
+    The violet, cyan and green then pass every check in both themes.
+  - Symbols in text keep the darker text colours: the cyan passes for marks (3.7:1) but not for
+    text.
+  - The generator's arrows take the same mark colours, so f^meas and I_x look alike in both
+    figures.
+- An inline formula and the punctuation after it are kept on one line: the browsers broke a line
+  between them.
+- The note above the demo is chosen in CSS (`.figlead:has(+ figure #demo)`), not by a new class.
+  So the two reverts that embed the full demo again still stop on the same conflicts the README
+  lists.
+### Notes & Caveats
+- With no script, the chart's place says it runs with JavaScript, and its legend is hidden.
+- One pointer drags the dot at a time; a second finger is ignored until the first lets go.
+- In Safari, Tab skips the pad's sliders unless the reader turns on full keyboard access, as for
+  every range input.
+- `draw_controller.py` now draws only the generator, and refuses to run if the press's markers are
+  still in the page.
+- On a phone, the Code button's longer label takes the buttons to a second row. There the note
+  above them has a smaller margin, so the hero still fits a 360×640 screen. At 320×568 it
+  overflowed before, and still does.
+- The stylesheet is now `style.css?v=18`, and the script `site.js?v=11`.
+
 ## [1.8.1] - 2026-10-14
 ### Features
 - The two robot clips are one to a row, at the column's full width, instead of side by side.
