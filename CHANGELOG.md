@@ -1,3 +1,84 @@
+## [1.6.0] - 2026-10-13
+### Features
+- The hero follows the DoorMan page (doorman-humanoid.github.io). As the page is scrolled, the
+  three teaser clips (Wipe Board, Rotate Box, Push Gantry) play frame by frame. Each plays under its
+  task's name, set by a leaf-green bar, with a "Scroll to explore" hint at the foot.
+- At the end of the teaser the side view of the gantry push fades in and plays by itself. Only then
+  do the title, the authors and the links appear. Scrolling on, the page slides up over the hero as
+  before.
+- Over the hero the nav is its words alone, in white.
+- The title ends in the rose of `rose.png`, on its transparent ground, instead of the 🌺. The
+  favicon and the touch icon are still the 🌺.
+- The data-collection clip no longer shows the green and the yellow strips of tape on the table.
+- An orange arrow round the crate shows its turn in the data-collection clip:
+  - it grows clockwise with the turn, from 4.95 to 5.87 s;
+  - it follows the crate as the crate is dragged;
+  - it has faded by 6.85 s.
+### Design Rationale
+- The teaser is a video sought by the scroll, not DoorMan's sequence of JPEGs: 56 s of footage would
+  be hundreds of pictures. It is one H.264 file at 15 fps, with a keyframe every 8 frames and no
+  frame predicted from a later one. It is 11.2 MB, and seeks in 3–5 ms in Chrome, WebKit and Firefox
+  (median, with the file in memory, on an M2 Pro).
+- The alternatives measured: every frame a keyframe was 21 MB and saved about 1 ms; a keyframe
+  every 30 frames was 9.0 MB, and WebKit's backward seeks took 12 ms.
+- The video is sought one seek at a time, each to the latest frame asked for. The frame sought eases
+  after the scroll (time constant 0.12 s), so a wheel's notches play as motion. The task names
+  follow the frame on screen.
+- The run is 10.6 screens:
+  - 9.4 for the teaser, about 6 s of footage a screen;
+  - 0.6 for the fade to the title;
+  - 0.6 for the title at rest.
+
+  DoorMan's run is 10 screens. The Rotate Box clip keeps its 2× part, which halves the scrolling
+  over the drag.
+- The fade and the cover have no resting place: a scroll that stops in one goes on to the end it
+  was last heading for. A link into the page, Back or Forward lands where it points. The page
+  before this one snapped a landing at `#video`, 72 px inside the cover, onto the page, and in
+  WebKit sent Back to `#video` up to the hero.
+- The teaser is fetched only when the page rests with the hero at least half in view: after load,
+  or on the way back up. A link into the page, or a scroll past the hero, fetches nothing. The side
+  view (1.4 MB) is fetched once the teaser can play through.
+- There is no run under reduced motion, without the script, or on paper. The title is over the side
+  view's still from the start, and nothing is fetched. A teaser that fails to load leaves the same,
+  with the side view playing.
+- The build writes the teaser's frame rate and its shots' spans on its `<video>` in `index.html`
+  (`data-rate`, `data-spans`). From them the script maps the scroll to frames and times the names.
+  The spans are checked against the teaser's sources on every run, built or not, so a teaser and
+  its page cannot part. The run's length is one CSS property (`--run`), which the script reads.
+- How the tape comes off:
+  - The table under each strip is redrawn once, from frames where nothing covers it, along the seams
+    and edges that cross it.
+  - Each frame then takes that drawing wherever the tape still shows. The drawing is corrected by
+    what changed on the bare table around it, such as light and shadow.
+  - The crate, the hands and the cables in front of the tape are kept.
+- The result was checked against the source:
+  - outside the edits, the master matches the source at 49.6–55.5 dB;
+  - the fill changes less from frame to frame than the table beside it (0.22 against 0.62 levels).
+### Notes & Caveats
+- iOS Safari fetches no frame of a video that has not played. After 2 s without one, the page plays
+  the teaser and pauses it at once. This could not be tried on an iPhone here, since Playwright's
+  WebKit is the macOS one. Low Power Mode refuses even that, which leaves the poster with the names
+  over it.
+- In the data-collection clip:
+  - from 5.2 to 6.3 s, a few 1–3 px specks remain at the foot of the motion-blurred crate where it
+    crosses the old tape lines; they are visible only zoomed in and brightened;
+  - about 0.17 s before the turn, the arrowhead peeks out from behind the crate's right end, as a
+    cue.
+- At 320×568 the hero's text is still taller than the hero, as before. On a phone on its side
+  (844×390) the hero is still its minimum 600 px, so the title and the authors show but the
+  affiliations and the links fall below the screen, as before.
+- Printed, the hero is the title over the side view's still, from wherever the page was scrolled.
+- New files:
+  - `teaser.mp4` and `teaser.jpg`;
+  - `rose.png`;
+  - `scripts/clean_data_collection.py`, whose master, `supp/data_collection_clean.mp4`, stays in the
+    paper's folder.
+- Changed files:
+  - `hero.mp4?v=4` is now the side view alone (1.4 MB), with the poster `hero.jpg?v=3`;
+  - `data_collection.mp4?v=2` and its poster are rebuilt;
+  - `style.css?v=11` and `site.js?v=9`.
+- The `rose.png` beside the page stays out of git, like `teaser/`.
+
 ## [1.5.1] - 2026-10-13
 ### Features
 - The Rotate Box teaser plays at 2× from 10.45 s, through the camera's circuit as well as the drag,

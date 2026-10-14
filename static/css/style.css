@@ -78,22 +78,31 @@ a { color: var(--accent); }
 #nav.stuck { border-bottom-color: var(--line); }
 #nav .brand { font-weight: 700; letter-spacing: -0.02em; font-size: 1.05rem; color: var(--fg); }
 #nav .links { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: .93rem; }
-#nav a { color: var(--muted); text-decoration: none; }
+#nav a { color: var(--muted); text-decoration: none; transition: color .2s; }
 #nav a:hover { color: var(--fg); }
 #nav a.on { color: var(--accent); font-weight: 600; }
 #nav .brand { color: var(--fg); }
+/* over the hero the nav is only its words, in white; it takes the page's colours once the page
+   has come up under it */
+.js #nav:not(.stuck) { background: transparent; backdrop-filter: none; }
+.js #nav:not(.stuck) a { color: rgba(255,255,255,.82); text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.js #nav:not(.stuck) :is(a:hover, .brand) { color: #fff; }
 @media (max-width: 860px) { #nav .links { display: none; } }
 
 /* ---------- hero ---------- */
 
+/* The hero stays pinned at the top while the page slides up over it.  With the script, and motion
+   allowed, the run after it first gives the teaser its scroll room: the teaser follows the run as
+   it scrolls by, under each task's name, and at the run's end the side view fades in and plays by
+   itself under the title.  Otherwise the title is there from the start, over the side view. */
 .hero {
   position: sticky; top: 0; height: 100vh; min-height: 600px; overflow: hidden; margin-top: -58px;
-  z-index: 1;
+  z-index: 1; background: #0b0d11;
 }
-main { position: relative; z-index: 2; background: var(--bg); }        /* slides up over the teaser */
+main { position: relative; z-index: 2; background: var(--bg); }        /* slides up over the hero */
 footer { position: relative; z-index: 2; background: var(--bg); }
-.hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-  transform: scale(calc(1 + var(--lift, 0) * 0.08)); will-change: transform; }
+.hero :is(.hero-teaser, .hero-bg) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero-bg { transform: scale(calc(1 + var(--lift, 0) * 0.08)); will-change: transform; }
 .hero-shade {
   position: absolute; inset: 0;
   background:
@@ -102,7 +111,8 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 }
 .hero-body {
   position: relative; height: 100%;
-  opacity: var(--fade, 1); transform: translateY(calc(var(--lift, 0) * -40px)); will-change: opacity, transform;
+  opacity: var(--fade, 1); will-change: opacity, transform;
+  transform: translateY(calc((1 - var(--title, 1)) * 28px + var(--lift, 0) * -40px));
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   text-align: center; color: #fff; padding: 6rem 1.5rem 4rem;
 }
@@ -110,6 +120,10 @@ footer { position: relative; z-index: 2; background: var(--bg); }
   font-size: 9rem; font-weight: 700; letter-spacing: -0.03em;
   margin: 0 0 .9rem; text-shadow: 2px 2px 4px rgba(0,0,0,.8);
 }
+/* the rose after the name, on a transparent ground, with the letters' shadow; a faint light rim
+   keeps its black outline from sinking into a dark picture */
+.hero h1 .rose { display: inline-block; width: auto; height: .86em; margin-left: .04em; vertical-align: -.08em;
+  filter: drop-shadow(0 0 1.5px rgba(255,255,255,.55)) drop-shadow(2px 2px 4px rgba(0,0,0,.8)); }
 .hero .sub {
   font-size: 3.5rem; font-weight: 600; line-height: 1.18;
   max-width: 22em; text-wrap: balance; margin: 0 0 2rem; letter-spacing: -0.015em;
@@ -132,6 +146,41 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 @media (max-width: 700px) {
   .authors .brk { display: none; }
   .hero-body { padding: 5rem 1.25rem 3.5rem; }
+}
+
+/* The teaser's own layers, as on doorman-humanoid.github.io: a light shade where the nav, the
+   names and the hint sit, each task's name on the left by a bar of the leaf green, and the hint
+   to scroll.  They give way to the title as it comes in. */
+.hero-teaser, .hero-tasks, .hero-hint { display: none; }
+.hero-tasks { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(8,10,14,.55) 0, rgba(8,10,14,0) 150px),
+    linear-gradient(0deg, rgba(8,10,14,.5) 0, rgba(8,10,14,0) 180px),
+    linear-gradient(90deg, rgba(8,10,14,.45) 0, rgba(8,10,14,0) 60%); }
+.hero-tasks p { position: absolute; top: 50%; left: max(1.25rem, 8vw); max-width: min(34rem, 84vw); margin: 0;
+  padding: .1rem 0 .25rem 1.5rem; border-left: 8px solid #5ccf95; color: #e3e8ef; font-size: 1.55rem;
+  line-height: 1.35; text-shadow: 0 2px 10px rgba(0,0,0,.6);
+  opacity: var(--o, 0); transform: translate(calc((var(--o, 0) - 1) * 30px), -50%); }
+.hero-tasks b { display: block; margin-bottom: .3rem; color: #fff; font-size: 4rem; line-height: 1.08;
+  letter-spacing: -0.02em; }
+.hero-hint { position: absolute; left: 0; right: 0; bottom: 1.4rem; margin: 0; text-align: center;
+  color: rgba(255,255,255,.9); font-size: .95rem; letter-spacing: .02em; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+/* The hero is a full 100vh and at least 600px, which on a phone runs on under the browser's bar
+   while that is out, and past the screen's foot when the phone is on its side: the hint keeps to
+   the part in view. */
+@supports (height: 100svh) { .hero-hint { bottom: calc(100% - min(100%, 100svh) + 1.4rem); } }
+.hero-hint svg { display: block; width: 18px; height: 18px; margin: .25rem auto 0; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; animation: bob 1.8s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: none; } 50% { transform: translateY(5px); } }
+.hero-run { --run: 10.6; }   /* screens: 9.4 of teaser, then site.js's 0.6 of fade and 0.6 of title at rest */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .js .hero-run { height: calc(var(--run) * 100vh); }
+  .js .hero.still + .hero-run { height: 0; }   /* the teaser failed (site.js) */
+  .js :is(.hero-teaser, .hero-tasks, .hero-hint) { display: block; }
+  /* the names are gone within the first third of the fade, before the title shows */
+  .js :is(.hero-tasks, .hero-hint) { opacity: max(0, 1 - var(--title, 0) * 3); }
+  .js :is(.hero-bg, .hero-shade) { opacity: var(--title, 0); }
+  .js .hero-body { opacity: calc(max(0, var(--title, 0) * 1.4 - .4) * var(--fade, 1)); }
+  .js .hero:not(.titled) .hero-body { pointer-events: none; }
 }
 
 .buttons { display: flex; gap: .7rem; flex-wrap: wrap; justify-content: center; }
@@ -158,7 +207,12 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 .js .reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1); }
 .js .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; transition: none; } }
-@media print { .js .reveal { opacity: 1; transform: none; } }
+@media print {
+  .js .reveal { opacity: 1; transform: none; }
+  /* the hero as it stands at the top, wherever the page was scrolled to */
+  .hero-body { opacity: 1 !important; transform: none !important; }
+  .hero-bg { transform: none !important; }
+}
 .lede { color: var(--muted); }
 .wrap.narrow > p { font-size: 1.06rem; line-height: 1.72; }
 #abstract p { font-size: .95rem; line-height: 1.55; text-align: justify; margin: 0; }
@@ -363,7 +417,7 @@ footer {
 footer p { margin: 0 0 .3rem; }
 footer a { color: inherit; }
 
-/* the teaser is either full screen or out of the way: no resting place in between */
+/* the hero is either full screen or out of the way, and the page glides to where it goes */
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
 @media (max-width: 1024px) {
@@ -378,6 +432,8 @@ footer a { color: inherit; }
   .hero .authors { font-size: 1rem; }
   .hero .affil { font-size: .85rem; }
   .hero .note { font-size: .8rem; }
+  .hero-tasks p { padding-left: 1rem; border-left-width: 6px; font-size: 1.05rem; }
+  .hero-tasks b { font-size: 2.3rem; }
   h2 { font-size: 1.7rem; }
   :is(#abstract p, .lede, .figlead, figcaption) { text-align: left; }   /* a justified line this narrow opens wide gaps */
   .buttons { gap: .5rem; }

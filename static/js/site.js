@@ -1,6 +1,8 @@
 // FLoRe project page: clips that load and play only while they are watched, the nav that marks
-// the section you are in, and the teaser that gives way to the page.  The structure follows the
-// Workhorse page's script (hybridrobotics.github.io/workhorse), trimmed to what is used here.
+// the section you are in, and the hero, whose teaser plays as the page is scrolled before it gives
+// way to the page.  The structure follows the Workhorse page's script
+// (hybridrobotics.github.io/workhorse), trimmed to what is used here; the hero follows the
+// DoorMan page's (doorman-humanoid.github.io).
 
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 const DWELL = 500; // ms a figure stays on screen before it starts, so a page jump starts nothing
@@ -56,7 +58,7 @@ document.querySelectorAll("video[data-poster]").forEach((v) =>
   }),
 );
 
-// The hero keeps its address in data-src and fetches nothing before it is set.
+// The hero's clips keep their addresses in data-src and fetch nothing before it is set.
 const attach = (v) => {
   if (!v.dataset.src) return;
   v.src = v.dataset.src;
@@ -459,34 +461,7 @@ if (hop) {
   hop.nextElementSibling?.style.setProperty("--i", beat);
 }
 
-// --- the hero reel ---
-// Its still is drawn with the page, and the reel is fetched once the rest has arrived -- or after
-// 2.5 s on a slow line, where the load event can be minutes away.  It plays only while the teaser
-// is on screen, so a link into the middle of the page fetches nothing for it.
-const heroClip = document.querySelector(".hero-bg");
-let heroReady = false,
-  heroStart = 0;
-const heroShown = () => scrollY < innerHeight * 0.85 * 0.99; // where the page covers it
-const syncHero = () => {
-  clearTimeout(heroStart);
-  if (!heroReady || reduced.matches || !heroShown()) {
-    heroClip.pause();
-    return;
-  }
-  if (heroClip.paused)
-    heroStart = setTimeout(() => {
-      attach(heroClip);
-      heroClip.play().catch(() => {});
-    }, DWELL);
-};
-const heroArrives = () => {
-  heroReady = true;
-  syncHero();
-};
-addEventListener("load", heroArrives, { once: true });
-setTimeout(heroArrives, 2500);
-
-// --- nav: the current section marked, and a border once the page has covered the hero ---
+// --- nav: the current section marked ---
 const nav = document.getElementById("nav");
 const links = [...document.querySelectorAll("#nav .links a")];
 const sections = links.map((a) => document.querySelector(a.getAttribute("href"))).filter(Boolean);
@@ -503,40 +478,262 @@ const spy = new IntersectionObserver(
 
 sections.forEach((s) => spy.observe(s));
 
-// The hero is sticky, so it never leaves the viewport and an observer on it never fires: the
-// page covering it is read from the scroll position instead.
-const mainTop = () => document.querySelector("main").offsetTop;
-
-// --- the teaser gives way to the page: its text fades and it drifts as the first screen scrolls ---
+// --- the hero ---
+// It is sticky, so it never leaves the viewport and an observer on it never fires: where the page
+// is comes from the scroll position instead.  With motion allowed, the empty run after the hero is
+// the teaser's: as the run scrolls by, the teaser follows it frame by frame, under each task's
+// name.  At the run's end the side view fades in and plays by itself, with the title over it, and
+// scrolling on, the page slides up over the hero while its text fades.  Under reduced motion there
+// is no run (style.css): the title is there from the start, and nothing plays.
 const hero = document.querySelector(".hero");
-const onScroll = () => {
-  const p = Math.min(1, scrollY / Math.max(1, innerHeight * 0.85));
-  hero.style.setProperty("--lift", p.toFixed(3));
-  hero.style.setProperty("--fade", (1 - Math.min(1, p * 1.35)).toFixed(3));
-  nav.classList.toggle("stuck", scrollY >= mainTop() - nav.offsetHeight);
-  syncHero();
+const run = document.querySelector(".hero-run");
+const teaser = hero.querySelector(".hero-teaser");
+const heroClip = hero.querySelector(".hero-bg");
+// The teaser's frame rate and the span of each of its shots in seconds, "from,to" apart by spaces,
+// which scripts/build_media.py writes on it as it builds it.
+const [rateNum, rateDen] = teaser.dataset.rate.split("/").map(Number);
+const FPS = rateNum / rateDen;
+const SPANS = teaser.dataset.spans.split(" ").map((span) => span.split(",").map(Number));
+const LENGTH = SPANS[SPANS.length - 1][1];
+// Screens of scrolling down the run for the fade to the title and for the title at rest; the
+// teaser has the rest of the run, whose length in screens style.css gives as --run.
+const FADE = 0.6;
+const REST = 0.6;
+const CUE = 1.2; // s of teaser over which a task's name comes in or goes
+const LAG = 0.12; // s, the time constant with which the teaser's picture follows the scroll
+const clamp = (x) => Math.min(1, Math.max(0, x));
+const smooth = (x) => x * x * (3 - 2 * x);
+const mainTop = () => document.querySelector("main").offsetTop;
+// where the teaser has played, where the title is in and where the page covers the hero, in px
+// scrolled; with no run they all come at once
+const marks = () => {
+  const len = run.offsetHeight;
+  const screen = len / (parseFloat(getComputedStyle(run).getPropertyValue("--run")) || 1);
+  return {
+    len,
+    played: len - (FADE + REST) * screen,
+    titled: len - REST * screen,
+    main: mainTop(),
+  };
 };
-addEventListener("scroll", () => requestAnimationFrame(onScroll), { passive: true });
-addEventListener("resize", () => requestAnimationFrame(onScroll));
-onScroll();
 
-// The teaser has no resting place halfway: when the scrolling stops inside the handover, it goes
-// on to the end it was heading for, so a single wheel notch or arrow key is enough either way.
-// Under reduced motion the page is left where the visitor put it.
-let settle,
-  rest = scrollY; // where the page last came to rest outside the handover
+// A task's name comes in just after its shot has and goes just before the next shot's fade; the
+// first is there from the start, and the last stays until the title takes over.  The names follow
+// the frame on screen, not the one asked for.
+const cues = [...hero.querySelectorAll(".hero-tasks p")].slice(0, SPANS.length).map((p, i) => ({
+  p,
+  from: SPANS[i][0],
+  to: SPANS[i][1],
+}));
+const cue = (t) => {
+  for (const c of cues) {
+    const come = c.from > 0 ? clamp((t - c.from - 0.3) / CUE) : 1;
+    const go = c.to < LENGTH ? clamp((c.to - 0.9 - t) / CUE) : 1;
+    c.p.style.setProperty("--o", smooth(Math.min(come, go)).toFixed(3));
+  }
+};
+cue(0); // the poster is the first frame
+
+// The teaser is sought one seek at a time, each to the latest frame asked for, and its picture
+// eases after the scroll, so that a wheel's notches play as motion.  A seek ends in "seeked"; a
+// load that fails or starts over leaves none running.
+let want = 0, // s of teaser that the scroll asks for
+  eased = null, // s of teaser to seek to, easing after it
+  asked = -1, // the frame last sought
+  seeking = false,
+  easing = 0,
+  then = 0;
+const seek = () => {
+  if (seeking || eased === null || teaser.readyState < 1 || reduced.matches) return; // loadedmetadata comes back here
+  const f = Math.max(0, Math.min(Math.round(eased * FPS), Math.round(teaser.duration * FPS) - 1));
+  if (f === asked) return;
+  asked = f;
+  seeking = true;
+  teaser.currentTime = (f + 0.5) / FPS;
+};
+teaser.addEventListener("seeked", () => {
+  seeking = false;
+  cue(teaser.currentTime);
+  seek();
+});
+teaser.addEventListener("loadedmetadata", () => {
+  asked = -1;
+  seek();
+});
+teaser.addEventListener("emptied", () => {
+  seeking = false;
+  asked = -1;
+});
+const ease = (now) => {
+  const dt = then ? Math.min(0.1, (now - then) / 1000) : 0;
+  then = now;
+  // a jump, or the first frame, is sought at once
+  if (eased === null || Math.abs(want - eased) > 8) eased = want;
+  else eased += (want - eased) * (1 - Math.exp(-dt / LAG));
+  if (Math.abs(want - eased) < 0.2 / FPS) eased = want;
+  seek();
+  easing = eased === want ? 0 : requestAnimationFrame(ease);
+  if (!easing) then = 0;
+};
+
+// A teaser that cannot be had leaves the title over the side view, as under reduced motion, and a
+// visitor partway down the run back at the top.
+teaser.addEventListener("error", () => {
+  const inRun = scrollY < run.offsetHeight;
+  hero.classList.add("still");
+  if (inRun) scrollTo({ top: 0, behavior: "instant" });
+  repaint();
+});
+
+// The teaser is fetched once the page comes to rest with the hero at least half in view: at the
+// top once the page has loaded (or after 1.5 s), or on the way back up.  A page opened at a link
+// into it, or scrolled past the hero on its way somewhere, fetches nothing for it.  The side view
+// follows once the teaser can play through, or when it is seen.
+const inView = (m) => m.len > 0 && scrollY < m.len + innerHeight * 0.5;
+const fetchTeaser = () => {
+  if (!teaser.dataset.src || reduced.matches || !inView(marks())) return;
+  teaser.preload = "auto";
+  attach(teaser);
+  repaint();
+  // iOS fetches no frame of a video that has not played: if none has come after a while, a play
+  // that is paused at once fetches it
+  setTimeout(() => {
+    if (teaser.readyState >= 2 || reduced.matches) return;
+    teaser.play().then(
+      () => {
+        teaser.pause();
+        asked = -1;
+        seek();
+      },
+      () => {},
+    );
+  }, 2000);
+};
+// a page opened at a link into it, which the browser is about to scroll to
+const linked = (() => {
+  try {
+    const at = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    return !!at && document.querySelector("main").contains(at);
+  } catch {
+    return false; // an address that does not decode names no element
+  }
+})();
+let settle = 0; // pending while the page scrolls
+const arrive = () => {
+  if (!linked && !settle) fetchTeaser(); // a scroll under way fetches once it comes to rest
+};
+addEventListener("load", arrive, { once: true });
+setTimeout(arrive, 1500);
+teaser.addEventListener(
+  "canplaythrough",
+  () => {
+    if (reduced.matches) return;
+    heroClip.preload = "auto";
+    attach(heroClip);
+  },
+  { once: true },
+);
+
+// The side view starts a moment after it comes into sight, however the scrolling goes on, and
+// pauses as it leaves.
+let heroSeen = false,
+  heroStart = 0;
+const syncHero = (seen) => {
+  seen = seen && !reduced.matches;
+  if (seen === heroSeen) return;
+  heroSeen = seen;
+  clearTimeout(heroStart);
+  if (!seen) {
+    heroClip.pause();
+    return;
+  }
+  heroStart = setTimeout(() => {
+    if (!heroSeen || reduced.matches) return;
+    attach(heroClip);
+    heroClip.play().catch(() => {});
+  }, 150);
+};
+
+const paint = () => {
+  const m = marks();
+  const y = scrollY;
+  const title = m.len ? smooth(clamp((y - m.played) / (m.titled - m.played))) : 1;
+  const lift = clamp((y - m.len) / Math.max(1, innerHeight * 0.85));
+  hero.style.setProperty("--title", title.toFixed(3));
+  hero.style.setProperty("--lift", lift.toFixed(3));
+  hero.style.setProperty("--fade", (1 - Math.min(1, lift * 1.35)).toFixed(3));
+  hero.classList.toggle("titled", title > 0.5);
+  nav.classList.toggle("stuck", y >= m.main - nav.offsetHeight);
+  if (!m.len) {
+    syncHero(hero.classList.contains("still") && lift < 0.99); // the teaser failed: the side view plays
+    return;
+  }
+  want = clamp(y / m.played) * LENGTH;
+  if (!easing) easing = requestAnimationFrame(ease);
+  syncHero(!teaser.dataset.src && title > 0 && lift < 0.99); // once the hero is in use
+};
+let painting = 0;
+const repaint = () => {
+  if (!painting)
+    painting = requestAnimationFrame(() => {
+      painting = 0;
+      paint();
+    });
+};
+addEventListener("scroll", repaint, { passive: true });
+addEventListener("resize", repaint);
+reduced.addEventListener("change", () => {
+  syncHero(false); // whatever was about to start does not
+  repaint();
+});
+paint();
+
+// The title's links are there to be reached by the keyboard before they are shown: one that takes
+// the focus brings the title in.
+hero.querySelector(".hero-body").addEventListener("focusin", () => {
+  const m = marks();
+  if (m.len && scrollY < m.titled) scrollTo({ top: m.titled, behavior: "instant" });
+});
+
+// Two stretches have no resting place: the fade from the teaser to the title, and the page's
+// cover over the hero.  When the scrolling stops inside one, it goes on to the end it was last
+// heading for, so a single wheel notch or arrow key is enough either way.  A link into the page
+// is left where it landed, and under reduced motion the page is left where the visitor put it.
+let lastY = scrollY,
+  heading = 0,
+  jumped = linked;
+document.addEventListener("click", (e) => {
+  if (e.target.closest?.('a[href^="#"]')) jumped = true;
+});
+// so do Back and Forward
+addEventListener("hashchange", () => (jumped = true));
+addEventListener("popstate", () => (jumped = true));
+const settled = () => {
+  fetchTeaser();
+  const m = marks();
+  const y = scrollY;
+  const spans = m.len
+    ? [
+        [m.played, m.titled],
+        [m.len, m.main],
+      ]
+    : [[0, m.main]];
+  const span = spans.find(([a, b]) => y > a + 4 && y < b - 4);
+  const link = jumped;
+  jumped = false;
+  if (!span || link || reduced.matches) return;
+  scrollTo({ top: heading > 0 ? span[1] : span[0], behavior: "smooth" });
+};
 addEventListener(
   "scroll",
   () => {
+    const y = scrollY;
+    if (y !== lastY) heading = Math.sign(y - lastY);
+    lastY = y;
     clearTimeout(settle);
     settle = setTimeout(() => {
-      const end = mainTop();
-      if (scrollY <= 4 || scrollY >= end - 4) {
-        rest = scrollY;
-        return;
-      }
-      if (reduced.matches) return;
-      scrollTo({ top: scrollY > rest ? end : 0, behavior: "smooth" });
+      settle = 0;
+      settled();
     }, 140);
   },
   { passive: true },

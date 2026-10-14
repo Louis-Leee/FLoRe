@@ -18,7 +18,7 @@
      load or to start, everything is shown again after 3 s. -->
 <script>document.documentElement.classList.add('js');
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
-<link rel="stylesheet" href="./static/css/style.css?v=10">
+<link rel="stylesheet" href="./static/css/style.css?v=11">
 </head>
 <body>
 
@@ -36,13 +36,25 @@
 
 <!-- no element is called "top", so the brand link #top scrolls to the very top of the page -->
 <header id="hero" class="hero">
-  <!-- The page is drawn on the still; the reel (10 MB, 71 s) streams in once everything else has
-       arrived. -->
+  <!-- The three tasks' teaser (11 MB, 56 s at 15 fps) plays as the page scrolls down the run after
+       the hero; then the side view (1.4 MB, 15 s) plays by itself under the title.  Without the
+       script, or under reduced motion, there is no run, and the title is there from the start
+       over the side view's still.  The teaser's frame rate and its shots' spans in seconds
+       (data-rate, data-spans) are written by scripts/build_media.py as it builds it. -->
+  <video width="1280" height="720" class="hero-teaser" muted playsinline preload="none" aria-hidden="true"
+         poster="./static/images/teaser.jpg" data-src="./static/videos/teaser.mp4"
+         data-rate="15000/1001" data-spans="0.000,12.613 12.012,40.641 40.040,56.123"></video>
   <video width="1280" height="720" class="hero-bg" muted loop playsinline preload="none"
-         poster="./static/images/hero.jpg?v=2" data-src="./static/videos/hero.mp4?v=3"></video>
+         poster="./static/images/hero.jpg?v=3" data-src="./static/videos/hero.mp4?v=4"></video>
   <div class="hero-shade"></div>
+  <!-- each task's name over its shot of the teaser, in the shots' order -->
+  <div class="hero-tasks" aria-hidden="true">
+    <p><b>Wipe Board</b>Wiping a whiteboard under steady pressure</p>
+    <p><b>Rotate Box</b>Rotating a crate with both hands</p>
+    <p><b>Push Gantry</b>Walking a heavy gantry forward</p>
+  </div>
   <div class="hero-body">
-    <h1>FLoRe 🌺</h1>
+    <h1>FLoRe <img class="rose" src="./static/images/rose.png" width="165" height="189" alt=""></h1>
     <p class="sub">Learning Force&#8209;Reactive Humanoid Loco&#8209;Manipulation</p>
 
     <p class="authors">
@@ -70,7 +82,10 @@
       <a class="btn" href="https://github.com/Louis-Leee/FLoRe">Code</a>
     </div>
   </div>
+  <p class="hero-hint" aria-hidden="true">Scroll to explore<svg viewBox="0 0 16 16"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg></p>
 </header>
+<!-- the teaser's scroll room: empty page that scrolls by under the pinned hero -->
+<div class="hero-run" aria-hidden="true"></div>
 
 <main>
 
@@ -382,8 +397,8 @@
     <p class="figlead reveal">A Rotate Box demonstration: the two grippers pinch the crate&rsquo;s rim,
       turn it and drag it across the table.</p>
     <div class="grid reveal">
-      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/data_collection.jpg" aria-label="Data collection, a Rotate Box demonstration">
-        <source src="./static/videos/data_collection.mp4" type="video/mp4"></video></figure>
+      <figure class="tile"><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/data_collection.jpg?v=2" aria-label="Data collection, a Rotate Box demonstration">
+        <source src="./static/videos/data_collection.mp4?v=2" type="video/mp4"></video></figure>
     </div>
   </div>
 </section>
@@ -394,6 +409,6 @@
   <p>The paper and arXiv links follow shortly.</p>
 </footer>
 
-<script src="./static/js/site.js?v=8" onerror="document.documentElement.classList.remove('js')"></script>
+<script src="./static/js/site.js?v=9" onerror="document.documentElement.classList.remove('js')"></script>
 </body>
 </html>

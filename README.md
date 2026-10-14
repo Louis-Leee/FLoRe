@@ -31,9 +31,15 @@ each choice are listed at the top of the script. All clips are single H.264 file
 clips at CRF 24, the narrated video at 720p CRF 20), so every browser plays them without a second
 codec.
 
-The hero reel is cut from three teaser clips, one per task, and the side view of the gantry push.
-The script reads the teaser clips from this folder's `teaser/`, which git ignores: they are
-200 MB, and one of them is over GitHub's 100 MB limit.
+The hero is two clips. The teaser joins three teaser clips, one per task, and is played by the
+page's scrolling: at 15 fps, with a keyframe every 8 frames and none predicted from a later one, so
+that whichever frame the scroll asks for decodes at once. Then the side view of the gantry push
+loops under the title. The script reads the teaser clips from this folder's `teaser/` and the
+title's rose from `rose.png`, and git ignores both: the clips are 200 MB, and one of them is over
+GitHub's 100 MB limit. The build writes the teaser's frame rate and the span of each of its shots
+on its `<video>` in `index.html` (`data-rate`, `data-spans`): the page's script maps the scroll to
+frames by them, and times each task's name by its shot. The run of page that the teaser plays over
+is `--run` screens long, in `style.css`.
 
 The narrated video's title slide is made again from the clip it plays, rendered with the title
 alone; the rest of the recording keeps its frames, and the narration its timing. That clip is made
@@ -42,6 +48,15 @@ beside its source in the working folder, with numpy, Pillow and OpenCV:
 ```bash
 cd PAPER_DIR/supp/push_gantry
 python3 add_title_reveal.py --occlude --edge-offset 90 --x0 356 --no-subtitle --out IMG_3352_title_occluded_nosub.mp4
+```
+
+The data-collection clip is made from a master with the two strips of tape taken off the table
+and an arrow drawn round the crate as it turns. That master is made beside its source in the
+working folder, with numpy, OpenCV and Pillow; its constants (the tapes' lines, the frames that
+show them uncovered, the arrow's timing) belong to that one clip:
+
+```bash
+python3 scripts/clean_data_collection.py --src PAPER_DIR    # writes PAPER_DIR/supp/data_collection_clean.mp4
 ```
 
 ## Redraw the controller diagrams
