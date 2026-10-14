@@ -739,9 +739,9 @@ addEventListener(
   { passive: true },
 );
 
-// --- a diagram too wide for the screen scrolls sideways in its own box; while it does, the
-// keyboard can reach it too ---
-const wides = document.querySelectorAll(".wide");
+// --- a diagram or an equation too wide for the screen scrolls sideways in its own box; while it
+// does, the keyboard can reach it too.  An equation's width is known once its fonts are in ---
+const wides = document.querySelectorAll(".wide, .law .eq");
 const reachable = () =>
   wides.forEach((w) => {
     if (w.scrollWidth > w.clientWidth + 1) w.tabIndex = 0;
@@ -749,3 +749,4 @@ const reachable = () =>
   });
 addEventListener("resize", reachable);
 reachable();
+document.fonts?.ready.then(reachable);

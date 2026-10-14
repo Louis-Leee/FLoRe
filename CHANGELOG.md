@@ -1,3 +1,65 @@
+## [1.7.0] - 2026-10-14
+### Features
+- The demo in the page is now a simpler build, `demo-x/`: the controller on the left hand, along x.
+  - Its wall stands in front of the hand from the start.
+  - Two sliders: F^cmd, from 0 to 20 N, and an extra push F^ext, at ±20 N.
+  - Each arrow (purple F^cmd, blue F^meas, orange F^ext) carries its value along x, in newtons.
+  - The panels say what the arrows and the switches are.
+  - Only the standing motion is listed.
+  - It has its own recorded preview, `controller_x.mp4`.
+  - The "Try the demo in a new tab!" pill still opens the full demo, `demo/`, with both hands, all
+    three axes and every motion, and a line under it says so.
+- The Controller section explains the law in equations, in the manner of tune-to-learn's
+  "Position Impedance Controllers and Gains":
+  - the paper's Eq. 3 along the task direction x, with its terms labelled under braces (motion
+    reference, force command, force feedback; contact phase, force error), followed by a "where …"
+    list;
+  - the same law as an admittance: force tracking along x, where a force is commanded, and
+    compliance along z, where none is;
+  - the external force f^ext and what the wrist sensor reads of it (Eq. 2);
+  - compliance control, UniFP and FLoRe side by side, with links to FALCON, FACET, SoftMimic, CHIP
+    and UniFP.
+### Design Rationale
+- demo-x is built by `scripts/build_demo_x.py` from cloned copies of the release's mjswan template
+  and command term, which `scripts/demo_x.patch` changes. `demo/`, `build_demo.py` and the
+  release's checkout are untouched (checked by hash and by `git status --ignored`), so the full
+  demo stays as it was.
+- The wall is seeded by the runtime at the first step of every episode, from the pelvis's x axis,
+  levelled. The runtime publishes the plane, and the drawing shows that plane, centred where the
+  hand meets it, instead of seeding a copy of its own.
+- F^cmd stops at 20 N because the wall pushes back with at most k_env × 8 cm = 22.6 N. A command
+  above that could not be tracked.
+- The standing motion only: the wall stays where the hand started, as in training. Played with it,
+  the forward walk and the three lifting clips pressed the hand into it with the whole 22.6 N, and
+  the sideways walk with 9 N, all with no command.
+- F^ext is left out of the simulated F/T reading, as it always was in the full demo. The page now
+  says so: the sensor feels the wall and nothing else, so F^ext is
+  a disturbance that the policy has to reject. With 15 N held, F^meas settled at −15.0 N, went to
+  −14.0 N after a −10 N push and came back to −14.7 N, and came back to −15.0 N after +10 N.
+- The labels are sprites drawn on a canvas. Each is placed past the tip of its arrow, in the
+  arrow's direction on screen, and moved a row up or down so that labels never overlap. F^ext's
+  arrow is drawn 5 cm below the hand point, where F^meas's does not hide it.
+- The equations are typeset into the page once by `scripts/render_math.py`, with KaTeX served from
+  `static/katex`. The page then needs no script, nothing has to be fetched from a CDN, and the text
+  does not reflow once it has loaded. f^cmd, f^meas and I take the diagrams' colours, and f^ext
+  takes the orange of the demo's push, in either theme.
+- The comparison keeps to the paper's related work:
+  - FALCON rejects the force as a disturbance;
+  - FACET, SoftMimic and CHIP expose a stiffness;
+  - UniFP's shift (f^cmd + f^ext)/K needs the true contact force and stiffness, and its end-effector
+    force control is on a quadrupedal manipulator.
+- The admittance reading is the law itself: (K/K_I) dΔx/dt = f^cmd + f^meas. On the robot it
+  closes on all three axes, as the paper says.
+### Notes & Caveats
+- index.html is 144 KB, 17 KB gzipped, as KaTeX writes both HTML and MathML for each formula. Only
+  four of its fonts are fetched.
+- On a phone a wide equation scrolls sideways in its own box, as the diagrams do, and takes keyboard
+  focus while it does.
+- To embed the full demo again, revert the commit "the page's demo is demo-x; the full demo opens in
+  its own tab". demo-x and its preview stay in the repository.
+- The stylesheet is now `style.css?v=13`, the script `site.js?v=10`, and KaTeX's stylesheet
+  `katex.min.css?v=0.19.0`.
+
 ## [1.6.1] - 2026-10-14
 ### Features
 - The bar by each task's name in the teaser is Amazon orange (#ff9900) instead of the leaf green.

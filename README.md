@@ -75,6 +75,21 @@ generator is drawn to scale for that press once it has settled. Captions and fig
 physical constants. The script refuses to write unless each diagram has exactly one pair of
 markers.
 
+## Typeset the controller's equations
+
+The Controller section explains the controller's law in equations, in the paper's notation and along
+one axis. They are KaTeX, typeset into `index.html` once rather than in the browser. Each formula's
+TeX sits in a comment before its rendering, and one script renders every formula again from its TeX.
+It needs Node, and `npx` fetches KaTeX 0.19.0 the first time:
+
+```bash
+python3 scripts/render_math.py
+```
+
+The page loads only KaTeX's stylesheet and the fonts that its formulas use. Both are in
+`static/katex/`: that release's own stylesheet, cut to its woff2 fonts. The script's macros colour
+the forces and the integral as the diagrams do, through classes in `style.css`.
+
 ## Rebuild the interactive demo
 
 `demo/` is the static browser bundle of the 5-keypoint controller, built by the code release's own
@@ -149,5 +164,6 @@ that.
 
 - Font: [Inter](https://github.com/rsms/inter), SIL Open Font License 1.1 (`static/fonts/OFL.txt`).
 - Icon: the 🌺 of [Noto Emoji](https://github.com/googlefonts/noto-emoji) v2.047, Apache License 2.0.
+- Equations: [KaTeX](https://katex.org/) 0.19.0, its stylesheet and fonts, MIT License (`static/katex/LICENSE`).
 - Page structure: adapted from the [Workhorse](https://hybridrobotics.github.io/workhorse/) project page.
 - Interactive demo: [mjswan](https://github.com/ttktjmt/mjswan) (Apache-2.0, `demo/LICENSE`), as vendored and patched in the FLoRe release; the idea of embedding it follows the [PHP](https://php-parkour.github.io/) page.

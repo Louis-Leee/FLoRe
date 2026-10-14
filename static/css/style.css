@@ -19,6 +19,7 @@
   --blue: #1971c2;
   --cyan: #0b7285;              /* f^meas in the controller's diagrams, as the demo's cyan arrow, darkened for text */
   --red: #b02525;               /* the baseline's failures */
+  --orange: #d9480f;            /* f^ext in the controller's equations, as the demo's orange push, darkened for text */
   --math: "Times New Roman", Times, "Nimbus Roman", "Liberation Serif", serif;   /* a variable, as typeset in the paper */
   --amazon: #ff9900;            /* Amazon orange, the same in either theme: the bars by the teaser's names, and the link */
   --amazon-ink: #232f3e;        /* to the demo's tab, with Amazon's dark ink on it (6.3:1, where white gets 2.1:1) */
@@ -40,6 +41,7 @@
     --blue: #4dabf7;
     --cyan: #3bc9db;
     --red: #ff8787;
+    --orange: #ff922b;
   }
 }
 
@@ -395,6 +397,18 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 .ctl .integ-area { fill: var(--accent); fill-opacity: .24; }
 .ctl .ev { fill: var(--bg); stroke: var(--cyan); stroke-width: 2.4; }
 
+/* The controller's law in equations, as tune-to-learn explains its gains: KaTeX, typeset into the
+   page by scripts/render_math.py.  The forces and the integral take the diagrams' colours, f^ext
+   the orange of the demo's push.  A wide equation scrolls sideways in its own box on a phone. */
+.wrap.narrow > .law { margin-top: 2.2rem; }
+.law p { margin: 0 0 .8rem; font-size: 1.12rem; line-height: 1.6; text-align: justify; }
+.law .eq { margin: 0 0 .9rem; overflow-x: auto; overflow-y: hidden; }
+.law .eq .katex-display { margin: .45em 0; }
+.katex .m-cmd { color: var(--violet); }
+.katex .m-meas { color: var(--cyan); }
+.katex .m-ext { color: var(--orange); }
+.katex .m-integ { color: var(--accent); }
+
 /* the plots under a task: commanded and measured force per hand and axis */
 .plots img { border-radius: 8px; }
 .legend { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .35rem 1.3rem;
@@ -408,7 +422,7 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 .legend .ln.dashed::before { border-top-style: dashed; }
 .legend .gap { width: 1px; height: 1.1em; background: var(--line); }
 
-:is(video, .tile .full, .bleed a, .wide):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:is(video, .tile .full, .bleed a, .wide, .law .eq):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .tile .seek:focus-visible { outline: 2px solid #fff; outline-offset: 0; box-shadow: 0 0 0 4px rgba(0,0,0,.55); }
 
 footer {
@@ -436,7 +450,8 @@ footer a { color: inherit; }
   .hero-tasks p { padding-left: 1rem; border-left-width: 6px; font-size: 1.05rem; }
   .hero-tasks b { font-size: 2.3rem; }
   h2 { font-size: 1.7rem; }
-  :is(#abstract p, .lede, .figlead, figcaption) { text-align: left; }   /* a justified line this narrow opens wide gaps */
+  :is(#abstract p, .lede, .figlead, figcaption, .law p) { text-align: left; }   /* a justified line this narrow opens wide gaps */
+  .law .eq .katex-display > .katex { font-size: 1.05em; }
   .buttons { gap: .5rem; }
   .btn { padding: .55rem .9rem; font-size: .9rem; }
 }
