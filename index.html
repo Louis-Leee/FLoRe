@@ -234,16 +234,21 @@
       </div>
     </figure>
     <p class="figlead reveal">Try it below: the controller runs in your browser, with MuJoCo and the policy
-      compiled to WebAssembly as in the code release, and each hand meets the same compliant wall and
-      simulated F/T sensor as in training.</p>
+      compiled to WebAssembly as in the code release. The left hand faces a virtual wall along <var>x</var>,
+      with the compliant contact of training, and each arrow carries its value along <var>x</var>, so you can
+      read how closely F<sup>meas</sup> mirrors F<sup>cmd</sup>: the same force, pushing back. Of the forces
+      from outside, the simulated F/T sensor reads the wall's alone, as in training, where nothing else
+      touches the hand: the orange F<sup>ext</sup> is an extra push it does not read, which the policy has
+      to reject.</p>
     <figure class="reveal bleed">
-      <!-- The demo is about 85 MB, so the page shows its recording and loads it only when asked. -->
-      <div class="demo frame" id="demo" data-src="./demo/?embed">
+      <!-- The demo is about 85 MB, so the page shows its recording and loads it only when asked.
+           demo-x/ is the left hand along x; the full demo, demo/, opens in its own tab (below). -->
+      <div class="demo frame" id="demo" data-src="./demo-x/?embed">
         <video class="demo-preview" width="1280" height="720" data-autoplay muted loop playsinline preload="none"
-               data-poster="./static/images/posters/controller.jpg" aria-label="A recording of the demo">
-          <source src="./static/videos/controller.mp4" type="video/mp4">
+               data-poster="./static/images/posters/controller_x.jpg" aria-label="A recording of the demo">
+          <source src="./static/videos/controller_x.mp4" type="video/mp4">
         </video>
-        <a class="demo-launch" href="./demo/" target="_blank" rel="noopener">
+        <a class="demo-launch" href="./demo-x/" target="_blank" rel="noopener">
           <span class="btn">&#9654;&ensp;Start the interactive demo</span>
           <span class="note">Loads about 55 MB and runs entirely in your browser; best on a computer</span>
         </a>
@@ -252,15 +257,18 @@
     <ul class="demo-tips reveal">
       <li class="tip-force"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
         <b>Command a force</b>
-        Set F<sup>cmd</sup> (purple) for a hand with the left sliders, up to 25&nbsp;N; F<sup>meas</sup> (cyan) follows.</li>
+        Set F<sup>cmd</sup> (purple) with the upper slider, up to 20&nbsp;N: the hand presses on the wall until
+        F<sup>meas</sup> (blue) reads &minus;F<sup>cmd</sup>, the same force pushing back.</li>
       <li class="tip-push"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v15l4-3.8 2.6 5.8 2.6-1.2-2.6-5.6H17z"/><path d="M17 5.5l2-2M19.5 9H22"/></svg>
-        <b>Push the robot</b>
-        Drag it with the mouse, or add F<sup>ext</sup> with the lower sliders: it keeps its balance.</li>
+        <b>Push the hand</b>
+        Push or pull it with F<sup>ext</sup> (orange), the lower slider: F<sup>meas</sup> returns to
+        &minus;F<sup>cmd</sup>. Or drag the robot with the mouse.</li>
       <li class="tip-look"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 3.5V8h-4.5"/><circle cx="12" cy="12" r="2.2"/></svg>
         <b>Look around</b>
-        Drag to orbit, scroll to zoom, and switch the motion at the top right. <kbd>R</kbd> resets.</li>
+        Drag to orbit and scroll to zoom; <kbd>R</kbd> resets. A panel folds away when you click its title.</li>
     </ul>
     <p class="demo-open reveal"><a href="./demo/" target="_blank" rel="noopener"><span class="hop">Try the demo in a new tab!</span><span class="go" aria-hidden="true">&#8599;</span></a></p>
+    <p class="demo-full reveal">There, the full demo: both hands, all three axes, and the walking and lifting motions.</p>
   </div>
 </section>
 

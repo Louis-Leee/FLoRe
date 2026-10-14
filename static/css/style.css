@@ -354,6 +354,7 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 @keyframes hop { 0%, 11%, 100% { transform: none; } 5.5% { transform: translateY(-.24em); } }
 @keyframes nudge { 0%, 13%, 100% { transform: none; } 6.5% { transform: translate(.2em, -.2em); } }
 @media (prefers-reduced-motion: reduce) { .demo-open .ch, .demo-open .go { animation: none; } }
+.wrap.narrow > .demo-full { margin: .9rem 0 0; text-align: center; color: var(--muted); font-size: .95rem; }   /* what that tab has */
 
 /* The controller's two diagrams, drawn by scripts/draw_controller.py in the page's own font and
    colours.  On a phone a diagram keeps a readable size and scrolls sideways in its own box. */
