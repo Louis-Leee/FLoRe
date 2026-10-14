@@ -20,6 +20,9 @@
   subscript three parts, which Firefox reported as invalid markup. It is now `\mathrm{max}`, which
   looks the same on screen.
 - The stylesheet is now `style.css?v=16`.
+- The robot clips follow the pill. So the two reverts that embed the full demo again now stop on
+  conflicts in `index.html`. The README says how to resolve them. Done that way, the switch back
+  gives the demo block as it was before demo-x, and keeps the clips.
 
 ## [1.7.2] - 2026-10-14
 ### Features

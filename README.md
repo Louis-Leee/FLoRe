@@ -163,7 +163,11 @@ To embed the full demo again, point the `#demo` frame's `data-src` and its *Star
 `./demo/`, its preview back to `controller.mp4` and `controller.jpg`, restore the paragraph and the
 tips above and below it, and name the pill *Try the demo in a new tab!* again. Reverting the commit
 that named the pill's tab the full demo, and then the one that switched the frame to `demo-x/`,
-does all of that.
+does all of that. Both reverts now stop on conflicts in `index.html`, since the page has changed
+around those lines:
+- the stylesheet's link: give it a new version;
+- the pill, in the first: keep the old pill and the line under it, then the robot clips;
+- the line under the pill, in the second: drop it, and keep the robot clips.
 
 ## Credits
 
