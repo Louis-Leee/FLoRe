@@ -1,3 +1,18 @@
+## [1.7.2] - 2026-10-14
+### Features
+- The data-collection arrow is drawn over everything, so the crate no longer hides it. It also lies
+  a little lower and further left on the table, by 80 px and 40 px in the 1080p master.
+### Design Rationale
+- Before, the arrow was hidden wherever the crate stood in front of it. As the crate was dragged
+  across the ring's front, that hid the arrowhead from 5.5 to 6.2 s. Drawn on top, the head stays
+  in sight over the crate until the ring fades.
+- Moved lower, the ring's front lies further out on the table, in front of the crate's foot.
+### Notes & Caveats
+- The ring's start, at the crate's right end, is now drawn over the crate too, rather than coming
+  out from behind it.
+- The master and `data_collection.mp4?v=4` are rebuilt. Away from the arrow's frames, the master
+  matches the previous one at 53 dB or more. The poster is unchanged.
+
 ## [1.7.1] - 2026-10-14
 ### Features
 - In the data-collection clip, the arrow lies on the table and stays there. Before, it went along

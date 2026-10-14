@@ -51,10 +51,10 @@ python3 add_title_reveal.py --occlude --edge-offset 90 --x0 356 --no-subtitle --
 ```
 
 The data-collection clip is made from a master with the two strips of tape taken off the table
-and an arrow drawn on the table round the crate as it turns. The arrow stays where it was drawn
-while the crate is dragged off it. That master is made beside its source in the working folder,
-with numpy, OpenCV and Pillow; its constants (the tapes' lines, the frames that show them
-uncovered, the arrow's timing) belong to that one clip:
+and an arrow drawn on the table round the crate as it turns. The arrow stays where it was drawn,
+over everything, while the crate is dragged across it. That master is made beside its source in
+the working folder, with numpy, OpenCV and Pillow; its constants (the tapes' lines, the frames that
+show them uncovered, the arrow's timing) belong to that one clip:
 
 ```bash
 python3 scripts/clean_data_collection.py --src PAPER_DIR    # writes PAPER_DIR/supp/data_collection_clean.mp4

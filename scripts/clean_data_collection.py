@@ -77,11 +77,11 @@ TAPES = (
 DRIFT = ((960, 900, 1120, 1040), (1430, 795, 1600, 880))
 
 # The arrow: an orange ring on the table round the crate, in perspective, that grows clockwise as
-# the crate turns (clockwise seen from above, so on screen too).  It comes out from behind the
-# crate's right end, runs along its front and ends pointing left.  It lies where the crate stood as
-# it appeared, and stays there, moving only as the table drifts, while the crate is turned (4.95 to
-# 5.87 s) and dragged left off it; wherever the crate stands in front of it, it is hidden.  Then the
-# ring fades.
+# the crate turns (clockwise seen from above, so on screen too).  It starts at the crate's right
+# end, runs along its front and ends pointing left.  It lies where the crate stood as it appeared,
+# and stays there, moving only as the table drifts, while the crate is turned (4.95 to 5.87 s) and
+# dragged left across it.  It is drawn over everything, so the crate never hides it.  Then the ring
+# fades.
 ARROW_RGB = (255, 153, 0)       # #ff9900, the page's orange
 ARROW_IN, ARROW_GROW, ARROW_OUT = (4.78, 4.95), (4.95, 5.87), (6.45, 6.85)   # s
 ARROW_AT = ARROW_IN[0]          # s: where the crate stands then is where the ring is laid
@@ -89,6 +89,7 @@ ARROW_TAIL, ARROW_SPAN = -48.0, 216.0   # degrees round the ring, clockwise on s
 ARROW_SIZE = 0.64               # the ring's half width, as a share of the crate's width
 ARROW_TILT = 0.30               # its height over its width: the camera looks down on it a little
 ARROW_DROP = 0.18               # its centre below the crate's, as a share of the crate's height
+ARROW_SHIFT = (-80.0, 40.0)     # px it is then moved, left and down, onto more of the table
 ARROW_WIDTH = 15.0              # px of stroke at the ring's front; its back is narrower, its tail tapers
 ARROW_SS = 3                    # supersampling of the drawing
 
@@ -386,11 +387,11 @@ def arrow_state(i: int) -> tuple[float, float]:
 
 def arrow_ring(track: np.ndarray) -> tuple[int, tuple[float, float, float, float]]:
     """The frame the ring is laid in, and its centre and half axes there, in px: round the crate as
-    it stands then, its centre a little below the crate's."""
+    it stands then, its centre a little below the crate's, and moved by ARROW_SHIFT."""
     k = round(ARROW_AT * FPS)
     cx, cy, bw, bh = track[k]
     a = ARROW_SIZE * bw
-    return k, (cx, cy + ARROW_DROP * bh, a, ARROW_TILT * a)
+    return k, (cx + ARROW_SHIFT[0], cy + ARROW_DROP * bh + ARROW_SHIFT[1], a, ARROW_TILT * a)
 
 
 def table_map(m_from: np.ndarray, m_to: np.ndarray) -> np.ndarray:
@@ -445,19 +446,10 @@ def draw_arrow(frame: np.ndarray, i: int, ring: tuple[float, float, float, float
     pen.ellipse([ex - r0, ey - r0, ex + r0, ey + r0], fill=255)
     pen.polygon(at(np.array([base + wing, tip, base - wing])), fill=255)
     pic = pic.resize((x1 - x0, y1 - y0), Image.LANCZOS)
-    ink = np.asarray(pic, np.float32) / 255
-    shadow = np.roll(np.asarray(pic.filter(ImageFilter.GaussianBlur(4)), np.float32) / 255, (3, 2), (0, 1))
-
-    # The ring lies on the table, so whatever of it falls inside the crate's silhouette (the convex
-    # hull of its blue grey) is behind the crate, and hidden.
-    small = cv2.resize(frame, (W // 2, H // 2), interpolation=cv2.INTER_AREA)
-    m = crate_mask((np.clip(small, 0, 1) * 255).astype(np.uint8))
-    hull = np.zeros(m.shape, np.uint8)
-    if m.any():
-        cv2.fillConvexPoly(hull, cv2.convexHull(cv2.findNonZero(m)), 1)
-    hull = cv2.GaussianBlur(cv2.resize(hull.astype(np.float32), (W, H)), (0, 0), 1.5)[y0:y1, x0:x1]
-    ink *= (1 - hull) * alpha
-    shadow *= (1 - hull) * alpha * 0.55
+    # over everything in the frame, with a soft shadow under it
+    ink = np.asarray(pic, np.float32) / 255 * alpha
+    blur = np.asarray(pic.filter(ImageFilter.GaussianBlur(4)), np.float32) / 255
+    shadow = np.roll(blur, (3, 2), (0, 1)) * alpha * 0.55
 
     out = frame.copy()
     reg = out[y0:y1, x0:x1] * (1 - shadow[..., None])
