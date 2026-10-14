@@ -2,16 +2,25 @@
 ### Features
 - The data-collection arrow is drawn over everything, so the crate no longer hides it. It also lies
   a little lower and further left on the table, by 80 px and 40 px in the 1080p master.
+- Chen Feng, Guanya Shi and Haozhi Qi carry a †. Beside "§Work done while interning at Amazon FAR",
+  the note under the affiliations now reads "†Amazon FAR team co-lead".
 ### Design Rationale
 - Before, the arrow was hidden wherever the crate stood in front of it. As the crate was dragged
   across the ring's front, that hid the arrowhead from 5.5 to 6.2 s. Drawn on top, the head stays
   in sight over the crate until the ring fades.
 - Moved lower, the ring's front lies further out on the table, in front of the crate's foot.
+- The page's Inter subset has no †. The system fonts' dagger, small in a superscript, read as a +.
+  So the dagger is Inter's own, in a 2 KB file of its own (`static/fonts/inter-dagger.woff2`) that
+  only U+2020 calls for.
+- Each note is kept whole. On a computer the two share one line; on a phone each takes its own.
 ### Notes & Caveats
 - The ring's start, at the crate's right end, is now drawn over the crate too, rather than coming
   out from behind it.
 - The master and `data_collection.mp4?v=4` are rebuilt. Away from the arrow's frames, the master
   matches the previous one at 53 dB or more. The poster is unchanged.
+- At 320×568 the hero's text was already taller than the hero, and is now about 10 px taller. From
+  360×640 up it fits, in Chrome, WebKit and Firefox.
+- `inter.css?v=2` and `style.css?v=15`.
 
 ## [1.7.1] - 2026-10-14
 ### Features

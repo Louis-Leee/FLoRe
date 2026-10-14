@@ -3,3 +3,6 @@
    SIL Open Font License 1.1, see OFL.txt. */
 @font-face { font-family: Inter; font-style: normal; font-weight: 400 700;
   font-display: swap; src: url('./inter.woff2') format('woff2'); }
+/* The dagger (U+2020), which that subset lacks, alone: fetched the same way, by its text= parameter. */
+@font-face { font-family: Inter; font-style: normal; font-weight: 400 700;
+  font-display: swap; src: url('./inter-dagger.woff2') format('woff2'); unicode-range: U+2020; }
