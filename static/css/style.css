@@ -262,6 +262,9 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 /* A trial clip: muted, looping while it is in view, with a full-screen button on its corner. */
 .tile { position: relative; }
 .tile > .clip-title { margin: 0 0 .5rem; text-align: center; font-weight: 600; }   /* a clip's title, over it */
+.tile > .clip-note { margin: 0 0 .8rem; text-align: center; text-wrap: balance; color: var(--muted);
+  font-size: .95rem; line-height: 1.55; }   /* and a line or two on what it shows */
+.tile > .clip-note sup { line-height: 0; }
 .tile .full { position: absolute; right: 8px; bottom: 8px; z-index: 2; display: grid; place-items: center;
   width: 30px; height: 30px; padding: 0; border: 0; border-radius: 7px; background: var(--chip); color: #fff;
   cursor: pointer; opacity: 0; transition: opacity .15s; }

@@ -1,3 +1,20 @@
+## [1.8.1] - 2026-10-14
+### Features
+- The two robot clips are one to a row, at the column's full width, instead of side by side.
+- A note under the Force Tracking title says what that clip shows:
+  - F^cmd = −10 N along x;
+  - the gauge reads the same force as the wrist's F/T sensor, F^meas;
+  - when the external force grows or shrinks, the reading strays from 10 N, and the controller
+    gradually brings it back.
+### Design Rationale
+- Side by side, each clip was 441 px wide, too small for the gauge to be read. One to a row, they
+  are 900 px wide on a computer.
+- The note sits between the title and the clip, as the page's captions sit above their figures, in
+  smaller, muted type.
+### Notes & Caveats
+- On a phone the note takes five lines.
+- The stylesheet is now `style.css?v=17`.
+
 ## [1.8.0] - 2026-10-14
 ### Features
 - Under the pill to the full demo, the Controller section shows the controller on the robot in two

@@ -20,7 +20,7 @@
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
 <!-- The controller's equations, typeset once by scripts/render_math.py (KaTeX 0.19.0, MIT). -->
 <link rel="stylesheet" href="./static/katex/katex.min.css?v=0.19.0">
-<link rel="stylesheet" href="./static/css/style.css?v=16">
+<link rel="stylesheet" href="./static/css/style.css?v=17">
 </head>
 <body>
 
@@ -394,12 +394,14 @@ c100.7 8.3 195.3 44 280 108 55.3 42 101.7 93 139 153l9 14c2.7-4 5.7-8.7 9-14
     </ul>
     <p class="demo-open reveal"><a href="./demo/" target="_blank" rel="noopener"><span class="hop">Try the full demo in a new tab!</span><span class="go" aria-hidden="true">&#8599;</span></a></p>
     <!-- the controller on the robot: compliant where no force is commanded, and a commanded force tracked -->
-    <div class="grid two reveal">
-      <figure class="tile"><figcaption class="clip-title">Compliant Behavior</figcaption><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/compliance.jpg" aria-label="Compliant behavior: the robot's hands give way when pushed and pulled">
-        <source src="./static/videos/compliance.mp4" type="video/mp4"></video></figure>
-      <figure class="tile"><figcaption class="clip-title">Force Tracking (<var>x</var> direction &minus;10&nbsp;N)</figcaption><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/force_tracking.jpg" aria-label="Force tracking: &minus;10 N commanded along x, read on a force gauge at the hand">
+    <figure class="tile reveal"><figcaption class="clip-title">Compliant Behavior</figcaption><video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/compliance.jpg" aria-label="Compliant behavior: the robot's hands give way when pushed and pulled">
+      <source src="./static/videos/compliance.mp4" type="video/mp4"></video></figure>
+    <figure class="tile reveal"><figcaption class="clip-title">Force Tracking (<var>x</var> direction &minus;10&nbsp;N)</figcaption>
+      <p class="clip-note">Here F<sup>cmd</sup> = &minus;10&nbsp;N along <var>x</var>, and the gauge reads the same force as
+        the wrist's F/T sensor, F<sup>meas</sup>. When the external force grows or shrinks, the reading strays from
+        10&nbsp;N, and the controller gradually brings it back.</p>
+      <video class="frame" width="1920" height="1080" controls data-autoplay muted loop playsinline preload="none" data-poster="./static/images/posters/force_tracking.jpg" aria-label="Force tracking: &minus;10 N commanded along x, read on a force gauge at the hand">
         <source src="./static/videos/force_tracking.mp4" type="video/mp4"></video></figure>
-    </div>
   </div>
 </section>
 
