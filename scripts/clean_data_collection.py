@@ -82,7 +82,7 @@ DRIFT = ((960, 900, 1120, 1040), (1430, 795, 1600, 880))
 # and stays there, moving only as the table drifts, while the crate is turned (4.95 to 5.87 s) and
 # dragged left across it.  It is drawn over everything, so the crate never hides it.  Then the ring
 # fades.
-ARROW_RGB = (255, 153, 0)       # #ff9900, the page's orange
+ARROW_RGB = (255, 153, 0)       # #ff9900, the page's accent when the clip was made (now clay)
 ARROW_IN, ARROW_GROW, ARROW_OUT = (4.78, 4.95), (4.95, 5.87), (6.45, 6.85)   # s
 ARROW_AT = ARROW_IN[0]          # s: where the crate stands then is where the ring is laid
 ARROW_TAIL, ARROW_SPAN = -48.0, 216.0   # degrees round the ring, clockwise on screen from its right

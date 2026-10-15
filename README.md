@@ -3,7 +3,12 @@
 The project page of *FLoRe: Learning Force-Reactive Humanoid Loco-Manipulation*, served by
 GitHub Pages from this branch. It is a static page with no build step for the HTML: `index.html`,
 one stylesheet (`static/css/style.css`) and one script (`static/js/site.js`). The layout follows the
-[Workhorse page](https://hybridrobotics.github.io/workhorse/).
+[Workhorse page](https://hybridrobotics.github.io/workhorse/), and the look follows
+[claude.com](https://claude.com/)'s: its warm greys, a serif (Newsreader) for the headings over Inter
+for the text, and clay as the one accent. The controller's forces take steps of the same site's
+plum, sky, clay and mineral, checked against each other for colour blindness. The sections' index
+floats at the right, as a scale whose needle follows the reading (`site.js`); its names fold away to
+their marks wherever they would lie over the page, and open on hover, on focus or at a tap.
 
 ## Preview locally
 
@@ -170,15 +175,17 @@ To embed the full demo again, point the `#demo` frame's `data-src` and its *Star
 `./demo/`, its preview back to `controller.mp4` and `controller.jpg`, restore the paragraph and the
 tips above and below it, and name the pill *Try the demo in a new tab!* again. Reverting the commit
 that named the pill's tab the full demo, and then the one that switched the frame to `demo-x/`,
-does all of that. Both reverts now stop on conflicts in `index.html`, since the page has changed
-around those lines:
-- the stylesheet's link: give it a new version;
+does all of that. Both reverts now stop on conflicts, since the page has changed around those lines:
+- the stylesheet's link, in the first: give it a new version;
 - the pill, in the first: keep the old pill and the line under it, then the robot clips;
+- the pill's rule in `style.css`, in the first: keep this side's colours, and take the revert's
+  font size, `clamp(1rem, 4.4vw, 2rem)`;
 - the line under the pill, in the second: drop it, and keep the robot clips.
 
 ## Credits
 
-- Font: [Inter](https://github.com/rsms/inter), SIL Open Font License 1.1 (`static/fonts/OFL.txt`).
+- Fonts: [Inter](https://github.com/rsms/inter) for the text and [Newsreader](https://github.com/productiontype/Newsreader)
+  for the headings, both SIL Open Font License 1.1 (`static/fonts/OFL-Inter.txt`, `static/fonts/OFL-Newsreader.txt`).
 - Icon: the 🌺 of [Noto Emoji](https://github.com/googlefonts/noto-emoji) v2.047, Apache License 2.0.
 - Equations: [KaTeX](https://katex.org/) 0.19.0, its stylesheet and fonts, MIT License (`static/katex/LICENSE`).
 - Page structure: adapted from the [Workhorse](https://hybridrobotics.github.io/workhorse/) project page.

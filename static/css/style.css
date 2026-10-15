@@ -1,99 +1,169 @@
 /* FLoRe project page. One stylesheet, no framework; the layout follows the Workhorse page
-   (hybridrobotics.github.io/workhorse), trimmed to the figures this page has. */
+   (hybridrobotics.github.io/workhorse), trimmed to the figures this page has, and the look follows
+   claude.com's: warm ivory and slate, a serif for the headings, and clay as the one accent. */
 
 :root {
-  --bg: #ffffff;
-  --bg-alt: #f5f6f8;
-  --fg: #16181d;
-  --muted: #5d6470;
-  --line: #e2e5ea;
-  --accent: #1f7a4d;            /* leaf green, as the 🌺's leaves */
-  --accent-soft: #e6f3eb;
-  --radius: 12px;
-  --chip: rgba(16,19,24,.72);   /* a label or button laid on a picture, the same in either theme */
+  /* claude.com's own warm greys */
+  --bg: #faf9f5;                /* ivory: the page */
+  --bg-alt: #f0eee6;            /* oat: every other section */
+  --card: #ffffff;              /* a card on either */
+  --fg: #141413;                /* slate: the headings, and what stands out of the text */
+  --text: #3d3d3a;              /* the running text */
+  --muted: #5e5d59;             /* captions, notes and legends, 5.7:1 on oat */
+  --mark: #87867f;              /* the index's marks, 3.5:1 */
+  --line: #e8e6dc;              /* hairlines */
+  --line-2: #d1cfc5;            /* the borders of keys, and the index's small marks */
+  --accent: #d97757;            /* clay, the one accent: the index's needle, the teaser's bars, the demo's pill */
+  --accent-ink: #b04c29;        /* clay dark enough for text, 4.6:1 on oat */
+  --accent-on: #141413;         /* the text on clay, 5.9:1 (ivory gets 3.0:1) */
+  --focus: #c46849;             /* the focus ring, as claude.com's */
+  --radius: 12px;               /* a picture's frame */
+  --radius-card: 18px;          /* a card's */
+  --chip: rgba(20,20,19,.72);   /* a label or button laid on a picture, the same in either theme */
   --wrap: 1344px;
+  --serif: Newsreader, "Iowan Old Style", Georgia, serif;
+  --math: "Times New Roman", Times, "Nimbus Roman", "Liberation Serif", serif;   /* a variable, as typeset in the paper */
   --fx: #b71c1c;                /* the force plots' axis colours, sampled from the figures */
   --fy: #43b05c;
   --fz: #2860c4;
-  --violet: #6741d9;            /* the demo tips' own colours, with the accent: violet as the F^cmd arrow */
-  --blue: #1971c2;
-  --cyan: #0b7285;              /* f^meas in the controller's diagrams, as the demo's cyan arrow, darkened for text */
-  --red: #b02525;               /* the baseline's failures */
-  --orange: #d9480f;            /* f^ext in the controller's equations, as the demo's orange push, darkened for text */
-  --mk-meas: #0891b2;           /* f^meas and the integral as lines and arrows: steps of the same hues apart enough */
-  --mk-integ: #1f7a4d;          /* that the chart's three curves pass the colour-blind checks against the violet */
-  --math: "Times New Roman", Times, "Nimbus Roman", "Liberation Serif", serif;   /* a variable, as typeset in the paper */
-  --amazon: #ff9900;            /* Amazon orange, the same in either theme: the bars by the teaser's names, and the link */
-  --amazon-ink: #232f3e;        /* to the demo's tab, with Amazon's dark ink on it (6.3:1, where white gets 2.1:1) */
+  /* The controller's forces, in the hues of claude.com's own palette: plum for f^cmd, sky for
+     f^meas, clay for f^ext and mineral for the integral, as the demo draws its arrows purple, blue
+     and orange.  Text takes steps dark enough to read, 4.6:1 on oat; the plot's lines and the
+     diagram's arrows take steps that pass the colour-blind checks against each other. */
+  --f-cmd: #655caa;
+  --f-meas: #316ea7;
+  --f-ext: #b04c29;
+  --f-integ: #1f7861;
+  --mk-cmd: #655caa;
+  --mk-meas: #5d94ca;
+  --mk-integ: #1f876d;
+  --red: #b6443b;               /* the baseline's failures: claude.com's error red, darkened for text */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #101216;
-    --bg-alt: #161920;
-    --fg: #e9ecf1;
-    --muted: #9aa3b2;
-    --line: #262b34;
-    --accent: #5ccf95;
-    --accent-soft: #13261c;
+    --bg: #1f1e1d;
+    --bg-alt: #262624;
+    --card: #262624;
+    --fg: #faf9f5;
+    --text: #dedcd1;
+    --muted: #b0aea5;
+    --mark: #87867f;
+    --line: #3d3d3a;
+    --line-2: #4d4c48;
+    --accent-ink: #e57b58;
+    --focus: #d97757;
     --fx: #ef6461;
     --fy: #66c47e;
     --fz: #6c9cf0;
-    --violet: #9775fa;
-    --blue: #4dabf7;
-    --cyan: #3bc9db;
-    --red: #ff8787;
-    --orange: #ff922b;
-    --mk-meas: #0891b2;
-    --mk-integ: #2f9e44;
+    --f-cmd: #968fe2;
+    --f-meas: #609dd9;
+    --f-ext: #e57b58;
+    --f-integ: #55a88f;
+    --mk-cmd: #8b71b2;
+    --mk-meas: #1c9fe4;
+    --mk-integ: #389a7f;
+    --red: #ec7568;
   }
 }
 
 * { box-sizing: border-box; }
 
-html { scroll-padding-top: 72px; }
-
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--fg);
+  color: var(--text);
   font: 400 18px/1.7 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
 
-h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; margin: 0 0 .6rem; line-height: 1.15; }
-h2 { font-size: 2.5rem; text-wrap: balance; }
-h3 { font-size: clamp(1.25rem, 1.8vw, 1.55rem); margin-top: 2.6rem; }
+/* the headings in the serif, light and close-set, as claude.com sets its own */
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.012em; margin: 0 0 .6rem;
+  line-height: 1.12; color: var(--fg); }
+h2 { font-size: 2.85rem; text-wrap: balance; margin-bottom: 1rem; }
+h3 { font-size: clamp(1.6rem, 2.2vw, 2rem); margin-top: 3rem; }
 p { margin: 0 0 1rem; }
-b { font-weight: 600; }
+b { font-weight: 600; color: var(--fg); }
 :is(var, .m) { font-family: var(--math); font-size: 1.12em; line-height: 1; }   /* a serif's x-height is smaller */
 var + sup { margin-left: .12em; }        /* clear of the slanted letter's top */
-a { color: var(--accent); }
+/* a link in the text keeps the text's colour over a clay rule; each control styles its own */
+:where(a) { color: inherit; text-decoration: underline 1px color-mix(in srgb, var(--accent) 70%, transparent);
+  text-underline-offset: .2em; transition: color .15s, text-decoration-color .15s; }
+:where(a:hover) { color: var(--accent-ink); text-decoration-color: currentColor; }
 
-/* ---------- sticky nav ---------- */
+/* ---------- the index ---------- */
 
+/* The page's index floats at the right, as a scale with a mark for each section and a small one
+   between each two: its needle, in clay, follows the reading from mark to mark (site.js), and the
+   section that it is in is named in slate.  The names fold away to their marks wherever they would
+   lie over the page, and while the teaser plays; they come out on a card of their own on hover, on
+   focus or at a tap, and Escape puts the card away.  Over the hero the index takes light ink. */
 #nav {
-  position: sticky; top: 0; z-index: 50;
-  display: flex; align-items: center; gap: 1.5rem;
-  padding: .7rem max(1.25rem, calc((100vw - var(--wrap)) / 2));
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: saturate(150%) blur(10px);
-  border-bottom: 1px solid transparent;
-  transition: border-color .2s, background .2s;
+  --tick: var(--mark); --minor: var(--line-2); --name: var(--muted); --name-on: var(--fg);
+  position: fixed; z-index: 50; top: 50%; right: clamp(.35rem, 1.6vw, 1.75rem); transform: translateY(-50%);
+  padding: .5rem .55rem .5rem .9rem; border-radius: 16px; pointer-events: none;
+  transition: opacity .35s, visibility 0s, background-color .2s, box-shadow .2s;
 }
-#nav.stuck { border-bottom-color: var(--line); }
-#nav .brand { font-weight: 700; letter-spacing: -0.02em; font-size: 1.05rem; color: var(--fg); }
-#nav .links { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: .93rem; }
-#nav a { color: var(--muted); text-decoration: none; transition: color .2s; }
-#nav a:hover { color: var(--fg); }
-#nav a.on { color: var(--accent); font-weight: 600; }
-#nav .brand { color: var(--fg); }
-/* over the hero the nav is only its words, in white; it takes the page's colours once the page
-   has come up under it */
-.js #nav:not(.stuck) { background: transparent; backdrop-filter: none; }
-.js #nav:not(.stuck) a { color: rgba(255,255,255,.82); text-shadow: 0 1px 3px rgba(0,0,0,.5); }
-.js #nav:not(.stuck) :is(a:hover, .brand) { color: #fff; }
-@media (max-width: 860px) { #nav .links { display: none; } }
+#nav ol { position: relative; margin: 0; padding: 0; list-style: none; }
+/* the scale's small marks: one between each two sections, and one at either end */
+#nav li::before, #nav ol::before { content: ""; position: absolute; right: 0; width: 7px; height: 1px;
+  margin-top: -.5px; background: var(--minor); }
+#nav ol::before { bottom: 0; margin: 0 0 -.5px; }
+/* Only a mark takes the pointer, over a target wider than it, and a name only where it shows: the
+   index lets the page be used under it. */
+#nav a { display: flex; align-items: center; justify-content: flex-end; height: 2rem; text-decoration: none;
+  pointer-events: none; }
+/* a screen too short for seven rows, zoomed in or on its side, packs them closer, so that every one
+   stays on it */
+@supports (height: 100svh) { #nav a { height: clamp(1.1rem, calc((100svh - 2rem) / 7.4), 2rem); } }
+#nav a::after { content: ""; flex: none; width: 26px; height: 100%; pointer-events: auto;
+  background: linear-gradient(var(--tick), var(--tick)) right center / 14px 1.5px no-repeat; transition: background-size .2s; }
+#nav a span { padding-right: .6rem; color: var(--name); font: 500 .8125rem/1 Inter, sans-serif; white-space: nowrap;
+  transition: opacity .2s, transform .2s, color .15s; }
+#nav a[href="#top"] span { font: 500 1.02rem/1 var(--serif); letter-spacing: -0.01em; }   /* the page's own name */
+#nav a:is(:hover, [aria-current]) span { color: var(--name-on); }
+#nav a[aria-current] span { font-weight: 600; }
+#nav a:hover::after { background-size: 20px 1.5px; }
+#nav a:focus-visible { outline: none; }
+#nav a:focus-visible span { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+/* the needle */
+#nav ol::after { content: ""; position: absolute; top: 0; right: 0; width: 24px; height: 2px; margin-top: -1px;
+  border-radius: 1px; background: var(--accent); transform: translateY(var(--needle, 1rem)); }
+/* folded, the names come out on a card, over the page */
+#nav.folded a span { opacity: 0; transform: translateX(.35rem); }
+#nav:not(.folded) a span { pointer-events: auto; }
+#nav.folded:not(.shut):is(.open, :has(:focus-visible)) { pointer-events: auto;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 0 0 1px var(--line), 0 8px 30px rgba(20,20,19,.08); backdrop-filter: blur(10px); }
+#nav.folded:not(.shut):is(.open, :has(:focus-visible)) a span { opacity: 1; transform: none; pointer-events: auto; }
+@media (hover: hover) {
+  #nav.folded:not(.shut):hover { pointer-events: auto; background: color-mix(in srgb, var(--card) 94%, transparent);
+    box-shadow: 0 0 0 1px var(--line), 0 8px 30px rgba(20,20,19,.08); backdrop-filter: blur(10px); }
+  #nav.folded:not(.shut):hover a span { opacity: 1; transform: none; pointer-events: auto; }
+}
+/* over the hero, in light ink */
+#nav.light { --tick: rgba(250,249,245,.75); --minor: rgba(250,249,245,.38); --name: rgba(250,249,245,.82); --name-on: #faf9f5; }
+#nav.light a span { text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+#nav.light.folded:not(.shut):is(.open, :has(:focus-visible)) { background: rgba(20,20,19,.62); box-shadow: 0 0 0 1px rgba(250,249,245,.14); }
+@media (hover: hover) { #nav.light.folded:not(.shut):hover { background: rgba(20,20,19,.62); box-shadow: 0 0 0 1px rgba(250,249,245,.14); } }
+/* site.js shows it once it has placed it; without the script it has no needle */
+.js #nav:not(.shown) { opacity: 0; visibility: hidden; }
+html:not(.js) #nav ol::after { display: none; }
+/* On a phone the marks keep to the page's margin, and a finger gets taller rows. */
+@media (max-width: 700px) {
+  #nav { right: 0; padding: .45rem 4px .45rem .7rem; }
+  #nav a::after { width: 20px; background-size: 10px 1.5px; }
+  #nav a:hover::after { background-size: 12px 1.5px; }
+  #nav li::before, #nav ol::before { width: 5px; }
+  #nav ol::after { width: 13px; }
+}
+@media (pointer: coarse) {
+  #nav a { height: 2.4rem; }
+  @supports (height: 100svh) { #nav a { height: clamp(1.1rem, calc((100svh - 2rem) / 7.4), 2.4rem); } }
+}
+@media (prefers-reduced-motion: reduce) { #nav, #nav a span, #nav a::after { transition: none; } }
+@media print { #nav { display: none; } }
 
 /* ---------- hero ---------- */
 
@@ -102,8 +172,8 @@ a { color: var(--accent); }
    it scrolls by, under each task's name, and at the run's end the side view fades in and plays by
    itself under the title.  Otherwise the title is there from the start, over the side view. */
 .hero {
-  position: sticky; top: 0; height: 100vh; min-height: 600px; overflow: hidden; margin-top: -58px;
-  z-index: 1; background: #0b0d11;
+  position: sticky; top: 0; height: 100vh; min-height: 600px; overflow: hidden;
+  z-index: 1; background: #141413;
 }
 main { position: relative; z-index: 2; background: var(--bg); }        /* slides up over the hero */
 footer { position: relative; z-index: 2; background: var(--bg); }
@@ -112,18 +182,18 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 .hero-shade {
   position: absolute; inset: 0;
   background:
-    radial-gradient(120% 80% at 50% 62%, rgba(6,8,12,.74) 0%, rgba(6,8,12,.32) 55%, rgba(6,8,12,.05) 100%),
-    linear-gradient(180deg, rgba(8,10,14,.5) 0%, rgba(8,10,14,.2) 35%, rgba(8,10,14,.6) 100%);
+    radial-gradient(120% 80% at 50% 62%, rgba(20,20,19,.74) 0%, rgba(20,20,19,.32) 55%, rgba(20,20,19,.05) 100%),
+    linear-gradient(180deg, rgba(20,20,19,.5) 0%, rgba(20,20,19,.2) 35%, rgba(20,20,19,.6) 100%);
 }
 .hero-body {
   position: relative; height: 100%;
   opacity: var(--fade, 1); will-change: opacity, transform;
   transform: translateY(calc((1 - var(--title, 1)) * 28px + var(--lift, 0) * -40px));
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; color: #fff; padding: 6rem 1.5rem 4rem;
+  text-align: center; color: #faf9f5; padding: 6rem 1.5rem 4rem;
 }
 .hero h1 {
-  font-size: 9rem; font-weight: 700; letter-spacing: -0.03em;
+  font-size: 9.6rem; letter-spacing: -0.025em; line-height: 1.05; color: inherit;
   margin: 0 0 .9rem; text-shadow: 2px 2px 4px rgba(0,0,0,.8);
 }
 /* the rose after the name, on a transparent ground, with the letters' shadow; a faint light rim
@@ -131,21 +201,21 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 .hero h1 .rose { display: inline-block; width: auto; height: .86em; margin-left: .04em; vertical-align: -.08em;
   filter: drop-shadow(0 0 1.5px rgba(255,255,255,.55)) drop-shadow(2px 2px 4px rgba(0,0,0,.8)); }
 .hero .sub {
-  font-size: 3.5rem; font-weight: 600; line-height: 1.18;
+  font: 400 3.6rem/1.12 var(--serif);
   max-width: 22em; text-wrap: balance; margin: 0 0 2rem; letter-spacing: -0.015em;
   text-shadow: 2px 2px 4px rgba(0,0,0,.8);
 }
 .hero .authors { margin: 0 0 .6rem; font-size: 1.5rem; line-height: 1.9; max-width: 48em;
   text-shadow: 2px 2px 4px rgba(0,0,0,.8); }
 .authors > span { white-space: nowrap; }
-.hero .authors sup { font-size: .62em; color: #d5dce6; margin-left: .06em; }
+.hero .authors sup { font-size: .62em; color: #dedcd1; margin-left: .06em; }
 /* four institutions are too many for a corner note: they sit under the names, one per run */
-.hero .affil { margin: 0 0 .45rem; max-width: 52em; color: #dde3ec; font-size: 1.05rem; line-height: 1.6;
+.hero .affil { margin: 0 0 .45rem; max-width: 52em; color: #e8e6dc; font-size: 1.05rem; line-height: 1.6;
   text-wrap: balance; text-shadow: 2px 2px 4px rgba(0,0,0,.8); }
 .hero .affil span { white-space: nowrap; margin: 0 .55em; }
 .hero .affil sup { font-size: .72em; margin-right: .12em; }
 /* the footnotes to the § and the † by the names, one per run */
-.hero .note { margin: 0 0 1.9rem; color: #c8d0db; font-size: .95rem; line-height: 1.5;
+.hero .note { margin: 0 0 1.9rem; color: #d1cfc5; font-size: .95rem; line-height: 1.5;
   text-wrap: balance; text-shadow: 2px 2px 4px rgba(0,0,0,.8); }
 .hero .note span { white-space: nowrap; margin: 0 .55em; }
 .hero .note sup { font-size: .72em; margin-right: .12em; }
@@ -155,22 +225,22 @@ footer { position: relative; z-index: 2; background: var(--bg); }
   .hero-body { padding: 5rem 1.25rem 3.5rem; }
 }
 
-/* The teaser's own layers, as on doorman-humanoid.github.io: a light shade where the nav, the
-   names and the hint sit, each task's name on the left by a bar of Amazon orange, and the hint
-   to scroll.  They give way to the title as it comes in. */
+/* The teaser's own layers, as on doorman-humanoid.github.io: a light shade where the names and the
+   hint sit, each task's name on the left by a bar of clay, and the hint to scroll.  They give way to
+   the title as it comes in. */
 .hero-teaser, .hero-tasks, .hero-hint { display: none; }
 .hero-tasks { position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(8,10,14,.55) 0, rgba(8,10,14,0) 150px),
-    linear-gradient(0deg, rgba(8,10,14,.5) 0, rgba(8,10,14,0) 180px),
-    linear-gradient(90deg, rgba(8,10,14,.45) 0, rgba(8,10,14,0) 60%); }
+  background: linear-gradient(180deg, rgba(20,20,19,.55) 0, rgba(20,20,19,0) 150px),
+    linear-gradient(0deg, rgba(20,20,19,.5) 0, rgba(20,20,19,0) 180px),
+    linear-gradient(90deg, rgba(20,20,19,.45) 0, rgba(20,20,19,0) 60%); }
 .hero-tasks p { position: absolute; top: 50%; left: max(1.25rem, 8vw); max-width: min(34rem, 84vw); margin: 0;
-  padding: .1rem 0 .25rem 1.5rem; border-left: 8px solid var(--amazon); color: #e3e8ef; font-size: 1.55rem;
+  padding: .1rem 0 .25rem 1.5rem; border-left: 8px solid var(--accent); color: #f0eee6; font-size: 1.55rem;
   line-height: 1.35; text-shadow: 0 2px 10px rgba(0,0,0,.6);
   opacity: var(--o, 0); transform: translate(calc((var(--o, 0) - 1) * 30px), -50%); }
-.hero-tasks b { display: block; margin-bottom: .3rem; color: #fff; font-size: 4rem; line-height: 1.08;
+.hero-tasks b { display: block; margin-bottom: .3rem; color: #faf9f5; font: 400 4.4rem/1.05 var(--serif);
   letter-spacing: -0.02em; }
 .hero-hint { position: absolute; left: 0; right: 0; bottom: 1.4rem; margin: 0; text-align: center;
-  color: rgba(255,255,255,.9); font-size: .95rem; letter-spacing: .02em; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+  color: rgba(250,249,245,.9); font-size: .95rem; letter-spacing: .02em; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
 /* The hero is a full 100vh and at least 600px, which on a phone runs on under the browser's bar
    while that is out, and past the screen's foot when the phone is on its side: the hint keeps to
    the part in view. */
@@ -191,19 +261,20 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 }
 
 .buttons { display: flex; gap: .7rem; flex-wrap: wrap; justify-content: center; }
+/* the title's buttons, as claude.com's: ivory on the picture, square-cornered with a soft round */
 .btn {
-  display: inline-block; padding: .62rem 1.15rem; border-radius: 999px;
-  background: #fff; color: #16181d; font-weight: 600; font-size: .95rem; text-decoration: none;
-  border: 1px solid transparent; transition: transform .12s, background .2s;
+  display: inline-block; padding: .62rem 1.2rem; border-radius: 10px;
+  background: #faf9f5; color: #141413; font-weight: 600; font-size: .95rem; text-decoration: none;
+  border: 1px solid transparent; transition: transform .12s, background-color .2s;
 }
-.btn:hover { transform: translateY(-1px); }
-.btn.disabled { background: rgba(255,255,255,.08); color: #aab3c0; border-color: rgba(255,255,255,.22); cursor: not-allowed; }
+.btn:hover { transform: translateY(-1px); background: #fff; }
+.btn.disabled { background: rgba(250,249,245,.08); color: #c2c0b6; border-color: rgba(250,249,245,.24); cursor: not-allowed; }
 .btn.disabled:hover { transform: none; }
 
 /* ---------- sections ---------- */
 
-.section { padding: 3.4rem 1.25rem; }
-.section.tight { padding-top: .6rem; }
+.section { padding: 4rem 1.25rem; }
+.section.tight { padding-top: .6rem; scroll-margin-top: 2rem; }   /* a link there lands clear of its heading */
 .section.alt { background: var(--bg-alt); }
 .wrap { max-width: var(--wrap); margin: 0 auto; }
 .wrap.narrow { max-width: 900px; }
@@ -211,7 +282,7 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 
 /* things rise into place as they come into view; without the script, or on paper, they are
    simply there */
-.js .reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1); }
+.js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1); }
 .js .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; transition: none; } }
 @media print {
@@ -234,7 +305,7 @@ footer { position: relative; z-index: 2; background: var(--bg); }
 /* ---------- figures ---------- */
 
 /* Every picture on the page wears one frame.  A clip in full screen drops it. */
-.frame { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #0b0d11; }
+.frame { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #141413; }
 video { width: 100%; height: auto; display: block; }
 video:fullscreen { border: 0; border-radius: 0; object-fit: contain; }
 
@@ -246,8 +317,8 @@ figure img { width: 100%; height: auto; display: block; }
 
 /* a caption introduces its figure, so it sits above it; a lead-in to a row of figures is
    the same thing without a <figure> to live in */
-.wrap.narrow .figlead { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-height: 1.6; }
-figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-height: 1.6; }
+.wrap.narrow .figlead { color: var(--text); font-size: 1.12rem; margin: 0 0 .8rem; line-height: 1.6; }
+figcaption { color: var(--text); font-size: 1.12rem; margin: 0 0 .8rem; line-height: 1.6; }
 
 /* the lead-in to the in-page demo is a note on how to read it, in smaller, muted type */
 .wrap.narrow > .figlead:has(+ figure #demo) { color: var(--muted); font-size: .95rem; line-height: 1.55; }
@@ -268,7 +339,8 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 
 /* A trial clip: muted, looping while it is in view, with a full-screen button on its corner. */
 .tile { position: relative; }
-.tile > .clip-title { margin: 0 0 .5rem; text-align: center; font-weight: 600; font-size: 1.3rem; }   /* a clip's title, over it */
+.tile > .clip-title { margin: 0 0 .55rem; text-align: center; color: var(--fg); font: 400 1.6rem/1.25 var(--serif);
+  letter-spacing: -0.01em; }   /* a clip's title, over it */
 .tile > .clip-note { margin: 0 0 .8rem; text-align: center; text-wrap: balance; color: var(--muted);
   font-size: .95rem; line-height: 1.55; }   /* and a line or two on what it shows */
 .tile > .clip-note sup { line-height: 0; }
@@ -298,8 +370,8 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
 /* One rollout of the position-only baseline closes each task: a card in the failures' colour, its
    note beside a clip as large as one of the task's own.  Narrow, the note goes above the clip. */
 .baseline { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.3rem; align-items: center;
-  padding: 1rem; border-radius: var(--radius); background: color-mix(in srgb, var(--red) 8%, var(--bg));
-  border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); }
+  padding: 1.1rem; border-radius: var(--radius-card); background: color-mix(in srgb, var(--red) 6%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--red) 22%, transparent); }
 .baseline h4 { display: flex; align-items: center; gap: .45rem; margin: 0 0 .4rem; color: var(--red);
   font-size: 1.05rem; font-weight: 700; line-height: 1.3; }
 .baseline .ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9;
@@ -311,14 +383,14 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
    mjswan bundle in a frame.  A veil over the running demo keeps the page's scrolling from
    zooming it: one click hands it the mouse, and leaving the frame takes it back. */
 .demo { position: relative; aspect-ratio: 16 / 9; max-height: 82vh; width: 100%;
-  background: linear-gradient(#26405a, #2f4f6d); }
+  background: linear-gradient(#262624, #30302e); }
 .demo .demo-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
   filter: brightness(.5) saturate(.9); }
 .demo-launch { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: .7rem; text-decoration: none; color: #fff; text-align: center; }
+  justify-content: center; gap: .7rem; text-decoration: none; color: #faf9f5; text-align: center; }
 .demo-launch .btn { font-size: 1.05rem; padding: .75rem 1.4rem; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
 .demo-launch:hover .btn { transform: translateY(-1px); }
-.demo-launch .note { color: #dde3ec; font-size: .9rem; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+.demo-launch .note { color: #e8e6dc; font-size: .9rem; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 .demo iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
 .demo-veil { position: absolute; inset: 0; z-index: 2; cursor: pointer; display: flex; align-items: flex-end;
   justify-content: center; padding-bottom: 14px; background: transparent; border: 0; font: inherit; }
@@ -334,12 +406,12 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
    dark theme gets dark tints */
 .demo-tips { margin: 1.4rem 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr);
   gap: .9rem; }
-.demo-tips li { --tint: var(--accent); padding: 1rem 1.1rem 1.05rem; border-radius: var(--radius);
-  background: color-mix(in srgb, var(--tint) 12%, var(--bg));
-  border: 1px solid color-mix(in srgb, var(--tint) 26%, transparent);
+.demo-tips li { --tint: var(--f-integ); padding: 1.05rem 1.15rem 1.1rem; border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--tint) 7%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--tint) 20%, transparent);
   color: var(--muted); font-size: .92rem; line-height: 1.5; }
-.demo-tips .tip-force { --tint: var(--violet); }
-.demo-tips .tip-push { --tint: var(--blue); }
+.demo-tips .tip-force { --tint: var(--f-cmd); }
+.demo-tips .tip-push { --tint: var(--f-ext); }      /* the push is F^ext, orange */
 .demo-tips .ico { display: block; width: 22px; height: 22px; margin-bottom: .5rem; fill: none; stroke: var(--tint);
   stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .demo-tips b { display: block; margin-bottom: .2rem; color: var(--fg); font-size: 1rem; }
@@ -348,18 +420,18 @@ figcaption { color: var(--fg); font-size: 1.12rem; margin: 0 0 .8rem; line-heigh
   .demo-tips { grid-template-columns: 1fr; }
   .demo-tips .ico { float: left; margin: 1px .55rem 0 0; }   /* stacked, the icon sits by its title */
 }
-kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
-  font: 600 .85em/1.4 Inter, sans-serif; color: var(--fg); background: var(--bg); }
+kbd { padding: .05rem .4rem; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 5px;
+  font: 600 .85em/1.4 Inter, sans-serif; color: var(--fg); background: var(--card); }
 
-/* The demo's own tab, where its panels have room: a large orange pill whose letters hop in a wave
+/* The demo's own tab, where its panels have room: a large clay pill whose letters hop in a wave
    every few seconds, the arrow last.  Its padding is in em, so the pill scales with its text, and
    the text shrinks with a narrow screen to keep to one line. */
 .demo-open { margin: 2rem 0 0; text-align: center; }
 .demo-open a { display: inline-flex; align-items: center; gap: .5em; max-width: 100%; padding: .8em 1.5em;
-  border-radius: 999px; background: var(--amazon); color: var(--amazon-ink); font-weight: 700;
+  border-radius: 999px; background: var(--accent); color: var(--accent-on); font-weight: 700;
   font-size: clamp(.875rem, 4.4vw, 2rem); line-height: 1.25; text-decoration: none;
-  box-shadow: 0 10px 32px color-mix(in srgb, var(--amazon) 38%, transparent); transition: transform .15s, box-shadow .15s; }
-.demo-open a:hover { transform: translateY(-3px); box-shadow: 0 16px 40px color-mix(in srgb, var(--amazon) 48%, transparent); }
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--accent) 34%, transparent); transition: transform .15s, box-shadow .15s; }
+.demo-open a:hover { transform: translateY(-3px); box-shadow: 0 16px 40px color-mix(in srgb, var(--accent) 44%, transparent); }
 .demo-open a:focus-visible { outline: 3px solid var(--fg); outline-offset: 4px; }
 .demo-open .w { white-space: nowrap; }
 .demo-open .ch, .demo-open .go { display: inline-block; animation: 4s calc(var(--i, 0) * 40ms) infinite both; }
@@ -381,13 +453,13 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
 .ctl .note { font-size: 15px; }
 .ctl text.gray { fill: var(--muted); }
 .ctl :is(line, path) { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.ctl text.cmd { fill: var(--violet); }
-.ctl text.meas { fill: var(--cyan); }
-.ctl text.integ { fill: var(--accent); }
-.ctl :is(line, path).cmd { stroke: var(--violet); stroke-width: 3; }
+.ctl text.cmd { fill: var(--f-cmd); }
+.ctl text.meas { fill: var(--f-meas); }
+.ctl text.integ { fill: var(--f-integ); }
+.ctl :is(line, path).cmd { stroke: var(--mk-cmd); stroke-width: 3; }
 .ctl :is(line, path).meas { stroke: var(--mk-meas); stroke-width: 3; }
 .ctl line.integ { stroke: var(--mk-integ); stroke-width: 3; }
-.ctl marker.cmd path { fill: var(--violet); }
+.ctl marker.cmd path { fill: var(--mk-cmd); }
 .ctl marker.meas path { fill: var(--mk-meas); }
 .ctl marker.integ path { fill: var(--mk-integ); }
 .ctl .chip { fill: var(--bg); }
@@ -413,7 +485,7 @@ kbd { padding: .05rem .4rem; border: 1px solid var(--line); border-bottom-width:
   -webkit-tap-highlight-color: transparent; }
 .gains-pad svg { display: block; width: 100%; height: auto; touch-action: none; cursor: grab; }
 .gains-pad.drag svg { cursor: grabbing; }
-.gains-pad:focus-within svg { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+.gains-pad:focus-within svg { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 8px; }
 .gains-pad .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .gains-off { margin: 0; color: var(--muted); }
 .legend.gains-key { margin: 0 0 .5rem; }   /* over the plot, beside it on a phone too */
@@ -424,23 +496,23 @@ html:not(.js) .gains-key { display: none; }
 .gchart :is(.grid, .axis, .zero) { stroke: var(--line); stroke-width: 1; }
 .gchart :is(.axis, .zero) { stroke: var(--muted); stroke-opacity: .6; }
 .gchart .band { fill: var(--fg); fill-opacity: .05; }
-.gchart .cmd { stroke: var(--violet); stroke-width: 2; stroke-dasharray: 7 5; }
+.gchart .cmd { stroke: var(--mk-cmd); stroke-width: 2; stroke-dasharray: 7 5; }
 .gchart .meas { stroke: var(--mk-meas); stroke-width: 2.5; }
 .gchart .integ { stroke: var(--mk-integ); stroke-width: 2; }
 .gchart .area { fill: var(--mk-integ); fill-opacity: .1; stroke: none; }
 .gpad .grid { stroke: var(--line); stroke-width: 1; }
 .gpad .axis { stroke: var(--fg); stroke-width: 1.6; }
 .gpad marker path { fill: var(--fg); }
-.gains-pad[data-focus=k] line.ax-k, .gains-pad[data-focus=ki] line.ax-ki { stroke: var(--accent); }
-.gains-pad[data-focus=k] text.ax-k, .gains-pad[data-focus=ki] text.ax-ki { fill: var(--accent); }
+.gains-pad[data-focus=k] line.ax-k, .gains-pad[data-focus=ki] line.ax-ki { stroke: var(--focus); }
+.gains-pad[data-focus=k] text.ax-k, .gains-pad[data-focus=ki] text.ax-ki { fill: var(--accent-ink); }
 .gpad .home { fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-dasharray: 3 3; }
-.gpad .dot { fill: var(--fg); stroke: var(--bg); stroke-width: 2; }
-.gpad .pulse { fill: var(--fg); transform-box: fill-box; transform-origin: center; animation: pad-pulse 1.8s ease-out infinite; }
+.gpad .dot { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }   /* what is dragged, in clay */
+.gpad .pulse { fill: var(--accent); transform-box: fill-box; transform-origin: center; animation: pad-pulse 1.8s ease-out infinite; }
 .gpad .hint { font-size: 14px; fill: var(--muted); }
 .gains-pad.used :is(.pulse, .hint) { display: none; }
 @keyframes pad-pulse { from { transform: scale(1); opacity: .35; } to { transform: scale(2.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .gpad .pulse { display: none; } }
-.legend .ln.cmd::before { border-top: 2px dashed var(--violet); }
+.legend .ln.cmd::before { border-top: 2px dashed var(--mk-cmd); }
 .legend .ln.meas::before { border-top: 2.5px solid var(--mk-meas); }
 .legend .ln.integ::before { border-top: 2px solid var(--mk-integ); }
 @media (max-width: 640px) {
@@ -450,20 +522,20 @@ html:not(.js) .gains-key { display: none; }
 }
 
 /* The controller's law in equations, as tune-to-learn explains its gains: KaTeX, typeset into the
-   page by scripts/render_math.py.  The forces and the integral take the diagrams' colours, f^ext
-   the orange of the demo's push.  A wide equation scrolls sideways in its own box on a phone. */
+   page by scripts/render_math.py.  The forces and the integral take the diagram's colours, f^ext
+   the clay of the demo's orange push.  A wide equation scrolls sideways in its own box on a phone. */
 .wrap.narrow > .law { margin-top: 2.2rem; }
 .wrap.narrow > h2 + .law { margin-top: 1.2rem; }
-/* the comparison with other learned controllers, in a box of its own */
-.law.compare { padding: 1.15rem 1.35rem .35rem; border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
-  border-radius: var(--radius); background: var(--bg-alt); }
+/* the comparison with other learned controllers, on a card of its own */
+.law.compare { padding: 1.3rem 1.5rem .45rem; border: 1px solid var(--line); border-radius: var(--radius-card);
+  background: var(--card); }
 .law p { margin: 0 0 .8rem; font-size: 1.12rem; line-height: 1.6; text-align: justify; }
 .law .eq { margin: 0 0 .9rem; overflow-x: auto; overflow-y: hidden; }
 .law .eq .katex-display { margin: .45em 0; }
-.katex .m-cmd { color: var(--violet); }
-.katex .m-meas { color: var(--cyan); }
-.katex .m-ext { color: var(--orange); }
-.katex .m-integ { color: var(--accent); }
+.katex .m-cmd { color: var(--f-cmd); }
+.katex .m-meas { color: var(--f-meas); }
+.katex .m-ext { color: var(--f-ext); }
+.katex .m-integ { color: var(--f-integ); }
 .nobr { white-space: nowrap; }   /* a formula and the punctuation after it, which may not start a line */
 
 /* the plots under a task: commanded and measured force per hand and axis */
@@ -479,7 +551,7 @@ html:not(.js) .gains-key { display: none; }
 .legend .ln.dashed::before { border-top-style: dashed; }
 .legend .gap { width: 1px; height: 1.1em; background: var(--line); }
 
-:is(video, .tile .full, .bleed a, .wide, .law .eq):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:is(video, .tile .full, .bleed a, .wide, .law .eq):focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .tile .seek:focus-visible { outline: 2px solid #fff; outline-offset: 0; box-shadow: 0 0 0 4px rgba(0,0,0,.55); }
 
 footer {
@@ -493,23 +565,23 @@ footer a { color: inherit; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
 @media (max-width: 1024px) {
-  .hero h1 { font-size: 6rem; }
-  .hero .sub { font-size: 2.6rem; }
+  .hero h1 { font-size: 6.4rem; }
+  .hero .sub { font-size: 2.7rem; }
   .hero .authors { font-size: 1.2rem; }
-  h2 { font-size: 2rem; }
+  h2 { font-size: 2.3rem; }
 }
 @media (max-width: 700px) {
-  .hero h1 { font-size: 3.6rem; }
-  .hero .sub { font-size: 1.6rem; }
+  .hero h1 { font-size: 3.8rem; }
+  .hero .sub { font-size: 1.7rem; }
   .hero .authors { font-size: 1rem; }
   .hero .affil { font-size: .85rem; }
   .hero .note { font-size: .8rem; }
   .hero-tasks p { padding-left: 1rem; border-left-width: 6px; font-size: 1.05rem; }
-  .hero-tasks b { font-size: 2.3rem; }
-  h2 { font-size: 1.7rem; }
+  .hero-tasks b { font-size: 2.5rem; }
+  h2 { font-size: 1.9rem; }
   :is(#abstract p, .lede, .figlead, figcaption:not(.clip-title), .law p) { text-align: left; }   /* a justified line this narrow opens wide gaps */
   .law .eq .katex-display > .katex { font-size: 1.05em; }
-  .law.compare { padding: .9rem .9rem .2rem; }
+  .law.compare { padding: 1rem 1rem .3rem; }
   .buttons { gap: .5rem; }
   .btn { padding: .55rem .9rem; font-size: .9rem; }
   .hero .note { margin-bottom: 1.1rem; }   /* "Code (coming soon)" takes the buttons a second row */

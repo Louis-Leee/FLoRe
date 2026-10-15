@@ -1,0 +1,15 @@
+/* The page's two faces, each the latin subset fetched once from Google Fonts and served from this
+   page's own origin, so that opening the page does not wait on two other hosts.  Both are under the
+   SIL Open Font License 1.1: see OFL-Inter.txt and OFL-Newsreader.txt. */
+
+/* Inter (v4, variable 400-700): the text */
+@font-face { font-family: Inter; font-style: normal; font-weight: 400 700;
+  font-display: swap; src: url('./inter.woff2') format('woff2'); }
+/* The dagger (U+2020), which that subset lacks, alone: fetched the same way, by its text= parameter. */
+@font-face { font-family: Inter; font-style: normal; font-weight: 400 700;
+  font-display: swap; src: url('./inter-dagger.woff2') format('woff2'); unicode-range: U+2020; }
+
+/* Newsreader (Production Type, variable 200-800 with optical sizes 6-72): the headings.  It has no
+   non-breaking hyphen (U+2011), so a hyphenated word in a heading is kept whole by a span instead. */
+@font-face { font-family: Newsreader; font-style: normal; font-weight: 200 800;
+  font-display: swap; src: url('./newsreader.woff2') format('woff2'); }

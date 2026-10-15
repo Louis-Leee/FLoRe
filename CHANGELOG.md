@@ -1,3 +1,93 @@
+## [2.0.0] - 2026-10-14
+### Features
+- The bar across the top is gone. The sections' index floats at the right, centred on the screen:
+  a scale with a mark for each of FLoRe, Video, Abstract, Pipeline, Controller, Experiments and Data
+  Collection, and a small mark between each two.
+  - A clay needle follows the reading line, a third of the way down the screen, from a section's
+    mark towards the next one's. The section that it is in is named in slate (and carries
+    `aria-current="location"`).
+  - A click or a tap on a mark or a name glides there, or jumps under reduced motion. Each section
+    lands flush at the top; the Abstract, whose padding is tight, lands 2rem lower.
+  - The names show beside the text where there is room. Wherever they would lie over the page (the
+    text's column, a figure wider than it, or the title's lines) they fold away to their marks, and
+    come out on a card on hover, on keyboard focus, or at a first tap on a touch screen; the second
+    tap goes where it says.
+  - Over the hero the index takes light ink. While the teaser plays it shows only its marks.
+  - On a phone the marks keep to the page's 20 px margin, and touch gets taller rows.
+  - Without the script it stays folded, at every width, and opens on hover or focus; it has no
+    needle and no current section.
+- The look follows claude.com's:
+  - claude.com's own warm greys: an ivory page (#faf9f5), oat for every other section (#f0eee6),
+    white cards, slate headings (#141413), text in #3d3d3a and notes in #5e5d59, hairlines in
+    #e8e6dc. The dark theme takes its dark greys (#1f1e1d, #262624).
+  - The title, the section headings, the task names over the teaser and the clips' titles are set
+    in Newsreader, light and close-set; the text stays in Inter.
+  - Clay (#d97757) is the one accent: the index's needle, the bars by the teaser's names, the demo's
+    pill (with slate text, 5.9:1) and the chart's draggable dot. Focus rings are claude.com's darker
+    clay (#c46849).
+  - Links keep the text's colour over a clay underline. The title's buttons are ivory with 10 px
+    corners. The comparison, the demo's tips and the baseline cards are cards with hairline borders
+    and 18 px corners.
+  - The controller's forces take claude.com's hues: plum for f^cmd, sky for f^meas, clay for f^ext
+    and mineral for the integral. In text they are at least 4.6:1 on oat. The chart's lines and the
+    diagram's arrows are steps that pass the dataviz palette validator against each other, all
+    pairs, in both themes.
+  - The hero's shades and the clips' frames are warm black (#141413) instead of blue-black.
+- The controller's text and chart were checked against the training code and the logged config of
+  the 5-point unified-anneal run. Its law, signs and constants are the page's: K = 200 N/m,
+  K_I = 0.5 1/s, I_max = 40 N, the error f^cmd + f^meas, a 5 ms step, and an integral cleared out of
+  contact. One mechanism was not:
+  - The integral is gated by contact itself: the simulated contact in training, and a measured force
+    on the robot. The page said the smoothed, hysteresis-switched contact phase gated it; that phase
+    feeds only the policy's observation and the rewards. The sentence now says only that the contact
+    phase c lets the integral build up only in contact and clears it on release.
+  - The chart's integral is gated by contact itself, as in training, and its shading runs from the
+    first touch to the last parting. PRESS loses its onset, release and low-pass constants. At the
+    paper's gains the curves hardly move (the integral at 7.7 s goes from 4.58 to 4.63 N), and the
+    force axis keeps its range.
+### Design Rationale
+- A scale rather than a list: it reads as the page's length, and the needle tells where the reading
+  is within a section as well as which one it is in. The folding keeps the names off the text and
+  off the two figures that leave the column (the pipeline and the demo), instead of shrinking those
+  figures to make room.
+- Newsreader is the free face closest to claude.com's own serif among those set side by side
+  (Newsreader, Source Serif 4, Literata, Fraunces): a similar colour at a light weight, and optical
+  sizes for both the title and the headings. It is self-hosted like Inter (132 KB, variable).
+- The two oranges (Amazon orange and the demo's orange) are now one clay, so the page has a single
+  accent. claude.com's plum, sky and mineral were too grey and too close to each other for lines,
+  so the chart takes stepped versions of them; the demo's own arrows keep their colours, and the
+  tips' words for them (purple, blue, orange) still hold.
+- Links are styled through `:where(a)`, so that every control that is a link (the buttons, the
+  pill, the demo's start, the index) keeps its own colours without an override per control.
+- The index stays on screen during the teaser, folded to its marks, so a visitor can still skip it;
+  its names come out only on hover, focus or a tap there, to keep the teaser clear. It starts folded
+  in the markup, so that without the script its names never fall over the page.
+- Escape puts away a card opened by hover or focus (WCAG 1.4.13); it comes back once the pointer
+  leaves or the focus moves on. A first tap opens the folded index only for a finger or a pen, by
+  the pointer that pressed, so a touch laptop that also has a mouse gets it too.
+- The controller's text keeps to what holds for both training and the robot. Constants such as the
+  robot's force threshold stay out of it.
+### Notes & Caveats
+- Newsreader has no non-breaking hyphen (U+2011), so the title's two hyphenated words are kept whole
+  by `.nobr` spans with plain hyphens.
+- `static/fonts/inter.css` is now `fonts.css`, and `OFL.txt` is `OFL-Inter.txt` beside
+  `OFL-Newsreader.txt`.
+- The two documented reverts back to the full demo now stop on one more conflict, in `style.css`,
+  on the pill's rule; the README says how to resolve it (re-simulated: the demo block comes back
+  identical to the one before demo-x).
+- Chrome starts Tab from where the page is scrolled to; from the top, Tab goes through the index
+  first and opens its card.
+- A screen too short for seven rows (zoomed in, or a phone on its side) packs the rows closer, down
+  to 1.1rem each.
+- The chart, the generator and the generator's text keep the reference on the surface, as the user
+  chose (v1.3.2). In training the surface stands 2 to 9 cm beyond the reference, so there the
+  integral also makes up that gap and settles higher.
+- At the pad's K = 100 edge the hand can touch the surface again for about 15 ms as the integral is
+  cleared at release; it does not show at the plot's resolution.
+- The data-collection clip keeps its arrow in Amazon orange: it is drawn into the video.
+- At 320x568 the title still runs past the screen, as before (the hero is at least 600 px tall).
+- `style.css?v=19`, `site.js?v=12`, `fonts.css?v=1`.
+
 ## [1.9.0] - 2026-10-14
 ### Features
 - The Controller section is rewritten around its law:

@@ -1,6 +1,6 @@
-// FLoRe project page: clips that load and play only while they are watched, the nav that marks
-// the section you are in, and the hero, whose teaser plays as the page is scrolled before it gives
-// way to the page.  The structure follows the Workhorse page's script
+// FLoRe project page: clips that load and play only while they are watched, the hero, whose teaser
+// plays as the page is scrolled before it gives way to the page, and the index at the right, whose
+// needle follows the reading.  The structure follows the Workhorse page's script
 // (hybridrobotics.github.io/workhorse), trimmed to what is used here; the hero follows the
 // DoorMan page's (doorman-humanoid.github.io).
 
@@ -466,7 +466,8 @@ if (hop) {
 // An idealised press of the controller's law along x: the reference brings a hand that lags its
 // target to a surface that stops it and pushes back in proportion to how deep the target lies, at a
 // stiffness the robot does not know; the command ramps up, holds and ramps down, and the reference
-// leaves again.  It illustrates the law and is not a recording.  scripts/draw_controller.py draws
+// leaves again.  The integral runs only while the hand touches the surface, as in training, and is
+// cleared as it leaves.  It illustrates the law and is not a recording.  scripts/draw_controller.py draws
 // the generator to scale for this press once it has settled at the paper's gains, so the two share
 // their constants: change them together.  A run takes well under a millisecond, so the press is run
 // again whenever the pad moves.
@@ -476,9 +477,6 @@ const PRESS = {
   kSpan: [100, 400], // the pad's K, on a log scale
   kiSpan: [0.125, 2], // and its K_I
   iMax: 40, // N, the integral's bound
-  onset: 2, // N: the contact phase switches on above this force,
-  release: 1.5, // N: and off below this one,
-  tauC: 0.05, // s: and a low-pass smooths it
   kContact: 150, // N/m: how hard the stopped hand presses per metre its target lies beyond the surface
   tauHand: 0.12, // s, how far the hand lags its target
   arrive: 1.2, // s: the reference reaches the surface,
@@ -501,25 +499,20 @@ function press(k, ki) {
   const gap = (t) => P.speed * (Math.max(0, P.arrive - t) + Math.max(0, t - P.leave)); // p* short of the surface
   const n = Math.round(P.tEnd / P.dt) + 1;
   const run = { n, cmd: new Float64Array(n), meas: new Float64Array(n), integ: new Float64Array(n) };
-  const beta = 1 - Math.exp(-P.dt / P.tauC);
   let x = -gap(0), // the hand, from the surface: where it would be, unstopped, as it lags its target
     integ = 0,
-    phase = 0,
-    on = false;
+    was = false;
   for (let i = 0; i < n; i++) {
     const t = i * P.dt;
     const fc = fCmd(t);
     x += (((fc + integ) / k - gap(t) - x) * P.dt) / P.tauHand;
     const f = P.kContact * Math.max(0, x); // -f_meas: the reading points out of the surface
-    if (!on && f > P.onset) {
-      on = true;
-      run.onset ??= t;
-    } else if (on && f < P.release) {
-      on = false;
-      run.release = t;
-    }
-    phase += beta * (+on - phase);
-    integ = phase * Math.min(Math.max(integ + ki * (fc - f) * P.dt, -P.iMax), P.iMax); // fc - f: f_cmd + f_meas
+    const touching = x > 0; // the integral's gate, as training's: the hand is in contact
+    // the shading runs from the first touch to the last parting
+    if (touching && !was) run.onset ??= t;
+    else if (!touching && was) run.release = t;
+    was = touching;
+    integ = touching ? Math.min(Math.max(integ + ki * (fc - f) * P.dt, -P.iMax), P.iMax) : 0; // fc - f: f_cmd + f_meas
     run.cmd[i] = fc;
     run.meas[i] = f;
     run.integ[i] = integ;
@@ -742,23 +735,6 @@ function gainsChart(root) {
 const gainsBox = document.getElementById("gains");
 if (gainsBox) gainsChart(gainsBox);
 
-// --- nav: the current section marked ---
-const nav = document.getElementById("nav");
-const links = [...document.querySelectorAll("#nav .links a")];
-const sections = links.map((a) => document.querySelector(a.getAttribute("href"))).filter(Boolean);
-
-const spy = new IntersectionObserver(
-  (entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      links.forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
-    }
-  },
-  { rootMargin: "-45% 0px -50% 0px" },
-);
-
-sections.forEach((s) => spy.observe(s));
-
 // --- the hero ---
 // It is sticky, so it never leaves the viewport and an observer on it never fires: where the page
 // is comes from the scroll position instead.  With motion allowed, the empty run after the hero is
@@ -944,7 +920,6 @@ const paint = () => {
   hero.style.setProperty("--lift", lift.toFixed(3));
   hero.style.setProperty("--fade", (1 - Math.min(1, lift * 1.35)).toFixed(3));
   hero.classList.toggle("titled", title > 0.5);
-  nav.classList.toggle("stuck", y >= m.main - nav.offsetHeight);
   if (!m.len) {
     syncHero(hero.classList.contains("still") && lift < 0.99); // the teaser failed: the side view plays
     return;
@@ -984,7 +959,7 @@ let lastY = scrollY,
   heading = 0,
   jumped = linked;
 document.addEventListener("click", (e) => {
-  if (e.target.closest?.('a[href^="#"]')) jumped = true;
+  if (!e.defaultPrevented && e.target.closest?.('a[href^="#"]')) jumped = true; // not the tap that opens the index
 });
 // so do Back and Forward
 addEventListener("hashchange", () => (jumped = true));
@@ -1019,6 +994,122 @@ addEventListener(
   },
   { passive: true },
 );
+
+// --- the index: a scale at the right, with a mark for each section ---
+// Its needle follows the reading line, a third of the way down the screen: from a section's mark it
+// moves towards the next one's as the line goes through the section, so it stands on a mark as its
+// section begins, and the section that it is in is the current one.  The page's top is a mark of its
+// own, where the title has come in, and the needle reaches the scale's end at the page's foot.  The
+// names fold away to their marks wherever they would lie over the page: over the title, or under it
+// over the text's column or a figure wider than it, and while the teaser plays, which the marks
+// still let a visitor skip.  Folded, the index opens on hover or focus (style.css), or at a tap of a
+// finger or a pen: that tap goes nowhere, and the next one goes where it says.  Escape puts the
+// opened index away until the pointer leaves it or the focus moves on.
+const nav = document.getElementById("nav");
+const scale = nav.querySelector("ol");
+const links = [...nav.querySelectorAll("a")];
+const targets = links.map((a) => (a.hash === "#top" ? null : document.getElementById(a.hash.slice(1))));
+const page = document.querySelector("main");
+// what the names may not cover, each as a function of its box on the screen: the title's lines, whose
+// own width is narrower than a balanced line's box, and below it the text's column and the part of
+// a wide figure that leaves it
+const lines = document.createRange();
+const overTitle = [...hero.querySelectorAll(".hero-body > *")].map((el) => () => {
+  lines.selectNodeContents(el);
+  return lines.getBoundingClientRect();
+});
+const overPage = [...page.querySelectorAll(".wrap.narrow, .bleed > :not(figcaption)")].map(
+  (el) => () => el.getBoundingClientRect(),
+);
+const READ = 0.35; // the reading line, as a fraction of the screen from its top
+let reading = -1;
+
+const place = () => {
+  const m = marks();
+  const y = scrollY;
+  const line = y + innerHeight * READ;
+  // each mark's place on the page, as the reading line's, and the scale's end
+  const at = targets.map((t) =>
+    t ? t.getBoundingClientRect().top + y : m.titled + innerHeight * READ,
+  );
+  at.push(
+    Math.max(at[at.length - 1] + 1, document.documentElement.scrollHeight - innerHeight * (1 - READ)),
+  );
+  let k = 0;
+  while (k < links.length - 1 && line >= at[k + 1]) k++;
+  const part = clamp((line - at[k]) / (at[k + 1] - at[k]));
+  const mid = (a) => a.offsetTop + a.offsetHeight / 2;
+  const from = mid(links[k]);
+  const to = k + 1 < links.length ? mid(links[k + 1]) : scale.offsetHeight;
+  // what lies under the names: the hero stays pinned under the page, so it counts only above it,
+  // and the teaser is left clear while it plays
+  const teasing = !hero.classList.contains("titled") && y < m.len;
+  const box = nav.getBoundingClientRect();
+  const light = page.getBoundingClientRect().top > (box.top + box.bottom) / 2;
+  const folded =
+    teasing ||
+    (light ? overTitle : overPage).some((rect) => {
+      const r = rect();
+      return (
+        r.height > 0 &&
+        r.top < box.bottom &&
+        r.bottom > box.top &&
+        r.right > box.left - 12 &&
+        r.left < box.right
+      );
+    });
+  scale.style.setProperty("--needle", `${(from + (to - from) * part).toFixed(1)}px`);
+  if (k !== reading) {
+    reading = k;
+    links.forEach((a, i) =>
+      i === k ? a.setAttribute("aria-current", "location") : a.removeAttribute("aria-current"),
+    );
+  }
+  nav.classList.toggle("light", light);
+  nav.classList.toggle("folded", folded);
+  nav.classList.add("shown");
+  if (!folded) nav.classList.remove("open", "shut");
+};
+let placing = 0;
+const replace = () => {
+  placing ||= requestAnimationFrame(() => {
+    placing = 0;
+    place();
+  });
+};
+addEventListener("scroll", replace, { passive: true });
+addEventListener("resize", replace);
+addEventListener("load", replace);
+document.fonts?.ready.then(replace); // the names' widths, and the page's
+// the hero's own changes that move nothing: the title coming in, a teaser that failed, a change to
+// reduced motion
+new MutationObserver(replace).observe(hero, { attributes: true, attributeFilter: ["class"] });
+reduced.addEventListener("change", replace);
+place();
+
+let finger = false; // whether what pressed on the index last was a finger or a pen, not a mouse
+nav.addEventListener("pointerdown", (e) => (finger = e.pointerType !== "mouse"));
+nav.addEventListener("click", (e) => {
+  if (!e.target.closest("a")) return;
+  // e.detail is 0 for a link followed from the keyboard
+  if (e.detail && finger && nav.classList.contains("folded") && !nav.classList.contains("open")) {
+    e.preventDefault();
+    nav.classList.remove("shut");
+    nav.classList.add("open");
+    return;
+  }
+  nav.classList.remove("open");
+});
+document.addEventListener("pointerdown", (e) => {
+  if (!nav.contains(e.target)) nav.classList.remove("open");
+});
+addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || !nav.classList.contains("folded")) return;
+  nav.classList.remove("open");
+  nav.classList.add("shut");
+});
+nav.addEventListener("focusin", () => nav.classList.remove("shut"));
+nav.addEventListener("pointerleave", () => nav.classList.remove("shut"));
 
 // --- a diagram or an equation too wide for the screen scrolls sideways in its own box; while it
 // does, the keyboard can reach it too.  An equation's width is known once its fonts are in ---
