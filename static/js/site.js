@@ -472,9 +472,9 @@ if (hop) {
 // their constants: change them together.  A run takes well under a millisecond, so the press is run
 // again whenever the pad moves.
 const PRESS = {
-  k: 200, // N/m, the paper's K, at the pad's centre
-  ki: 0.5, // 1/s, the paper's K_I, at the pad's centre
-  kSpan: [100, 400], // the pad's K, on a log scale
+  k: 200, // N/m, the paper's K, at the pad's ring
+  ki: 0.5, // 1/s, the paper's K_I, at the pad's ring
+  kSpan: [100, 800], // the pad's K, on a log scale: towards its top the integral needs more than its bound
   kiSpan: [0.125, 2], // and its K_I
   iMax: 40, // N, the integral's bound
   kContact: 150, // N/m: how hard the stopped hand presses per metre its target lies beyond the surface
@@ -527,7 +527,8 @@ const f1 = (x) => x.toFixed(1);
 
 function gainsChart(root) {
   const P = PRESS;
-  // the force axis spans all that the pad can reach, so that it stays put while the dot moves
+  // the force axis spans all that the pad can reach, so that it stays put while the dot moves, and
+  // the integral's bound with room over it
   let lo = 0,
     hi = 0;
   for (const q of [0, 0.5, 1])
@@ -540,7 +541,7 @@ function gainsChart(root) {
         }
     }
   const yLo = Math.floor(lo) - 1,
-    yHi = Math.ceil(hi) + 1;
+    yHi = Math.max(Math.ceil(hi) + 1, P.iMax + 3);
   const home = [placeOf(P.kSpan, P.k), placeOf(P.kiSpan, P.ki)];
   let [u, v] = home; // the dot's place: K across, K_I up
 
@@ -559,7 +560,7 @@ function gainsChart(root) {
   );
   plotBox.append(plot);
 
-  // the pad, in units of its own: a square of 160 with the paper's gains at its centre
+  // the pad, in units of its own: a square of 160, with a ring at the paper's gains
   const padBox = document.createElement("div");
   padBox.className = "gains-pad";
   const pad = svg("ctl gpad");
@@ -593,7 +594,8 @@ function gainsChart(root) {
     ["K I, the integral's gain", P.kiSpan, "per second"],
   ].map(([name, span, unit]) => {
     const input = document.createElement("input");
-    Object.assign(input, { type: "range", className: "sr", min: 0, max: 1, step: 1 / 32 });
+    // 48 steps a side: the paper's gains, a third and a half of the way, each fall on one
+    Object.assign(input, { type: "range", className: "sr", min: 0, max: 1, step: 1 / 48 });
     input.setAttribute("aria-label", name);
     return { input, span, unit };
   });
@@ -610,7 +612,8 @@ function gainsChart(root) {
     const X = (t) => m.l + ((w - m.l - m.r) * t) / P.tEnd;
     const Y = (f) => h - m.b - ((h - m.t - m.b) * (f - yLo)) / (yHi - yLo);
     const marks = [];
-    for (let f = Math.ceil(yLo / 5) * 5; f <= yHi; f += 5) {
+    const every = small ? 10 : 5; // N between the force axis's ticks
+    for (let f = Math.ceil(yLo / every) * every; f <= yHi; f += every) {
       const y = f1(Y(f));
       marks.push(
         `<line class="${f ? "grid" : "zero"}" x1="${m.l}" y1="${y}" x2="${w - m.r}" y2="${y}"/>` +
@@ -625,6 +628,10 @@ function gainsChart(root) {
       `<defs><clipPath id="gchart-area"><rect x="${m.l}" y="${m.t}" width="${w - m.l - m.r}" ` +
       `height="${h - m.t - m.b}"/></clipPath></defs>` +
       `<rect class="band" y="${m.t}" height="${h - m.t - m.b}"/>${marks.join("")}` +
+      // the integral's bound, dotted, named under its end, where the press is over
+      `<line class="bound" x1="${m.l}" y1="${f1(Y(P.iMax))}" x2="${w - m.r}" y2="${f1(Y(P.iMax))}"/>` +
+      `<text class="bound" x="${w - m.r - 4}" y="${f1(Y(P.iMax) + 16)}" text-anchor="end">` +
+      '<tspan class="v">I</tspan><tspan dy="3" font-size="10">max</tspan></text>' +
       `<line class="axis" x1="${m.l}" y1="${h - m.b}" x2="${w - m.r}" y2="${h - m.b}"/>` +
       `<text class="title" x="${f1((m.l + w - m.r) / 2)}" y="${h - 4}" text-anchor="middle">time (s)</text>` +
       `<text class="title" text-anchor="middle" ` +
@@ -670,10 +677,12 @@ function gainsChart(root) {
     chart.fit(chart.phases[1], on, off);
     // what a screen reader is told: the press at these gains, as the command ends
     const end = Math.round(P.ramp[2] / P.dt);
+    const held = Math.abs(run.integ[end]) >= P.iMax - 1e-9;
     plot.setAttribute(
       "aria-label",
       `The press over time at these gains: as the command ends, the hand presses ${run.meas[end].toFixed(1)} N ` +
-        `for the ${P.fPeak} N commanded, and the integral stands at ${run.integ[end].toFixed(1)} N`,
+        `for the ${P.fPeak} N commanded, and the integral stands at ${run.integ[end].toFixed(1)} N` +
+        (held ? ", held at its bound" : ""),
     );
     knob.setAttribute("transform", `translate(${f1(S.x0 + u * S.side)} ${f1(S.y1 - v * S.side)})`);
     [u, v].forEach((q, i) => {

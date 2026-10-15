@@ -500,6 +500,9 @@ html:not(.js) .gains-key { display: none; }
 .gchart .meas { stroke: var(--mk-meas); stroke-width: 2.5; }
 .gchart .integ { stroke: var(--mk-integ); stroke-width: 2; }
 .gchart .area { fill: var(--mk-integ); fill-opacity: .1; stroke: none; }
+.gchart line.bound { stroke: var(--mk-integ); stroke-width: 1.6; stroke-dasharray: .5 4.5; }   /* the integral's bound, dotted */
+.gchart text.bound { font-size: 13px; }
+.gchart .v { font: italic 400 15px var(--math); }
 .gpad .grid { stroke: var(--line); stroke-width: 1; }
 .gpad .axis { stroke: var(--fg); stroke-width: 1.6; }
 .gpad marker path { fill: var(--fg); }
@@ -515,6 +518,7 @@ html:not(.js) .gains-key { display: none; }
 .legend .ln.cmd::before { border-top: 2px dashed var(--mk-cmd); }
 .legend .ln.meas::before { border-top: 2.5px solid var(--mk-meas); }
 .legend .ln.integ::before { border-top: 2px solid var(--mk-integ); }
+.legend .ln.bound::before { border-top: 2px dotted var(--mk-integ); }
 @media (max-width: 640px) {
   .gains { flex-direction: column; gap: .5rem; }
   .gains-plot { flex: none; width: 100%; height: 250px; }

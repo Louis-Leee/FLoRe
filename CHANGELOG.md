@@ -1,3 +1,28 @@
+## [2.1.0] - 2026-10-14
+### Features
+- *The integral at work* shows the integral's bound (user request): a dotted line at I_max = 40 N,
+  in the integral's colour, named under its right end and keyed in the legend. Where the integral
+  needs more, it reaches the line and stays there, flat, and −f^meas_x falls short of f^cmd_x.
+  - The pad's K now runs from 100 to 800 N/m, so that its high-K, high-K_I corner asks for more than
+    the bound: there the integral is held at 40 N for up to 4 s, and the hand presses 10.3 N for the
+    15 N commanded. The paper's gains, marked by the ring, now sit a third of the way across; there
+    the integral still settles at about 4.6 N, far under the bound.
+  - The force axis spans −7 to 43 N, to hold the bound with room over it; on a phone its ticks are
+    every 10 N.
+  - The caption says that the integral cannot pass its bound, and what happens when it reaches it.
+    A screen reader is told when the integral is held at its bound.
+- The comparison's last sentence ends "…and complies along the other axes"; "whatever the stiffness
+  of what it touches" is gone (user request).
+### Design Rationale
+- The bound keeps the paper's 40 N. A lower bound, or a third control for it, would have shown the
+  clip at the paper's gains, but at a value the controller does not use; a wider K range reaches the
+  real bound with the press unchanged.
+- The keyboard sliders take 48 steps a side, so that the paper's gains (a third and a half of the
+  way) each fall on a step.
+### Notes & Caveats
+- With the axis at 50 N instead of 33 N, the curves at the paper's gains are about a third smaller.
+- `style.css?v=20`, `site.js?v=13`.
+
 ## [2.0.2] - 2026-10-14
 ### Features
 - The Controller heading breaks after "Controller": "Unified Force–Position Low-Level Controller" on
