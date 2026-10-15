@@ -1,3 +1,20 @@
+## [2.1.1] - 2026-10-14
+### Features
+- *Compliant behavior*: the uncommanded axis no longer reads f^meas_z → 0 (user correction). The
+  sensor reads the push, f^meas_z = f^ext_z, and with f^cmd_z = 0 the integral builds up with it,
+  İ_z = K_I f^meas_z = K_I f^ext_z, so the target moves along with the push for as long as it lasts,
+  as far as the bound allows. The text says the same in place of "until f^meas_z is gone".
+### Design Rationale
+- f^meas_z → 0 is only the integral's equilibrium, reached when what pushes eases off as the hand
+  gives way (a spring-like contact). A person who keeps pressing on the gripper is a force source:
+  the reading stays at the push, and the integral keeps moving the target until its bound.
+- f^meas_z = f^ext_z alone holds for a stiff hand too, so the line also shows what the integral does
+  with it; the rate, not an end value, is what makes the axis compliant.
+### Notes & Caveats
+- index.html only, re-typeset by `scripts/render_math.py`; no CSS or JS change.
+- On a phone the line is 554 px wide in a 350 px box and scrolls sideways, like every equation in
+  the section (the comparison's is 543 px).
+
 ## [2.1.0] - 2026-10-14
 ### Features
 - *The integral at work* shows the integral's bound (user request): a dotted line at I_max = 40 N,
