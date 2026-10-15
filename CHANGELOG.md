@@ -1,3 +1,13 @@
+## [2.0.2] - 2026-10-14
+### Features
+- The Controller heading breaks after "Controller": "Unified Force–Position Low-Level Controller" on
+  the first line, "with Compliant Behavior" on the second (user request). `text-wrap: balance` had
+  put "Controller" on the second line at every width from 600 px up.
+### Notes & Caveats
+- A `<br class="brk">` in the heading. Measured in Chrome at 600–1920 px: two lines, as asked. On a
+  phone the first part does not fit one line (390 px: "Unified Force–Position / Low-Level Controller /
+  with Compliant Behavior"; 320 px: five short lines).
+
 ## [2.0.1] - 2026-10-14
 ### Features
 - In the reference generator's diagram, "surface" is named over the surface's face, the solid black
