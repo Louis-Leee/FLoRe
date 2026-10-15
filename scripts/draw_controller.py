@@ -126,11 +126,11 @@ def generator() -> str:
     x_tgt = x_ff + I_SETTLED / K * 100 * CM          # p* + (f_cmd + I)/K
     wall_r, y_dim, y_force = x_tgt + 86, 214.0, 84.0
     p = [defs("cmd", "meas", "integ", hatch=True)]
-    # the surface, with its name above it
+    # the surface, with its name over its face, the solid line
     p.append(f'<rect class="wall" x="{x_face:.1f}" y="44" width="{wall_r - x_face:.1f}" height="212" '
              'fill="url(#ctl-hatch)"/>')
     p.append(f'<line class="face" x1="{x_face:.1f}" y1="44" x2="{x_face:.1f}" y2="256"/>')
-    p.append(text((x_face + wall_r) / 2, 32, "surface", "gray", "middle"))
+    p.append(text(x_face, 32, "surface", "gray", "middle"))
     for x in (x_ff, x_tgt):                          # down to the shift, which starts at the face
         p.append(guide(x, y + 15, y_dim + 8))
     # the hand: a gripper holding a pad whose face, at the TCP, is on the surface

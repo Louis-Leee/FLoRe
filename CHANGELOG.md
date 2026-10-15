@@ -1,3 +1,14 @@
+## [2.0.1] - 2026-10-14
+### Features
+- In the reference generator's diagram, "surface" is named over the surface's face, the solid black
+  line where the hand rests, instead of over the middle of the hatched wall (user request).
+### Design Rationale
+- The label names the line that the reference, the hand and the shift all start from. Above the
+  wall's middle it read as naming the hatching.
+### Notes & Caveats
+- Drawn by `scripts/draw_controller.py`; only the label's x changes, from 403 to 200 in the 900-wide
+  viewBox.
+
 ## [2.0.0] - 2026-10-14
 ### Features
 - The bar across the top is gone. The sections' index floats at the right, centred on the screen:
