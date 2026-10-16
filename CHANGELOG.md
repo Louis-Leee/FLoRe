@@ -1,3 +1,18 @@
+## [2.1.2] - 2026-10-16
+### Features
+- The Controller heading is "Hybrid Compliance Whole-body Controller with Force Tracking" (user
+  request), still broken after "Controller": "with Force Tracking" is the second line from 600 px up;
+  at 390 px the first part wraps once, as "Hybrid Compliance / Whole-body Controller".
+- The compliance line is shorter: f^cmd_z = 0 ⟹ İ_z = K_I f^ext_z. The text above it still says that
+  the sensor reads the push, f^meas_z = f^ext_z, so the middle term was a repeat.
+### Design Rationale
+- f^meas_z = f^ext_z alone was considered for the line and not used: it holds for a stiff hand as well,
+  and does not follow from f^cmd_z = 0. The integral growing with the push is what makes z compliant.
+### Notes & Caveats
+- The Abstract and the pipeline figure's caption keep the paper's name, "unified force–position
+  (whole-body) controller".
+- On a phone the compliance line is back to 483 px in a 350 px box.
+
 ## [2.1.1] - 2026-10-14
 ### Features
 - *Compliant behavior*: the uncommanded axis no longer reads f^meas_z → 0 (user correction). The
