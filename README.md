@@ -30,11 +30,11 @@ python3 scripts/build_media.py --src PAPER_DIR                       # fills in 
 python3 scripts/build_media.py --src PAPER_DIR --only supp --force
 ```
 
-`PAPER_DIR` is the paper's working folder. It needs Pillow, and an ffmpeg with libass (Homebrew
-`ffmpeg-full`) for the subtitles of the narrated video. The sources, encodings and the reason for
-each choice are listed at the top of the script. All clips are single H.264 files (1080p trial
-clips at CRF 24, the narrated video at 720p CRF 20), so every browser plays them without a second
-codec.
+`PAPER_DIR` is the paper's working folder. It needs Pillow, an ffmpeg with libass (Homebrew
+`ffmpeg-full`) for the subtitles of the narrated video, and pdftoppm (Homebrew `poppler`) for the
+pipeline figure. The sources, encodings and the reason for each choice are listed at the top of the
+script. All clips are single H.264 files (1080p trial clips at CRF 24, the narrated video at 720p
+CRF 20), so every browser plays them without a second codec.
 
 The hero is two clips. The teaser joins three teaser clips, one per task, and is played by the
 page's scrolling: at 15 fps, with a keyframe every 8 frames and none predicted from a later one, so

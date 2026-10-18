@@ -9,8 +9,8 @@ re-run fills in what is missing; --force rebuilds, --only limits the run to some
     python3 scripts/build_media.py --src PAPER_DIR
     python3 scripts/build_media.py --src PAPER_DIR --only supp hero --force
 
-Needs Pillow, and an ffmpeg with libass (Homebrew: ffmpeg-full) for the
-subtitles of the narrated video.
+Needs Pillow, an ffmpeg with libass (Homebrew: ffmpeg-full) for the subtitles of the
+narrated video, and pdftoppm (Homebrew: poppler) for the pipeline figure.
 """
 from __future__ import annotations
 
@@ -145,7 +145,9 @@ PLOTS = {
     "force_rotate_box_b": ("supp/rotate_box/force_paper_x0.8.png", 1200),
     "force_push_gantry": ("supp/push_gantry/force_s0.10_a1.00_g0.60_t0.25_p0.35_seed0.png", 1800),
 }
-PIPELINE_SRC = "ppt/main.png"
+# the paper's overview figure, drawn at the resolution of the old PNG export (ppt/main.png)
+PIPELINE_SRC = "ppt/main.pdf"
+PIPELINE_DPI = 300
 
 # the data-collection photo, with the emoji that covers the demonstrator's face
 DEVICE_SRC = "supp/device.png"
@@ -362,7 +364,13 @@ def build_plots(src_root: Path, force: bool) -> None:
 
 def build_pipeline(src_root: Path, force: bool) -> None:
     if need(IMAGES / "pipeline.jpg", force):
-        save_jpg(fit(flatten(src_root / PIPELINE_SRC), 2400), IMAGES / "pipeline.jpg")
+        pdftoppm = shutil.which("pdftoppm")
+        if not pdftoppm:
+            sys.exit("pdftoppm not found (brew install poppler)")
+        with tempfile.TemporaryDirectory() as tmp:
+            png = Path(tmp) / "pipeline"
+            run([pdftoppm, "-png", "-r", PIPELINE_DPI, "-singlefile", src_root / PIPELINE_SRC, png])
+            save_jpg(fit(flatten(png.with_suffix(".png")), 2400), IMAGES / "pipeline.jpg")
 
 
 def build_device(src_root: Path, force: bool) -> None:

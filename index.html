@@ -113,18 +113,20 @@
     <h2 class="reveal center">Abstract</h2>
     <p class="reveal">Many everyday tasks require controlling contact force as well as motion. On a
     humanoid, this force must often be coordinated across both hands and the whole body, and cannot
-    be specified by kinematic trajectories alone. We present FLoRe, a framework for learning
-    force-reactive humanoid loco-manipulation from robot-free demonstrations. A UMI-style handheld
-    interface records hand and torso motion together with the contact wrench applied by the
-    operator. A diffusion policy observes vision, robot state, and measured wrenches, then predicts
-    keypoint motion and per-hand force commands. A unified force&ndash;position whole-body
-    controller executes these commands while maintaining balance, with real force/torque (F/T)
-    feedback in the loop. In simulation, the controller realises commanded forces with a gain of
-    about 1.05 and an in-contact error of about 1&nbsp;N per hand while tracking whole-body motion.
-    Across three contact-rich tasks on the robot, the force-reactive policy succeeds in 80% of
-    rollouts, compared with 26.7% for a position-only policy trained on the same demonstrations and
-    executed by the same controller. Both force commands and force observations contribute to this
-    improvement.</p>
+    be specified by kinematic trajectories alone. Learning such tasks by imitation therefore needs
+    demonstrations that record contact force, and a whole-body controller that can deliver it. We
+    present FLoRe, a framework for learning force-reactive humanoid loco-manipulation. Its
+    robot-free force-annotated data collection system records the contact wrench applied through two
+    UMI-style handheld grippers, together with hand, torso, and foot motion. A force-reactive
+    diffusion policy takes vision, proprioception, and measured wrenches as input, then predicts
+    actions and per-hand force commands. A hybrid compliance whole-body controller with force
+    tracking executes these commands while maintaining balance: an integral of the force error
+    measured by real force/torque (F/T) sensors lets each hand track force accurately along the
+    commanded direction and comply along the others. In simulation, the controller tracks per-hand
+    force commands of varied magnitude and direction, with little loss in whole-body motion
+    accuracy. Across three contact-rich tasks on the robot, the force-reactive policy succeeds in
+    80% of rollouts, compared with 26.7% for a position-only policy trained on the same
+    demonstrations and executed by the same controller.</p>
   </div>
 </section>
 
@@ -132,18 +134,19 @@
   <div class="wrap narrow">
     <h2 class="reveal center">Pipeline</h2>
     <figure class="reveal bleed">
-      <figcaption><b>Overview of FLoRe.</b> (B) Two handheld UMI-style grippers with F/T sensors and
-        torso trackers record vision, action, and contact force without a robot. (C) A
-        force-reactive diffusion policy takes the images, state and measured force as input and
-        outputs keypoint motion together with the desired force command at 30&nbsp;Hz. (A) A unified
-        force&ndash;position controller converts the force command into a shift of the hand target,
-        so that one RL policy tracks motion and force simultaneously. Deployment: the robot's wrist
-        F/T sensors feed the measured force back into both the controller and the policy.</figcaption>
-      <a href="./static/images/pipeline.jpg" title="Open the full-size figure">
-        <img class="frame paper" loading="lazy" decoding="async" src="./static/images/pipeline.jpg" width="2400" height="797"
+      <figcaption><b>Overview of our FLoRe framework.</b> <b>(B)</b>&nbsp;Two handheld UMI-style
+        grippers with F/T sensors and another three trackers record vision, action, and contact
+        force without a robot. <b>(C)</b>&nbsp;A force-reactive diffusion policy takes the images,
+        state and measured force as input and outputs keypoint motion together with the desired
+        force command at 30&nbsp;Hz. <b>(A)</b>&nbsp;The hybrid compliance whole-body controller
+        with force tracking converts the force command into a shift of the target along the force
+        direction, so that one RL policy tracks motion and force simultaneously while keeping
+        compliant along other directions.</figcaption>
+      <a href="./static/images/pipeline.jpg?v=2" title="Open the full-size figure">
+        <img class="frame paper" loading="lazy" decoding="async" src="./static/images/pipeline.jpg?v=2" width="2400" height="799"
              alt="The FLoRe pipeline: force-annotated demonstrations from two handheld grippers (B) train a
-                  force-reactive diffusion policy (C), whose keypoint and force commands a unified
-                  force-position controller (A) executes on the humanoid, with wrist F/T feedback at deployment.">
+                  force-reactive diffusion policy (C), whose keypoint and force commands the hybrid compliance
+                  whole-body controller (A) executes on the humanoid, with wrist F/T feedback at deployment.">
       </a>
     </figure>
   </div>

@@ -1,3 +1,29 @@
+## [2.1.3] - 2026-10-17
+### Features
+- The Abstract is the paper's current one (user request). It now says why imitation needs
+  demonstrations that record force and a controller that delivers it, names the robot-free
+  force-annotated data collection system and the hybrid compliance whole-body controller with force
+  tracking, and says how the latter works: an integral of the force error measured by the F/T sensors
+  tracks force along the commanded direction and complies along the others. Simulation is summed up
+  without the gain and error figures. The paper's last sentence, a link to this page, is left out.
+- The Pipeline caption is the paper's current one for its overview figure: three more trackers
+  besides the grippers, and (A) the hybrid compliance whole-body controller with force tracking,
+  which shifts the target along the force direction and keeps compliant along the other directions.
+  The closing sentence on deployment is gone, as it is in the paper. As there, the panel labels are
+  bold and kept on the line of the word after them. The figure's alt text names the controller as
+  its panel does.
+- The pipeline figure is the paper's current one: panel A is "Hybrid Compliance Whole-body
+  Controller", where it was "Unified Force-position Low-level Controller"; the rest is unchanged.
+  `pipeline.jpg?v=2`, 2400×799.
+### Design Rationale
+- build_media renders `ppt/main.pdf` with pdftoppm at 300 dpi, the resolution of the old PNG export
+  (4120 px wide), and scales it to 2400 px as before. Its fonts are embedded and its pictures are at
+  300 ppi or more, so the render matches the export. `ppt/main.png` is that older export and is no
+  longer read.
+- "the desired force command" keeps the article that the paper's caption leaves out.
+### Notes & Caveats
+- `--only pipeline` now needs pdftoppm (Homebrew: poppler).
+
 ## [2.1.2] - 2026-10-16
 ### Features
 - The Controller heading is "Hybrid Compliance Whole-body Controller with Force Tracking" (user
