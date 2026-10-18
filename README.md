@@ -31,7 +31,7 @@ python3 scripts/build_media.py --src PAPER_DIR --only supp --force
 ```
 
 `PAPER_DIR` is the paper's working folder. It needs Pillow, an ffmpeg with libass (Homebrew
-`ffmpeg-full`) for the subtitles of the narrated video, and pdftoppm (Homebrew `poppler`) for the
+`ffmpeg-full`) for the subtitles of the narrated video, and pdftocairo (Homebrew `poppler`) for the
 pipeline figure. The sources, encodings and the reason for each choice are listed at the top of the
 script. All clips are single H.264 files (1080p trial clips at CRF 24, the narrated video at 720p
 CRF 20), so every browser plays them without a second codec.

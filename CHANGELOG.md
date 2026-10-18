@@ -1,3 +1,20 @@
+## [2.1.4] - 2026-10-17
+### Features
+- The pipeline figure is the paper's PDF itself, `ppt/main.pdf`, as vector SVG (user request):
+  `static/images/pipeline.svg`, converted one to one by pdftocairo, in place of the 2400 px JPEG
+  rendered from it. Its text and lines stay sharp at any zoom, and "Open the full-size figure" opens
+  the same SVG.
+### Design Rationale
+- An `<img>` cannot show a PDF in Chrome or Firefox, so the PDF reaches the page as SVG. pdftocairo
+  keeps its seven photos as JPEG and draws the text from the embedded fonts as outlines, so the file
+  needs no fonts: 1.03 MB, 628 KB gzipped as Pages serves it (the JPEG was 411 KB). In Chrome, WebKit
+  and Firefox it looks as pdftoppm's render of the PDF does.
+- The figure has no background of its own, so a white sheet is laid under it: opened alone it stays
+  on white, as it does on the page, where `.paper` figures sit on white.
+### Notes & Caveats
+- `pipeline.jpg` is gone. `--only pipeline` now needs pdftocairo (Homebrew: poppler); the same PDF
+  gives the same bytes.
+
 ## [2.1.3] - 2026-10-17
 ### Features
 - The Abstract is the paper's current one (user request). It now says why imitation needs
