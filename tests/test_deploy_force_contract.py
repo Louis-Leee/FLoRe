@@ -57,10 +57,19 @@ ESTOP_N = 40.0
 _needs_holosoma = pytest.mark.skipif(
     not _FORCE_MATH.is_file(), reason="holosoma_extensions submodule not checked out"
 )
-_needs_launchers = pytest.mark.skipif(
-    not (_VIVE_LAUNCHER.is_file() and _CLIP_LAUNCHER.is_file()),
+_needs_vive_launcher = pytest.mark.skipif(
+    not _VIVE_LAUNCHER.is_file(),
     reason="the robot-deploy launchers (force_deploy/) are not part of this checkout",
 )
+_needs_clip_launcher = pytest.mark.skipif(
+    not _CLIP_LAUNCHER.is_file(),
+    reason="force_deploy/3_run_policy_clip_force.sh is not part of this checkout",
+)
+#: Both launchers, each skipped on its own when it is absent.
+_LAUNCHERS = [
+    pytest.param("vive", marks=_needs_vive_launcher),
+    pytest.param("clip", marks=_needs_clip_launcher),
+]
 
 
 def _np_array_literal(path: Path, name: str) -> np.ndarray:
@@ -232,7 +241,7 @@ def test_planner_gate_defaults_to_the_contract_value():
 
 
 @_needs_holosoma
-@_needs_launchers
+@_needs_vive_launcher
 def test_low_level_wire_deadband_mirrors_the_planner_gate():
     """Defense in depth: the low level hard-zeros a sub-gate command BEFORE it reaches the
     buffer, so a planner bug cannot push force through below the gate."""
@@ -240,7 +249,7 @@ def test_low_level_wire_deadband_mirrors_the_planner_gate():
 
 
 @_needs_holosoma
-@_needs_launchers
+@_needs_vive_launcher
 def test_the_meas_gate_is_derived_from_the_wire_deadband_not_retyped():
     """With the wire on, GATE_CMD_N must come FROM ``$FORCE_CMD_WIRE_GATE_N``.
 
@@ -261,7 +270,7 @@ def test_the_meas_gate_is_derived_from_the_wire_deadband_not_retyped():
 # 3. The opt-in, and the hard stop
 # ---------------------------------------------------------------------------
 @_needs_holosoma
-@_needs_launchers
+@_needs_vive_launcher
 def test_the_default_launch_is_pure_position():
     """``FORCE_CMD_WIRE`` off by default: whatever the planner publishes, the low level
     ignores the wire's f_cmd entirely, so only translation+rotation reach the robot."""
@@ -276,8 +285,7 @@ def test_the_planner_force_switch_is_off_by_default():
 
 
 @_needs_holosoma
-@pytest.mark.parametrize("launcher", ["vive", "clip"])
-@_needs_launchers
+@pytest.mark.parametrize("launcher", _LAUNCHERS)
 def test_the_hard_ft_stop_is_armed_at_40n_in_both_launchers(launcher):
     """A limit that protects the robot must not depend on which script started it."""
     path = _VIVE_LAUNCHER if launcher == "vive" else _CLIP_LAUNCHER
@@ -285,8 +293,7 @@ def test_the_hard_ft_stop_is_armed_at_40n_in_both_launchers(launcher):
 
 
 @_needs_holosoma
-@pytest.mark.parametrize("launcher", ["vive", "clip"])
-@_needs_launchers
+@pytest.mark.parametrize("launcher", _LAUNCHERS)
 def test_the_hard_stop_fires_below_the_runaway_valve(launcher):
     """The stop must come first, or the runaway valve pre-empts it.
 
@@ -404,7 +411,7 @@ def test_the_low_level_masks_the_unused_hand_at_the_source():
 
 
 @_needs_holosoma
-@_needs_launchers
+@_needs_vive_launcher
 def test_the_s1_planner_path_defaults_to_left_only_sensors():
     """`HOLOSOMA_VIVE_RELATIVE=0` (the planner feeding absolute targets) → `FORCE_HANDS=left`.
 

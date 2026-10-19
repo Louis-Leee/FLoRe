@@ -1,0 +1,9 @@
+# The F/T bridge's environment (force_bridge.py, py3.12): the Bota gen-A toolkit + numpy + websockets,
+# at the versions of the paper's rig, frozen 2026-10-12. The bota-* wheels need glibc >= 2.34
+# (manylinux_2_34), hence the Ubuntu 24.04 container on the robot.
+bota-control==1.0.4
+bota-driver==1.1.9
+bota-payload-utils==1.0.2
+bota-tf-utils==1.0.12
+numpy==2.4.6
+websockets==16.0

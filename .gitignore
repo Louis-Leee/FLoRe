@@ -22,6 +22,9 @@ wandb/
 # Built browser bundles (regenerable with wbt-realtime-eval)
 third_party/holosoma_extensions/dist/
 
+# The robot deploy's Bota env (force_deploy/onboard/setup_envs.sh builds it)
+third_party/holosoma_extensions/force_deploy/.venv-bota/
+
 # Editors / OS
 .idea/
 .vscode/
