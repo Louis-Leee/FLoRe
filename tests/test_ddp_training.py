@@ -24,8 +24,8 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import torch.nn as nn
 
-from fuji.s1_policy.model.dp_act import DPACTConfig, DPACTModel
-from fuji.s1_policy.training.trainer import EpochShuffleSampler
+from flore.s1_policy.model.dp_act import DPACTConfig, DPACTModel
+from flore.s1_policy.training.trainer import EpochShuffleSampler
 
 # Small but STRUCTURALLY faithful: 7 decoder layers so the hs[0] gradient pattern (layer 0
 # live, 1-6 exactly zero) is present, since that pattern is what makes
@@ -180,7 +180,7 @@ def _worker_entry(worker, rank: int, world_size: int, queue, args) -> None:
 def _grad_parity_worker(rank: int, world_size: int, total_batch: int):
     from torch.nn.parallel import DistributedDataParallel
 
-    from fuji.s1_policy.training.distributed import DistInfo, wrap_model
+    from flore.s1_policy.training.distributed import DistInfo, wrap_model
 
     model = _model()
     ddp = wrap_model(model, DistInfo(rank=rank, local_rank=rank, world_size=world_size))
@@ -252,7 +252,7 @@ def _shard_disagreement_worker(rank: int, world_size: int, total_batch: int):
     the single-process one. Verified by mutation -- replacing the shard with the full batch
     leaves the parity test green and this one red.
     """
-    from fuji.s1_policy.training.distributed import DistInfo, wrap_model
+    from flore.s1_policy.training.distributed import DistInfo, wrap_model
 
     model = _model()
     ddp = wrap_model(model, DistInfo(rank=rank, local_rank=rank, world_size=world_size))
@@ -296,7 +296,7 @@ def _training_steps_worker(rank: int, world_size: int):
     """
     import math
 
-    from fuji.s1_policy.training.distributed import DistInfo, wrap_model
+    from flore.s1_policy.training.distributed import DistInfo, wrap_model
 
     max_norm = 1.0
     model = _model()
@@ -384,7 +384,7 @@ def test_ddp_gradient_norms_stay_finite_and_bounded(ddp_training_steps):
 
 def _nan_abort_worker(rank: int, world_size: int):
     """Rank 1 alone reports a non-finite loss; both ranks must conclude "abort"."""
-    from fuji.s1_policy.training.distributed import any_rank_flagged
+    from flore.s1_policy.training.distributed import any_rank_flagged
 
     saw_nan_locally = rank == 1
     return {"rank": rank, "local": saw_nan_locally,
@@ -402,7 +402,7 @@ def _uneven_collective_worker(rank: int, world_size: int):
     crash. The fix records the condition and reduces it once, after the loop, which is what
     this asserts: per-rank work may differ, collective COUNT may not.
     """
-    from fuji.s1_policy.training.distributed import all_reduce_sum, any_rank_flagged
+    from flore.s1_policy.training.distributed import all_reduce_sum, any_rank_flagged
 
     # Deliberately uneven, exactly as a contiguous validation shard can be.
     n_batches = 2 + rank
@@ -584,7 +584,7 @@ def test_sampler_rejects_an_impossible_topology():
 # ---------------------------------------------------------------------------
 def test_distributed_helpers_are_inert_without_a_process_group():
     """Every helper must be safe and side-effect-free in a plain single-process run."""
-    from fuji.s1_policy.training.distributed import (
+    from flore.s1_policy.training.distributed import (
         all_reduce_sum,
         any_rank_flagged,
         barrier,
@@ -615,12 +615,12 @@ def test_distributed_helpers_are_inert_without_a_process_group():
 def test_wrap_model_keeps_state_dict_keys_unprefixed():
     """A DDP-wrapped save would prefix every key with 'module.'.
 
-    Both scripts/eval_checkpoints_physical.py and fuji.s1_policy.inference.common load with
+    Both scripts/eval_checkpoints_physical.py and flore.s1_policy.inference.common load with
     strict=True, so such a checkpoint is written successfully and then refused by every
     reader. The trainer therefore keeps `self.model` unwrapped and saves from it; this pins
     the property that makes that necessary.
     """
-    from fuji.s1_policy.training.distributed import DistInfo
+    from flore.s1_policy.training.distributed import DistInfo
 
     model = _model()
     unwrapped_keys = set(model.state_dict())

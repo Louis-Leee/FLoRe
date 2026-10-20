@@ -11,14 +11,14 @@
 #
 # RECIPE is the variable under test:
 #
-#   baseline  FUJI's historical settings: lr 1e-4, betas (0.9, 0.95), wd 1e-4, no image
+#   baseline  FLoRe's historical settings: lr 1e-4, betas (0.9, 0.95), wd 1e-4, no image
 #             augmentation, one LR for the whole model.
 #   umi       Upstream UMI's settings, found by diffing against the pristine clone at
 #             third_party/universal_manipulation_interface (real-stanford @ d095ba9):
 #               * lr 3e-4, betas (0.95, 0.999), wd 1e-6
 #                 (config/train_diffusion_unet_timm_umi_workspace.yaml, `optimizer:`)
 #               * RandomCrop 0.95 + Resize + ColorJitter(0.3, 0.4, 0.5, 0.08)
-#                 (`obs_encoder.transforms`) -- FUJI had NO image augmentation at all
+#                 (`obs_encoder.transforms`) -- FLoRe had NO image augmentation at all
 #               * the pretrained ViT at 0.1x the base LR
 #                 (workspace/train_diffusion_unet_image_workspace.py:62)
 #
@@ -30,7 +30,7 @@
 # What is deliberately NOT copied from UMI: rot6d stays quantile-normalized (our own ACT
 # evidence favors it), the observation stays 1 frame, and the augmentation runs in TRAIN MODE
 # ONLY -- upstream also augments at validation and at deploy, which would move a val curve
-# for two reasons at once. See fuji/s1_policy/model/umi_parity.py.
+# for two reasons at once. See flore/s1_policy/model/umi_parity.py.
 #
 # Usage: [SESSION=0812_merged] [RECIPE=umi] [BATCH=32] run_train_diffusion_recipe.sh <gpu> [extra args...]
 #
@@ -50,8 +50,8 @@ shift || true
 # def-time default, and hl_dataset._check_file refuses a zarr whose hl_force_hist_len attr
 # disagrees -- pairing them here makes a mismatch impossible rather than merely detected.
 #
-# H is the ACTION-CHUNK length, exported as FUJI_ACTION_HORIZON the same way FH is exported as
-# FUJI_FORCE_HIST_LEN. UNLIKE FH it is not a property of the file: every shipped dataset stores
+# H is the ACTION-CHUNK length, exported as FLORE_ACTION_HORIZON the same way FH is exported as
+# FLORE_FORCE_HIST_LEN. UNLIKE FH it is not a property of the file: every shipped dataset stores
 # 50 steps at 30 Hz, and a shorter H trains on a strict PREFIX of that same chunk (t0-inclusive
 # grid, unchanged dt), so an H=30 vs H=50 A/B needs no re-convert. It still belongs in the
 # SESSION key rather than in the caller's environment, because NS/RUN/OUT are all derived from
@@ -156,7 +156,7 @@ case "$SESSION" in
     # 13.5-18.8 s of sustained wiping, 1817 anchors = 5.3% of the 34293 usable.
     #
     # The _h30 twin is the SAME file (a 30-step chunk is a strict PREFIX of the stored 50 on the
-    # t0-inclusive grid) with its OWN norm stats, fitted with FUJI_ACTION_HORIZON=30 exported
+    # t0-inclusive grid) with its OWN norm stats, fitted with FLORE_ACTION_HORIZON=30 exported
     # (norm_stats_hl_left_wipe_board_new_h30.json) -- exactly the wipe_board_h30 / 0823_merged_h30 rule.
     wipe_board_new)     DS=(third_party/UMI_collection/data/datasets/session_2026.09.13_wipe_board_new_v3_left_clean181.zarr.zip); FH=1; VAL_EPS=4 ;;
     wipe_board_new_h30) DS=(third_party/UMI_collection/data/datasets/session_2026.09.13_wipe_board_new_v3_left_clean181.zarr.zip); FH=1; H=30; VAL_EPS=4 ;;
@@ -166,8 +166,8 @@ case "$SESSION" in
             "0823_merged 0823_merged_h30 wipe_board wipe_board_new wipe_board_new_h30," \
             "got '$SESSION'" >&2; exit 1 ;;
 esac
-export FUJI_FORCE_HIST_LEN="$FH"
-export FUJI_ACTION_HORIZON="$H"
+export FLORE_FORCE_HIST_LEN="$FH"
+export FLORE_ACTION_HORIZON="$H"
 
 RECIPE=${RECIPE:-umi}
 case "$RECIPE" in
@@ -191,7 +191,7 @@ RUN="diffusion_${SESSION}_${RECIPE}"
 # CKPT_ROOT is overridable because /data exists only on the 8-GPU workstation; on a box
 # without it every guard below passes and the run dies at the first save. Keep it OFF `/`:
 # a diffusion step dir is ~3.1 GB (weights + optimizer moments + EMA shadow), 3x ACT's.
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 OUT="$CKPT_ROOT/$RUN"
 [[ -d "$CKPT_ROOT" ]] || mkdir -p "$CKPT_ROOT" 2>/dev/null || {
     echo "FATAL: checkpoint root '$CKPT_ROOT' is missing and not creatable." >&2

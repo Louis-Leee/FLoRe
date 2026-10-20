@@ -4,7 +4,7 @@
     uv run scripts/extract_walk_feet.py                       # the default source -> the bundled asset
     uv run scripts/extract_walk_feet.py --src other.npz --out /tmp/feet.npz
 
-The extraction is ``fuji.s1_policy.serving.walk_skill.load_walk_clip`` (ankle_roll_link origins in the
+The extraction is ``flore.s1_policy.serving.walk_skill.load_walk_clip`` (ankle_roll_link origins in the
 source clip's own per-frame PELVIS body frame, xyzw with w >= 0 — the low level's ``_compute_vr_fk``
 convention, cross-checked against mjswan's bake to 0.0013 mm — PLUS, since 2026-09-07, the clip's 29
 joint targets + velocities by name, sent as the 5pt wire's ``ref_joints`` so the low level's
@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from fuji.s1_policy.serving import walk_skill  # noqa: E402
+from flore.s1_policy.serving import walk_skill  # noqa: E402
 
 DEFAULT_SRC = Path(os.path.expanduser("~/data/walk_clip")) / walk_skill.DEFAULT_CLIP
 

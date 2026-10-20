@@ -52,17 +52,17 @@ collection interface**.
   deployment on the Unitree G1, and the 3D-printable parts of the robot-free data collection interface.
 - **2026-09-28** — Initial code release: training of the 5-keypoint unified force–position whole-body
   controller, and its interactive browser evaluation (mjswan). The source of the high-level
-  force-reactive diffusion policy (`fuji/`) is included; its guide will follow.
+  force-reactive diffusion policy (`flore/`) is included; its guide will follow.
 
 # ✅ Release Plan
 
 - [x] Low-level controller: 5-keypoint unified force–position whole-body controller, training (Isaac Lab)
 - [x] Low-level controller: interactive browser evaluation with live force commands (mjswan, MuJoCo WebAssembly)
-- [x] High-level policy: source code of the force-reactive diffusion policy (`fuji/`)
-- [ ] High-level policy: training and deployment guide
+- [x] High-level policy: source code of the force-reactive diffusion policy (`flore/`)
 - [x] Pretrained low-level controller (ONNX)
 - [x] Robot-free data collection interface (3D-printable parts)
 - [x] Real-robot deployment on the Unitree G1
+- [ ] High-level policy: training and deployment guide
 
 # 📑 Content Table
 
@@ -97,9 +97,9 @@ FLoRe/
 │   │   │   └── wbt_wrappers_inference/ #   policy wrappers and inference utilities
 │   │   └── thirdparty/holosoma/        #   holosoma, the training framework (git submodule)
 │   └── mjswan/                         # MuJoCo + ONNX Runtime in the browser (WebAssembly)
-├── fuji/                               # HIGH LEVEL: force-reactive diffusion policy (data, models, serving)
+├── flore/                              # HIGH LEVEL: force-reactive diffusion policy (data, models, serving)
 ├── scripts/                            #   training / offline inference / online planner entry points
-├── tests/                              #   CPU-only unit tests of fuji/
+├── tests/                              #   CPU-only unit tests of flore/
 ├── configs/
 ├── assets/                             # the paper (FLoRe.pdf) and the figures of this README
 └── UMI_Hardware.zip                    # 3D-printable parts of the data collection interface (STL)

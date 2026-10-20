@@ -34,7 +34,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fuji.s1_policy.data.layout import (
+from flore.s1_policy.data.layout import (
     ACTION_HORIZON,
     FORCE_DIM,
     FORCE_HIST_LEN,
@@ -45,7 +45,7 @@ from fuji.s1_policy.data.layout import (
     hands_flag,
     tracker_roles_required,
 )
-from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
 # Reuse the synthetic-zarr BUILDER rather than a second copy of it, for the reason
 # test_diffusion_umi_3tracker gives: a drifting second schema writer is how a loader test
@@ -108,7 +108,7 @@ def _augment(src: str, out: str, *, cond_mode="home", seed=7,
     """
     import zarr
 
-    from fuji.s1_policy.data.hl_dataset import _register_image_codecs
+    from flore.s1_policy.data.hl_dataset import _register_image_codecs
 
     _register_image_codecs()
     with zarr.ZipStore(src, mode="r") as store:
@@ -143,7 +143,7 @@ def _patch_zarr(path: str, *, arrays: dict | None = None, attrs: dict | None = N
     """
     import zarr
 
-    from fuji.s1_policy.data.hl_dataset import _register_image_codecs
+    from flore.s1_policy.data.hl_dataset import _register_image_codecs
 
     _register_image_codecs()
     mem = zarr.MemoryStore()
@@ -162,7 +162,7 @@ def _patch_zarr(path: str, *, arrays: dict | None = None, attrs: dict | None = N
 def _read_array(path: str, key: str) -> np.ndarray:
     import zarr
 
-    from fuji.s1_policy.data.hl_dataset import _register_image_codecs
+    from flore.s1_policy.data.hl_dataset import _register_image_codecs
 
     _register_image_codecs()
     with zarr.ZipStore(path, mode="r") as store:
@@ -221,11 +221,11 @@ def test_joint_names_match_the_sdk_order():
     """The 29 columns must be holosoma's dof_names order in all THREE places that name it.
 
     A permutation of 29 joint angles is a valid pose, so a swap has no numeric tell: it trains
-    to a healthy loss and renders a robot doing something else. FUJI mirrors the order twice
+    to a healthy loss and renders a robot doing something else. FLoRe mirrors the order twice
     (the layout for training, live_robot for the RecordTap remap) and the exporter mirrors it
     from holosoma_motion; nothing but this test connects them.
     """
-    from fuji.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES
+    from flore.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES
 
     assert WB_JOINT_NAMES == G1_29DOF_SDK_DOF_NAMES
     assert WB_JOINT_NAMES == wb_export.WB_JOINT_NAMES
@@ -563,7 +563,7 @@ def test_metrics_report_joint_degrees_and_never_a_fabricated_position():
     0.0, so the un-guarded arithmetic logs ``val/sample_position_cm = 0.00`` for a policy that
     predicts no position at all — a metric that says the run is perfect.
     """
-    from fuji.s1_policy.training.metrics import physical_trajectory_sums
+    from flore.s1_policy.training.metrics import physical_trajectory_sums
 
     lay = get_layout(MODE)
     pred = np.zeros((2, ACTION_HORIZON, lay.action_dim))
@@ -595,7 +595,7 @@ def test_metric_groups_log_joints_and_no_position():
 # The model: 43 dims out, two force encoder groups, a learned state token
 # ---------------------------------------------------------------------------
 def _model(cfg_diffusion):
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionModel
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionModel
 
     cfg_diffusion.pretrained = False
     return DPDiffusionModel(cfg_diffusion, encoder=TinyEncoder())
@@ -667,7 +667,7 @@ def test_both_force_groups_are_built_and_receive_gradient():
 # ---------------------------------------------------------------------------
 def test_a_wholebody_checkpoint_cannot_be_served_as_the_dual_preset():
     """``layout_mode`` is the only discriminator, so it must be pinned unconditionally."""
-    from fuji.s1_policy.inference.common import validate_model_layout
+    from flore.s1_policy.inference.common import validate_model_layout
 
     cfg = _train_config().diffusion
     hl_data = {"mode": MODE, "obs_history_len": 1, "image_keys": list(CAMS)}
@@ -686,7 +686,7 @@ def test_joint_windows_are_time_anchored_not_frame_indexed():
     one frame missing, "joints at frame+k" is a different instant from "joints at t0+k*dt" for
     the whole rest of the episode.
     """
-    from fuji.s1_policy.data.layout import ACTION_DT
+    from flore.s1_policy.data.layout import ACTION_DT
 
     wb_export.core.set_grid(FORCE_HIST_LEN, ACTION_HORIZON, 1.0 / ACTION_DT)
     n = ACTION_HORIZON + 20
@@ -717,7 +717,7 @@ def test_a_fully_completed_episode_supervises_every_non_tail_step():
     perfectly clean dataset. Nothing about that is visible in a value: the joints were right,
     there were simply far fewer samples than there should have been.
     """
-    from fuji.s1_policy.data.layout import ACTION_DT
+    from flore.s1_policy.data.layout import ACTION_DT
 
     wb_export.core.set_grid(FORCE_HIST_LEN, ACTION_HORIZON, 1.0 / ACTION_DT)
     n = ACTION_HORIZON + 20
@@ -733,7 +733,7 @@ def test_a_fully_completed_episode_supervises_every_non_tail_step():
 
 
 def test_joint_windows_flag_the_uncompleted_prefix_boundary():
-    from fuji.s1_policy.data.layout import ACTION_DT
+    from flore.s1_policy.data.layout import ACTION_DT
 
     wb_export.core.set_grid(FORCE_HIST_LEN, ACTION_HORIZON, 1.0 / ACTION_DT)
     n = ACTION_HORIZON + 20

@@ -23,12 +23,12 @@ plus a **future force/torque chunk**.
 
 WHY THIS IS A TWO-PROCESS TOOL (unlike rollout_viz.py). The UVA model runs only
 in its own conda env (``uvaforce``: torch 2.7.1+cu128, hydra, diffusers, and NO
-viser/mink), while viser + mink + mujoco live only in FUJI's ``.venv`` (torch
+viser/mink), while viser + mink + mujoco live only in FLoRe's ``.venv`` (torch
 2.13, and NO torch-2.7/hydra). The two environments cannot coexist in one
-interpreter. So this front-end (FUJI ``.venv``) owns the viser scene + the
+interpreter. So this front-end (FLoRe ``.venv``) owns the viser scene + the
 ThreePointIK, and spawns ``scripts/muse_force_infer_server.py`` in the UVA env
 as a child process; they talk over the child's stdin/stdout with a tiny
-base64-npz line protocol (both envs have numpy; FUJI's .venv has no zmq). The
+base64-npz line protocol (both envs have numpy; FLoRe's .venv has no zmq). The
 launcher ``run_muse_force_rollout_viz.sh`` wires the two Pythons together.
 
 ISOLATION: reads only already-committed files + the trained checkpoint. It never
@@ -58,8 +58,8 @@ from pathlib import Path
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_UMI = os.path.join(_FUJI_ROOT, "third_party", "UMI_collection")
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_UMI = os.path.join(_FLORE_ROOT, "third_party", "UMI_collection")
 # Same read-only vendored IK + viser helpers rollout_viz.py uses. Added here as a
 # fallback so the script runs when launched directly; the launcher sets them too.
 for _p in (
@@ -69,8 +69,8 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 
 import viser  # noqa: E402
 from viser import transforms as vtf  # noqa: E402
@@ -78,12 +78,12 @@ from viser.extras import ViserUrdf  # noqa: E402
 
 import replay_common as rc  # noqa: E402  (UMI_collection/replay: Timeline + helpers)
 
-from fuji.s1_policy.data.transforms import (  # noqa: E402
+from flore.s1_policy.data.transforms import (  # noqa: E402
     gripper_norm_to_width,
     gripper_width_to_norm,
     rotvec_to_rot6d,
 )
-from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d  # noqa: E402
+from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d  # noqa: E402
 
 _DEFAULT_YAM = os.path.join(_UMI, "robot_assets", "g1_yam", "g1_29dof_yam.urdf")
 _JAW_OPEN_M = 0.0475   # URDF jaw prismatic upper limit (matches collection_viz / replay)
@@ -232,7 +232,7 @@ class InferBackend:
 
 
 # ===========================================================================
-# Recorded episode (FUJI .venv side) — reads the SAME zarr the backend opened.
+# Recorded episode (FLoRe .venv side) — reads the SAME zarr the backend opened.
 # ===========================================================================
 class RecordedEpisode:
     """One episode of the converted zarr, for the RECORDED (blue) trajectory.
@@ -451,7 +451,7 @@ def _load_inv_tcp_extrinsic(ep: "RecordedEpisode", override: str) -> np.ndarray:
         return np.eye(4)
     d = json.load(open(path))
     T = np.asarray(d.get("T_tracker_tcp", np.eye(4).tolist()), dtype=np.float64)
-    print(f"[muse-viz] tracker->TCP extrinsic from {os.path.relpath(path, _FUJI_ROOT)} "
+    print(f"[muse-viz] tracker->TCP extrinsic from {os.path.relpath(path, _FLORE_ROOT)} "
           f"(translation {np.round(T[:3, 3], 3)} m).", flush=True)
     return np.linalg.inv(T)
 
@@ -553,7 +553,7 @@ def main(argv=None) -> int:
     print("[muse-viz] recorded IK done.", flush=True)
 
     # --- scene ---
-    server = viser.ViserServer(host=args.host, port=args.port, label="FUJI MuSe-force rollout viz")
+    server = viser.ViserServer(host=args.host, port=args.port, label="FLoRe MuSe-force rollout viz")
     server.scene.set_up_direction("+z")
     server.scene.add_grid("/grid", plane="xy", shadow_opacity=0.0, infinite_grid=True, cell_size=0.25)
 

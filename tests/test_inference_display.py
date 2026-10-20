@@ -26,8 +26,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data.layout import get_layout
-from fuji.s1_policy.inference.display import (
+from flore.s1_policy.data.layout import get_layout
+from flore.s1_policy.inference.display import (
     DISPLAY_HOME_POS,
     TCP_ALONG_WRIST_X_M,
     TRIAD_DRAW_SIZES,
@@ -41,7 +41,7 @@ from fuji.s1_policy.inference.display import (
     triad_offsets_from_tcp,
     wrist_offset_from_stored,
 )
-from fuji.utils.rot6d import rotmat_to_quat_xyzw
+from flore.utils.rot6d import rotmat_to_quat_xyzw
 
 _REPO = Path(__file__).resolve().parents[1]
 _UMI_VIZ = _REPO / "third_party" / "UMI_collection" / "viz"
@@ -391,7 +391,7 @@ def test_triad_style_covers_every_drawn_triad():
     ``TRIAD_OFFSETS_WRIST``, so adding an offset without a style is a KeyError at scene-build
     time — inside a viser render loop, where it surfaces as a dead viewer rather than a
     clear error."""
-    from fuji.s1_policy.inference.viewer import _TRIAD_STYLE
+    from flore.s1_policy.inference.viewer import _TRIAD_STYLE
 
     assert set(_TRIAD_STYLE) == set(TRIAD_OFFSETS_WRIST)
     for name, style in _TRIAD_STYLE.items():
@@ -628,7 +628,7 @@ def test_tcp_residual_tolerance_survives_an_f32_round_trip():
     ``TCP_RESIDUAL_TOL_MM`` (used by BOTH the provenance note and the GUI datum badge) must
     sit above that and below any real miscalibration, so the note and the badge can never
     contradict each other — the bug a pair of hand-picked thresholds (1e-6 vs 0.05) caused."""
-    from fuji.s1_policy.inference.display import TCP_RESIDUAL_TOL_MM
+    from flore.s1_policy.inference.display import TCP_RESIDUAL_TOL_MM
 
     perturbed = _CORRECTED_T.astype(np.float32).astype(np.float64)
     residual_mm = float(np.linalg.norm(tcp_triad_offset_from_stored(perturbed))) * 1000.0
@@ -667,7 +667,7 @@ def test_wrist_pose_from_stored_is_the_full_4x4_inverse():
     recovered wrist origin back through the stored composition must land on the stored point,
     and the recovered rotation must be a proper rotation that is IDENTITY exactly when the
     stored frame IS the wrist frame."""
-    from fuji.s1_policy.inference.display import PUCK_TO_WRIST_RELABEL, wrist_pose_from_stored
+    from flore.s1_policy.inference.display import PUCK_TO_WRIST_RELABEL, wrist_pose_from_stored
 
     tracker = np.asarray(TRIAD_OFFSETS_WRIST["tracker"], dtype=float)
     for label, extrinsic, want_identity in (
@@ -780,7 +780,7 @@ def test_resolve_role_geometry_sets_the_tracker_triad_rotation():
 # which imports viser lazily (only inside ``run_viewer``), so it IS importable headlessly.
 def _role_result(target_step0_rot6d=None, step0_valid: bool = True):
     """A minimal RoleTrajectory-shaped stand-in with valid, distinct poses."""
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     horizon = 16
     target_rot6d = rotmat_to_rot6d(_random_rotmats(horizon, seed=61))
@@ -805,7 +805,7 @@ def _role_result(target_step0_rot6d=None, step0_valid: bool = True):
 
 
 def _left_geometry():
-    from fuji.s1_policy.inference.display import RoleGeometry
+    from flore.s1_policy.inference.display import RoleGeometry
 
     return RoleGeometry(
         role="left",
@@ -821,7 +821,7 @@ def test_build_display_poses_anchors_the_sample_to_an_upright_home():
 
     This is the end-to-end statement of the operator's "+Z up" requirement: the drawn
     anchor frame is axis-aligned, so nothing points at the floor."""
-    from fuji.s1_policy.inference.viewer import _build_display_poses
+    from flore.s1_policy.inference.viewer import _build_display_poses
 
     role_result = _role_result()
     tail = np.vstack([role_result.target_position[0], [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]])
@@ -838,7 +838,7 @@ def test_build_display_poses_falls_back_to_raw_on_a_degenerate_reference():
     An all-zero rot6d decodes to an all-zero matrix (det 0). Rebasing against that would
     collapse every drawn pose; instead the role degrades to the raw frame and stays
     finite, so the operator sees real data rather than a silently destroyed scene."""
-    from fuji.s1_policy.inference.viewer import _build_display_poses
+    from flore.s1_policy.inference.viewer import _build_display_poses
 
     role_result = _role_result(target_step0_rot6d=np.zeros(6))
     poses = _build_display_poses(role_result, None, _left_geometry(), True)
@@ -861,7 +861,7 @@ def test_build_display_poses_refuses_a_masked_step0_reference():
     every line and the cluster move together nothing would look wrong. Unreachable today
     (``drop_glitch_windows=True`` removes those anchors) but cheap insurance against a
     keep-glitch-windows run or a future filter change."""
-    from fuji.s1_policy.inference.viewer import _build_display_poses
+    from flore.s1_policy.inference.viewer import _build_display_poses
 
     role_result = _role_result(step0_valid=False)
     poses = _build_display_poses(role_result, None, _left_geometry(), True)
@@ -873,7 +873,7 @@ def test_build_display_poses_refuses_a_masked_step0_reference():
 
 def test_build_display_poses_raw_mode_is_a_passthrough():
     """With the toggle off the viewer stays a strict fidelity check."""
-    from fuji.s1_policy.inference.viewer import _build_display_poses
+    from flore.s1_policy.inference.viewer import _build_display_poses
 
     role_result = _role_result()
     tail = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
@@ -885,7 +885,7 @@ def test_build_display_poses_raw_mode_is_a_passthrough():
 
 def test_build_display_poses_handles_a_missing_episode_tail():
     """A failed tail read yields None rather than crashing the rollout."""
-    from fuji.s1_policy.inference.viewer import _build_display_poses
+    from flore.s1_policy.inference.viewer import _build_display_poses
 
     assert _build_display_poses(_role_result(), None, _left_geometry(), True).episode_position is None
 
@@ -896,7 +896,7 @@ def test_build_display_poses_preserves_errors_end_to_end():
     Guards the whole chain (reference choice + rebase + quaternion conversion), not just the
     geometry primitives, so a future refactor of the viewer cannot start flattering the
     model without failing here."""
-    from fuji.s1_policy.inference.viewer import _build_display_poses
+    from flore.s1_policy.inference.viewer import _build_display_poses
 
     role_result = _role_result()
     geometry = _left_geometry()
@@ -940,7 +940,7 @@ def _forward_poses(tail_len: int = 8, seed: int = 71, with_gripper: bool = True)
 
     Row 0 is deliberately set equal to a caller-supplied anchor so the test can assert the
     rebase lands it on the display home."""
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     rng = np.random.default_rng(seed)
     times = np.arange(tail_len, dtype=np.float64) / 15.0  # 15 Hz camera grid
@@ -956,7 +956,7 @@ def _forward_poses(tail_len: int = 8, seed: int = 71, with_gripper: bool = True)
 
 def _playback_result(forward, step0_valid: bool = True):
     """A minimal result whose target step 0 equals the tail's row 0 (the real invariant)."""
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     _times, per = forward
     tail0_pos = per["left"]["position"][0]
@@ -984,7 +984,7 @@ def test_build_playback_data_anchors_row0_to_home_like_the_static_chunk():
     target), so rebasing against that same reference must land it on the home pose — this is
     what guarantees the played-back GT cluster rides on the green recorded-path line and
     shares the trained chunk's gripper/TCP/tracker/wrist frame relationship."""
-    from fuji.s1_policy.inference.viewer import _build_playback_data
+    from flore.s1_policy.inference.viewer import _build_playback_data
 
     forward = _forward_poses()
     result = _playback_result(forward)
@@ -1005,7 +1005,7 @@ def test_build_playback_data_shares_the_static_scenes_frame_exactly():
     ``_build_playback_data`` (as the recorded tail); the two must agree to machine precision,
     or the recorded demonstration would sit in a different frame than the GT chunk drawn from
     the same anchor — exactly the drift this shared-reference design exists to prevent."""
-    from fuji.s1_policy.inference.viewer import _build_display_poses, _build_playback_data
+    from flore.s1_policy.inference.viewer import _build_display_poses, _build_playback_data
 
     forward = _forward_poses()
     result = _playback_result(forward)
@@ -1019,7 +1019,7 @@ def test_build_playback_data_shares_the_static_scenes_frame_exactly():
 
 def test_build_playback_data_raw_mode_is_a_passthrough():
     """With the toggle off the swept poses are the raw recorded ones (strict fidelity)."""
-    from fuji.s1_policy.inference.viewer import _build_playback_data
+    from flore.s1_policy.inference.viewer import _build_playback_data
 
     forward = _forward_poses()
     result = _playback_result(forward)
@@ -1034,8 +1034,8 @@ def test_build_playback_data_maps_recorded_gripper_width_to_a_clamped_fraction()
 
     Widths must map to [0, 1] via GRIPPER_WIDTH_REF_M and clamp, since a recording can exceed
     the reference open width."""
-    from fuji.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
-    from fuji.s1_policy.inference.viewer import _build_playback_data
+    from flore.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
+    from flore.s1_policy.inference.viewer import _build_playback_data
 
     times, per = _forward_poses()
     # Force a width above the reference to exercise the clamp.
@@ -1052,7 +1052,7 @@ def test_build_playback_data_maps_recorded_gripper_width_to_a_clamped_fraction()
 def test_build_playback_data_falls_back_to_raw_on_a_degenerate_reference():
     """A masked/degenerate step-0 anchor leaves playback in the raw frame, mirroring the
     static path — never a silently collapsed sweep."""
-    from fuji.s1_policy.inference.viewer import _build_playback_data
+    from flore.s1_policy.inference.viewer import _build_playback_data
 
     forward = _forward_poses()
     result = _playback_result(forward, step0_valid=False)
@@ -1072,7 +1072,7 @@ def test_viewer_module_imports_without_viser():
     code = (
         "import sys; "
         "sys.modules['viser'] = None; "  # poison it: any real import would fail loudly
-        "import fuji.s1_policy.inference.viewer as v; "
+        "import flore.s1_policy.inference.viewer as v; "
         "assert hasattr(v, '_build_display_poses')"
     )
     subprocess.run([sys.executable, "-c", code], cwd=_REPO, check=True)
@@ -1084,7 +1084,7 @@ def test_display_module_imports_no_viser_or_third_party():
     import sys
 
     code = (
-        "import sys; import fuji.s1_policy.inference.display; "
+        "import sys; import flore.s1_policy.inference.display; "
         "assert 'viser' not in sys.modules; assert 'yourdfpy' not in sys.modules; "
         "bad = [n for n, m in sys.modules.items() "
         "if '/third_party/' in str(getattr(m, '__file__', '')).replace('\\\\', '/')]; "
@@ -1100,7 +1100,7 @@ def _rz(deg):
 
 
 def _fake_role(role, rotmat, valid=True):
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     rot6d = np.repeat(rotmat_to_rot6d(np.asarray(rotmat, dtype=np.float64))[None], 3, axis=0)
     return SimpleNamespace(role=role, target_position=np.zeros((3, 3)), target_rot6d=rot6d,
@@ -1112,7 +1112,7 @@ def test_heading_alignment_prefers_the_chest_and_falls_back_to_the_grip_yaw():
     re-based onto the home. wipe_board's LEFT reads -118.8 deg; the fallback turns by +118.8 and
     NAMES its source, the chest still wins whenever the layout has one, and raw mode / opt-out /
     an unreadable hand leave the scene unturned exactly as before."""
-    from fuji.s1_policy.inference.viewer import _heading_alignment
+    from flore.s1_policy.inference.viewer import _heading_alignment
 
     left_only = SimpleNamespace(roles=[_fake_role("left", _rz(-118.8))])
     world, heading, source = _heading_alignment(left_only, True, True)
@@ -1144,7 +1144,7 @@ def test_the_playback_cluster_carries_the_tracker_triad_rotation_like_the_static
     is drawn on the swept cluster too."""
     import inspect
 
-    from fuji.s1_policy.inference import viewer
+    from flore.s1_policy.inference import viewer
 
     src = inspect.getsource(viewer)
     playback = src[src.index("def _ensure_playback_nodes"):src.index("def _hide_playback_cluster")]

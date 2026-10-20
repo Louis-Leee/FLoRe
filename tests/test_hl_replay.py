@@ -1,4 +1,4 @@
-"""Contract tests for :mod:`fuji.s1_policy.serving.hl_replay` — the recorded-episode
+"""Contract tests for :mod:`flore.s1_policy.serving.hl_replay` — the recorded-episode
 action source that lets the online planner drive the rig with a human demonstration.
 
 The properties pinned here are the ones that decide whether a replayed chunk MOVES THE ARM
@@ -21,13 +21,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data.layout import ACTION_DT, ACTION_HORIZON, get_layout
-from fuji.s1_policy.data.transforms import (
+from flore.s1_policy.data.layout import ACTION_DT, ACTION_HORIZON, get_layout
+from flore.s1_policy.data.transforms import (
     GRIPPER_WIDTH_REF_M,
     delta_ee_to_absolute,
     rotvec_to_rot6d,
 )
-from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
+from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
 
 zarr = pytest.importorskip("zarr")
 
@@ -35,7 +35,7 @@ from tests.test_hl_dataset import _write_hl_zarr  # noqa: E402  (shared schema-f
 
 
 def _source(path, mode="left_only"):
-    from fuji.s1_policy.serving.hl_replay import RecordedEpisodeSource
+    from flore.s1_policy.serving.hl_replay import RecordedEpisodeSource
 
     return RecordedEpisodeSource(path, get_layout(mode))
 
@@ -126,7 +126,7 @@ def test_chunk_matches_the_training_action_chunk(left_zarr):
     encode (tried, measured, reverted — see ``hl_replay._body_vs_world_transport``) breaks it by
     up to 0.033 m in the position column, i.e. replay would stop being the policy's target and
     the demo-vs-policy A/B would no longer be apples-to-apples."""
-    from fuji.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.hl_dataset import HLDataset
 
     src = _source(left_zarr)
     layout = get_layout("left_only")
@@ -198,7 +198,7 @@ def test_decoding_from_any_anchor_reproduces_the_same_motion(left_zarr):
     just placed elsewhere. That is exactly why replay needs no lighthouse->pelvis alignment:
     the world frame cancels. Also pins that step 0 lands ON the anchor, so arming and
     executing cannot jump the arm."""
-    from fuji.s1_policy.serving.hl_online import decode_chunk
+    from flore.s1_policy.serving.hl_online import decode_chunk
 
     src = _source(left_zarr)
     layout = get_layout("left_only")
@@ -294,7 +294,7 @@ def masked_zarr(tmp_path):
 
 def _no_glitch_source(path):
     """A source with the glitch WINDOW disabled, isolating the step-0-masked exclusion."""
-    from fuji.s1_policy.serving.hl_replay import RecordedEpisodeSource
+    from flore.s1_policy.serving.hl_replay import RecordedEpisodeSource
 
     return RecordedEpisodeSource(
         path, get_layout("left_only"), glitch_pre_s=0.0, glitch_post_s=0.0
@@ -484,7 +484,7 @@ def test_episode_plan_decodes_to_the_same_curve_as_the_drawn_path(left_zarr):
     sheet compares the arm against the exact curve it was commanded, with no per-chunk
     re-anchor in between. Checked against a ROTATED anchor (an identity anchor cannot tell a
     body-frame transport from a world one — same reason as the drawn-path test)."""
-    from fuji.s1_policy.serving.hl_online import decode_chunk
+    from flore.s1_policy.serving.hl_online import decode_chunk
 
     src = _source(left_zarr)
     layout = get_layout("left_only")
@@ -606,7 +606,7 @@ def test_episode_path_is_relative_to_the_named_frame_and_meets_the_chunk(left_za
     anchor, so they cannot disagree about the frame (the bug that made the offline viewer
     read tilted). Pinned by requiring the path's reference row to coincide exactly with the
     decoded chunk's step 0."""
-    from fuji.s1_policy.serving.hl_online import decode_chunk
+    from flore.s1_policy.serving.hl_online import decode_chunk
 
     src = _source(left_zarr)
     layout = get_layout("left_only")
@@ -647,7 +647,7 @@ def test_drawn_path_uses_the_same_transport_as_the_command(left_zarr):
     the body-frame motion. The green line is the operator's datum for judging the motion, so a
     prettier line over different motion is worse than an honestly reoriented one. Both are
     checked here against a strongly rotated anchor, where the two conventions differ most."""
-    from fuji.s1_policy.serving.hl_online import decode_chunk
+    from flore.s1_policy.serving.hl_online import decode_chunk
 
     src = _source(left_zarr)
     layout = get_layout("left_only")
@@ -701,7 +701,7 @@ def test_image_at_returns_the_recorded_frame(left_zarr):
 
 
 def test_legacy_layout_is_refused(left_zarr):
-    from fuji.s1_policy.serving.hl_replay import RecordedEpisodeSource
+    from flore.s1_policy.serving.hl_replay import RecordedEpisodeSource
 
     with pytest.raises(ValueError, match="legacy32"):
         RecordedEpisodeSource(left_zarr, get_layout("legacy32"))
@@ -741,7 +741,7 @@ def test_glitch_window_frames_are_not_usable(tmp_path):
 def test_glitch_exclusion_matches_the_training_filter(tmp_path):
     """Replay must offer EXACTLY the anchors ``HLDataset`` trains on — otherwise the
     demo-vs-policy comparison runs the policy on frames it never saw."""
-    from fuji.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.hl_dataset import HLDataset
 
     path = _write_hl_zarr(tmp_path / "match.zarr.zip", n_frames=60, n_episodes=2)
     store = zarr.ZipStore(str(path), mode="a")
@@ -818,7 +818,7 @@ def test_a_faithful_file_is_accepted(left_zarr):
 
 # ---------------------------------------------------------------------------
 # HORIZON: `stored >= wanted`, mirroring HLDataset._check_file. Serving an H=30
-# checkpoint (FUJI_ACTION_HORIZON=30) must still replay the 50-step session it was
+# checkpoint (FLORE_ACTION_HORIZON=30) must still replay the 50-step session it was
 # TRAINED on — i.e. the file its own hl_data.zarr_paths points at.
 # ---------------------------------------------------------------------------
 def test_longer_stored_horizon_replays_as_its_prefix(tmp_path):
@@ -881,7 +881,7 @@ def test_replay_only_model_carries_the_layout_and_no_policy():
     bookkeeping, but no policy — loading one would pin a GPU and several GB of VRAM to run a
     data playback. It must still be the SAME dataclass the real loader returns, so
     ``scripts/hl_serving.py`` keeps one code path for the wire/gate/drip/clutch."""
-    from fuji.s1_policy.serving.hl_online import LoadedHLModel, replay_only_model
+    from flore.s1_policy.serving.hl_online import LoadedHLModel, replay_only_model
 
     loaded = replay_only_model("left_only")
     assert isinstance(loaded, LoadedHLModel)
@@ -899,7 +899,7 @@ def test_replay_only_planner_refuses_the_model_path_loudly():
 
     Without this the ``None`` model surfaces as an opaque ``AttributeError`` from inside the
     batch build, which reads like a torch bug rather than "you launched without a checkpoint"."""
-    from fuji.s1_policy.serving.hl_online import LivePlanner, replay_only_model
+    from flore.s1_policy.serving.hl_online import LivePlanner, replay_only_model
 
     planner = LivePlanner(replay_only_model("left_only"))
     with pytest.raises(RuntimeError, match="no policy"):
@@ -912,7 +912,7 @@ def test_replay_only_planner_still_decodes_a_recorded_chunk(left_zarr):
     This is the model-free path end to end — seed an anchor, read a chunk off the zarr, decode
     it with the SAME ``decode_chunk`` the model path uses — proving the missing model costs
     nothing but the model itself."""
-    from fuji.s1_policy.serving.hl_online import (
+    from flore.s1_policy.serving.hl_online import (
         LivePlanner,
         decode_chunk,
         replay_only_model,
@@ -1054,7 +1054,7 @@ def test_a_role_without_a_gripper_column_reports_none_rather_than_raising(left_z
 # camera view, the O(1) usability cache, and the operator-facing helpers
 # ---------------------------------------------------------------------------
 def _decoded(rc_actions, mode="left_only", h=None):
-    from fuji.s1_policy.serving.hl_online import decode_chunk
+    from flore.s1_policy.serving.hl_online import decode_chunk
 
     lay = get_layout(mode)
     n = len(lay.roles)
@@ -1095,7 +1095,7 @@ def test_episode_plan_carries_each_commanded_frames_own_step0_validity(tmp_path)
 
 
 def test_apply_step_validity_is_the_identity_when_everything_was_measured(left_zarr):
-    from fuji.s1_policy.serving.hl_replay import apply_step_validity
+    from flore.s1_policy.serving.hl_replay import apply_step_validity
 
     src = _source(left_zarr)
     rc = src.chunk_at(0, 2)
@@ -1108,7 +1108,7 @@ def test_apply_step_validity_is_the_identity_when_everything_was_measured(left_z
 
 
 def test_apply_step_validity_zeroes_unmeasured_wrench_rows_and_holds_the_jaw(left_zarr):
-    from fuji.s1_policy.serving.hl_replay import apply_step_validity
+    from flore.s1_policy.serving.hl_replay import apply_step_validity
 
     src = _source(left_zarr)
     rc = src.chunk_at(0, 2)
@@ -1133,7 +1133,7 @@ def test_apply_step_validity_zeroes_unmeasured_wrench_rows_and_holds_the_jaw(lef
 
 
 def test_apply_step_validity_drops_a_jaw_that_was_never_measured_in_the_chunk(left_zarr):
-    from fuji.s1_policy.serving.hl_replay import apply_step_validity
+    from flore.s1_policy.serving.hl_replay import apply_step_validity
 
     src = _source(left_zarr)
     rc = src.chunk_at(0, 2)
@@ -1184,7 +1184,7 @@ def test_the_cached_usability_agrees_with_a_per_frame_read_of_the_file(masked_za
 
 
 def test_episode_options_label_the_masked_starts_and_pad_the_index(masked_zarr):
-    from fuji.s1_policy.serving.hl_replay import episode_options
+    from flore.s1_policy.serving.hl_replay import episode_options
 
     src = _no_glitch_source(masked_zarr)
     opts = episode_options(src)
@@ -1213,7 +1213,7 @@ def test_speed_report_shows_the_step0_overhead_shrinking_with_the_chunk(left_zar
     """On a camera grid that IS the action grid the only speed term left is the k-1 overhead —
     every chunk re-commands its step 0 — so exec=8 reads about -12% and exec=16 about -6%, and
     a bigger chunk is always closer to the human's tempo."""
-    from fuji.s1_policy.serving.hl_replay import speed_report
+    from flore.s1_policy.serving.hl_replay import speed_report
 
     src = _source(left_zarr)
     txt = speed_report(src, 0, 1.0 / ACTION_DT, (8, 16))
@@ -1226,7 +1226,7 @@ def test_speed_report_shows_the_step0_overhead_shrinking_with_the_chunk(left_zar
 
 
 def test_transport_rotation_is_the_angle_between_recorded_hand_and_anchor():
-    from fuji.s1_policy.serving.hl_replay import transport_rotation_deg
+    from flore.s1_policy.serving.hl_replay import transport_rotation_deg
 
     ident = rotmat_to_rot6d(np.eye(3))
     assert transport_rotation_deg(ident, ident) == pytest.approx(0.0)

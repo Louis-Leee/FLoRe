@@ -83,7 +83,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from fuji.s1_policy.serving.hl_take import DeployTake, find_takes  # noqa: E402
+from flore.s1_policy.serving.hl_take import DeployTake, find_takes  # noqa: E402
 
 #: "Standing" means both the command and the arm are essentially still. At a 36 ms prediction
 #: period this is 0.36 mm/tick, tight enough that a velocity lead would have collapsed.
@@ -117,7 +117,7 @@ def series_per_prediction(take: DeployTake, role: str = "left") -> dict | None:
     n_exec = [int(p.n_exec) for p in take.predictions if p.n_exec is not None]
     ensembled = bool(n_exec) and all(n == 1 for n in n_exec) and len(chunks) > 2
     if ensembled:
-        from fuji.s1_policy.model.act.temporal_ensemble import TemporalEnsembler
+        from flore.s1_policy.model.act.temporal_ensemble import TemporalEnsembler
 
         horizon = chunks[0].shape[0]
         # Orientation is irrelevant to a POSITION audit, so feed a constant valid rot6d rather
@@ -245,7 +245,7 @@ def _wire_force_at_ticks(take: DeployTake, t: np.ndarray) -> np.ndarray:
     flip is what puts the two streams in one convention. Comparing them without it would report
     twice the force as an error.
     """
-    from fuji.utils.force_frame import CMD_FROM_MEAS_SIGN
+    from flore.utils.force_frame import CMD_FROM_MEAS_SIGN
 
     tc, fc = take.commanded_force_sensor()
     if fc.shape[0] < 2 or t.size == 0:

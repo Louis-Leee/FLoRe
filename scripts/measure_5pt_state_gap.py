@@ -11,7 +11,7 @@ first observation is something the policy has seen is a property of the DATASET'
 push_cart/push_gantry), not of the checkpoint, and it decides whether the first chunk is a
 prediction or an extrapolation. So it is measured per dataset rather than assumed from the last
 one — this is the ``fivepoint`` twin of the wholebody_geom table in
-``fuji/s1_policy/data/wb_geom.py``'s module docstring (the 0.28-0.58 sigma numbers).
+``flore/s1_policy/data/wb_geom.py``'s module docstring (the 0.28-0.58 sigma numbers).
 
 Three tables, all computed with the SAME functions training and deploy use (``KeypointFK`` +
 ``wb_geom.geom_from_bodies``; the ready pose from ``ready_pose.resolve_deploy_anchor``):
@@ -44,11 +44,11 @@ import numpy as np
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(_HERE, "..")))
 
-from fuji.s1_policy.data import wb_geom  # noqa: E402
-from fuji.s1_policy.data.hl_dataset import _register_image_codecs  # noqa: E402
-from fuji.s1_policy.data.layout import get_layout  # noqa: E402
-from fuji.s1_policy.inference import ready_pose  # noqa: E402
-from fuji.s1_policy.serving.hl_5pt import WIRE_ROLES  # noqa: E402
+from flore.s1_policy.data import wb_geom  # noqa: E402
+from flore.s1_policy.data.hl_dataset import _register_image_codecs  # noqa: E402
+from flore.s1_policy.data.layout import get_layout  # noqa: E402
+from flore.s1_policy.inference import ready_pose  # noqa: E402
+from flore.s1_policy.serving.hl_5pt import WIRE_ROLES  # noqa: E402
 
 #: The wire's five slots -> the URDF body whose FK is that keypoint (hands carry the fingertip
 #: lever, the chest its own, the feet none) — ``ready_pose.ROLE_BODY`` plus the two ankles.

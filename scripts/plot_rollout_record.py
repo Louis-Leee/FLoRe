@@ -18,7 +18,7 @@ camera frames: one row per view, frames evenly spaced over the run, captioned wi
 ``summary.json`` and ``summary.txt``. Reads only; never touches the JSONL or the JPEGs. The page spawns this itself when a recording is saved (``plot.log`` in
 the folder says how it went); ``--no-record-autoplot`` there leaves it to you.
 
-WHAT EACH LINE IS (the recorder's docstring, ``fuji/s1_policy/serving/rollout_record.py``, is the
+WHAT EACH LINE IS (the recorder's docstring, ``flore/s1_policy/serving/rollout_record.py``, is the
 contract): ``target`` is the clutched model target per executed step, BEFORE reach compensation and
 the leg override; ``published`` is what reached :8770 — reach residual + leg override applied, every
 frame including the heartbeat's re-sends; ``low level saw`` is RecordTap's ``vr_cmd_pos``, the target

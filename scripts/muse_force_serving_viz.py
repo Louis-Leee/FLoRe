@@ -25,7 +25,7 @@ left arm follows the chunk and everything else holds the stand pose ("IK for loo
 The backend hands us the LEFT UMI-TCP absolute pose per step; we recover the tracker
 pose (inverse 0.21 m extrinsic, exactly like the rollout viz) to drive the IK.
 
-Runs in FUJI's ``.venv`` (viser + mink + mujoco). Reads only committed files +
+Runs in FLoRe's ``.venv`` (viser + mink + mujoco). Reads only committed files +
 the checkpoint; writes nothing; shares NOTHING with the flow-matching rollout_viz
 or the offline muse rollout viz (helpers are duplicated on purpose). The launcher
 ``run_muse_force_serving.sh`` wires the two Pythons + PYTHONPATH.
@@ -46,8 +46,8 @@ from pathlib import Path
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_UMI = os.path.join(_FUJI_ROOT, "third_party", "UMI_collection")
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_UMI = os.path.join(_FLORE_ROOT, "third_party", "UMI_collection")
 for _p in (
     os.path.join(_UMI, "third_party", "humi_ik"),
     os.path.join(_UMI, "viz"),
@@ -55,8 +55,8 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 
 import viser  # noqa: E402
 from viser import transforms as vtf  # noqa: E402
@@ -64,10 +64,10 @@ from viser.extras import ViserUrdf  # noqa: E402
 
 import replay_common as rc  # noqa: E402
 
-from fuji.utils.rot6d import (  # noqa: E402
+from flore.utils.rot6d import (  # noqa: E402
     rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d,
 )
-from fuji.s1_policy.data.transforms import gripper_width_to_norm  # noqa: E402
+from flore.s1_policy.data.transforms import gripper_width_to_norm  # noqa: E402
 
 _DEFAULT_YAM = os.path.join(_UMI, "robot_assets", "g1_yam", "g1_29dof_yam.urdf")
 _JAW_OPEN_M = 0.0475
@@ -338,7 +338,7 @@ def main(argv=None) -> int:
     ik, mapper = _make_ik(args.ik_config, args.reach_scale, args.yam_urdf)
 
     # --- scene ---
-    server = viser.ViserServer(host=args.host, port=args.port, label="FUJI MuSe-force PLANNER")
+    server = viser.ViserServer(host=args.host, port=args.port, label="FLoRe MuSe-force PLANNER")
     server.scene.set_up_direction("+z")
     server.scene.add_grid("/grid", plane="xy", shadow_opacity=0.0, infinite_grid=True, cell_size=0.25)
     base_xyz = np.asarray(ik.home_q()[0:3], dtype=float).copy()

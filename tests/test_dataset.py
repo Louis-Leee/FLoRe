@@ -8,7 +8,7 @@ import pytest
 import torch
 import zarr
 
-from fuji.s1_policy.data.umi_dataset import ACTION_DIM, UMIDataset
+from flore.s1_policy.data.umi_dataset import ACTION_DIM, UMIDataset
 
 H, W = 224, 224
 ACTION_HORIZON = 8
@@ -211,7 +211,7 @@ def test_first_action_row_is_near_identity(zarr_1pt):
 
 def test_relative_action_roundtrips_to_absolute(zarr_1pt):
     """The stored relative chunk + anchor state recovers the absolute poses (GCL SE(3))."""
-    from fuji.s1_policy.data.transforms import delta_ee_to_absolute, rotvec_to_rot6d
+    from flore.s1_policy.data.transforms import delta_ee_to_absolute, rotvec_to_rot6d
 
     ds = UMIDataset(zarr_1pt, action_horizon=ACTION_HORIZON)
     s = ds[0]
@@ -280,7 +280,7 @@ def test_ref_frame_left_action_reference_row_identity(zarr_left_3pt):
 def test_ref_frame_roundtrips_to_absolute(zarr_left_3pt, ref_frame):
     """The shared-frame chunk + the base recovered from the raw absolute anchor state
     reconstructs the original absolute per-keypoint trajectory (SE(3) round-trip)."""
-    from fuji.s1_policy.data.transforms import (
+    from flore.s1_policy.data.transforms import (
         delta_ee_to_absolute, resolve_base, rotvec_to_rot6d,
     )
 

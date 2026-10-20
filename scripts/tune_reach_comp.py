@@ -39,8 +39,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fuji.s1_policy.serving.hl_reach import ReachCompensator, ReachConfig  # noqa: E402
-from fuji.s1_policy.serving.hl_take import DeployTake, find_takes  # noqa: E402
+from flore.s1_policy.serving.hl_reach import ReachCompensator, ReachConfig  # noqa: E402
+from flore.s1_policy.serving.hl_take import DeployTake, find_takes  # noqa: E402
 
 
 def _series(take: DeployTake, role: str = "left", *, ensembled: bool | None = None):
@@ -82,7 +82,7 @@ def _series(take: DeployTake, role: str = "left", *, ensembled: bool | None = No
         n_exec = [int(p.n_exec) for p in take.predictions if p.n_exec is not None]
         ensembled = bool(n_exec) and all(n == 1 for n in n_exec) and len(chunks) > 2
     if ensembled:
-        from fuji.s1_policy.model.act.temporal_ensemble import TemporalEnsembler
+        from flore.s1_policy.model.act.temporal_ensemble import TemporalEnsembler
 
         H = chunks[0].shape[0]
         # Orientation is irrelevant to a POSITION audit and the compensator never touches it, so
@@ -150,7 +150,7 @@ def _force_series(take: DeployTake, n: int) -> np.ndarray | None:
     The measured rows and the predictions run on the same take-relative clock but at different
     rates, so align by fraction-of-take (both are ordered) rather than inventing a join.
     """
-    from fuji.s1_policy.serving.hl_record import EXEC_COLS
+    from flore.s1_policy.serving.hl_record import EXEC_COLS
 
     ec = {name: i for i, name in enumerate(EXEC_COLS)}
     ex = take.executed

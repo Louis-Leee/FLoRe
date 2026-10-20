@@ -26,8 +26,8 @@ per-step curve, and per-role means; compare an H=30 against an H=50 run on ``fir
 robot-facing number off ``first_16`` (the executed window). The .npz beside the JSON holds every
 per-(anchor, step) error so any other statistic can be computed without re-sampling.
 
-The action-horizon pin (``FUJI_ACTION_HORIZON``) is read off the checkpoint and exported BEFORE the
-first fuji import, the launchers' contract; a conflicting value already in the environment is refused.
+The action-horizon pin (``FLORE_ACTION_HORIZON``) is read off the checkpoint and exported BEFORE the
+first flore import, the launchers' contract; a conflicting value already in the environment is refused.
 """
 from __future__ import annotations
 
@@ -56,27 +56,27 @@ def pin_horizon(raw: dict) -> int:
     horizon = block.get("action_horizon")
     if not isinstance(horizon, int) or isinstance(horizon, bool) or horizon < 1:
         raise SystemExit(f"config.json {ALGO_BLOCK[algo]}.action_horizon={horizon!r} is not a positive integer")
-    have = os.environ.get("FUJI_ACTION_HORIZON")
+    have = os.environ.get("FLORE_ACTION_HORIZON")
     if have not in (None, "", str(horizon)):
-        raise SystemExit(f"FUJI_ACTION_HORIZON={have} in the environment but the checkpoint declares {horizon}")
-    os.environ["FUJI_ACTION_HORIZON"] = str(horizon)
+        raise SystemExit(f"FLORE_ACTION_HORIZON={have} in the environment but the checkpoint declares {horizon}")
+    os.environ["FLORE_ACTION_HORIZON"] = str(horizon)
     return horizon
 
 
 def open_session(checkpoint: Path, algo: str, device: str, num_steps: int | None):
     if algo == "diffusion":
-        from fuji.s1_policy.inference.diffusion import DiffusionInferenceSession as cls
+        from flore.s1_policy.inference.diffusion import DiffusionInferenceSession as cls
     elif algo == "flow":
-        from fuji.s1_policy.inference.flow import FlowInferenceSession as cls
+        from flore.s1_policy.inference.flow import FlowInferenceSession as cls
     elif algo == "act":
-        from fuji.s1_policy.inference.act import ACTInferenceSession as cls
+        from flore.s1_policy.inference.act import ACTInferenceSession as cls
     else:
         raise SystemExit(f"unknown algo {algo!r}")
     return cls(checkpoint, device=device, num_steps=num_steps)
 
 
 def geodesic_deg(rot6d_a: np.ndarray, rot6d_b: np.ndarray) -> np.ndarray:
-    from fuji.utils.rot6d import rot6d_to_rotmat
+    from flore.utils.rot6d import rot6d_to_rotmat
 
     ra, rb = rot6d_to_rotmat(rot6d_a), rot6d_to_rotmat(rot6d_b)
     rel = np.einsum("...ij,...kj->...ik", ra, rb)

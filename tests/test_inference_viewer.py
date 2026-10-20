@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.s1_policy.inference.viewer import _path_axes_steps
+from flore.s1_policy.inference.viewer import _path_axes_steps
 
 
 def test_path_axes_steps_stride_and_last_step():

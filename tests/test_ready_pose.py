@@ -25,8 +25,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.s1_policy.inference import ready_pose as RP
-from fuji.s1_policy.inference.display import (
+from flore.s1_policy.inference import ready_pose as RP
+from flore.s1_policy.inference.display import (
     DISPLAY_HOME_POS, RoleGeometry, resolve_role_geometry,
 )
 
@@ -131,7 +131,7 @@ def test_the_arm_joint_selection_matches_the_rig_by_name():
     Indices would be a silent trap across an SDK re-order, so both sides match substrings; this
     pins that the substrings still select exactly the 14 arm joints and no leg or waist joint.
     """
-    from fuji.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES
+    from flore.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES
 
     picked = [n for n in G1_29DOF_SDK_DOF_NAMES if any(k in n for k in RP._ARM_JOINT_KEYS)]
     assert len(picked) == 14, picked
@@ -317,7 +317,7 @@ def test_this_rigs_operator_really_does_face_backwards():
     with +x. This pins that it is not, on real data, because the whole heading correction is
     dead weight if the number is ever ~0 and nobody would notice it going stale.
     """
-    from fuji.s1_policy.inference.common import HLSampleSource  # noqa: F401  (import check)
+    from flore.s1_policy.inference.common import HLSampleSource  # noqa: F401  (import check)
 
     heading = -174.8  # measured, session 0831 sample 20940 (mean -169 over 38 samples)
     world, _ = RP.world_yaw_alignment(_rz(heading))
@@ -331,7 +331,7 @@ def test_this_rigs_operator_really_does_face_backwards():
 
 def test_a_non_yaw_world_rotation_is_refused():
     """The guard that stops the removed 'rigid tilt' bug from coming back through this door."""
-    from fuji.s1_policy.inference.display import check_yaw_only, home_anchor_positions
+    from flore.s1_policy.inference.display import check_yaw_only, home_anchor_positions
 
     np.testing.assert_allclose(check_yaw_only(_rz(30.0)), _rz(30.0), atol=0.0)
     tilt = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])   # Rx(90)
@@ -351,7 +351,7 @@ def test_the_world_turn_costs_no_metric():
     CONJUGATED, so its geodesic is a trace that the conjugation cannot change. Asserting it
     numerically is what lets the frame be turned without re-validating the Metrics panel.
     """
-    from fuji.s1_policy.inference.display import home_anchor_positions, home_anchor_rotmats
+    from flore.s1_policy.inference.display import home_anchor_positions, home_anchor_rotmats
 
     rng = np.random.default_rng(0)
     pred, targ = rng.normal(size=(7, 3)), rng.normal(size=(7, 3))
@@ -413,7 +413,7 @@ def test_the_keypoint_fk_reproduces_the_ready_pose_frame_bit_for_bit():
     and the wire would sit permanently offset. Fed the anchor's OWN joints, the two must land on
     top of each other, so the test is an equality rather than a tolerance.
     """
-    from fuji.s1_policy.serving import hl_dense
+    from flore.s1_policy.serving import hl_dense
 
     anchor, why = RP.resolve_deploy_anchor(("left", "right", "head"))
     if anchor is None:

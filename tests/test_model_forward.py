@@ -9,7 +9,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fuji.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
+from flore.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
 
 ACTION_DIM = 32
 ACTION_HORIZON = 50
@@ -276,8 +276,8 @@ def test_history_grows_global_cond():
 def test_metric_groups_match_dataset_layout():
     """The model's per-group dim indices MUST mirror the dataset's 32-dim slot layout.
     If the dataset layout ever changes, this test fails so the metric groups get fixed."""
-    from fuji.s1_policy.data.umi_dataset import _HEAD, _LEFT, _RIGHT
-    from fuji.s1_policy.model.dp_flow import _METRIC_GROUP_DIMS
+    from flore.s1_policy.data.umi_dataset import _HEAD, _LEFT, _RIGHT
+    from flore.s1_policy.model.dp_flow import _METRIC_GROUP_DIMS
 
     def _kp_dims(spec):
         pos, rot, grip = spec
@@ -341,7 +341,7 @@ def test_per_group_metric_matches_manual_masked_mse():
 
     metrics = model._extra_train_metrics(v_t, u_t, is_pad, None, dim_mask)
 
-    from fuji.s1_policy.model.dp_flow import _METRIC_GROUP_DIMS
+    from flore.s1_policy.model.dp_flow import _METRIC_GROUP_DIMS
 
     sq = (v_t - u_t) ** 2
     include = (~is_pad).unsqueeze(-1).float()  # (B, T, 1)

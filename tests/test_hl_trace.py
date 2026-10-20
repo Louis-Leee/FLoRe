@@ -1,4 +1,4 @@
-"""Contract tests for :mod:`fuji.s1_policy.serving.hl_trace` — the executed-path recorder
+"""Contract tests for :mod:`flore.s1_policy.serving.hl_trace` — the executed-path recorder
 and the executed-vs-recorded comparison sheet.
 
 What is pinned here is what decides whether the red line and the saved PNG can be TRUSTED as
@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.s1_policy.serving.hl_trace import (
+from flore.s1_policy.serving.hl_trace import (
     ExecutionTrace,
     ReferencePath,
     resample_reference_to_trace,
@@ -28,7 +28,7 @@ from fuji.s1_policy.serving.hl_trace import (
     rotation_geodesic_deg,
     trace_stats,
 )
-from fuji.utils.rot6d import rotmat_to_rot6d, rotvec_to_rotmat
+from flore.utils.rot6d import rotmat_to_rot6d, rotvec_to_rotmat
 
 _IDENT6 = rotmat_to_rot6d(np.eye(3))
 
@@ -273,7 +273,7 @@ def test_empty_stats_are_zeros_not_nan():
 def test_saving_with_an_empty_trace_raises_instead_of_writing_a_blank_png(tmp_path):
     """An operator who pressed save with nothing recorded must be TOLD, not handed a file
     that looks like a result."""
-    from fuji.s1_policy.serving.hl_trace import plot_trace_vs_reference
+    from flore.s1_policy.serving.hl_trace import plot_trace_vs_reference
 
     pytest.importorskip("matplotlib")
     ref = ReferencePath(t=np.array([0.0, 1.0]), pos=np.zeros((2, 3)),
@@ -288,7 +288,7 @@ def test_the_sheet_is_written_with_the_stats_it_reports(tmp_path):
     """End-to-end: a real PNG lands at the returned path (which the page shows the operator),
     and the returned stats describe the data that was plotted."""
     pytest.importorskip("matplotlib")
-    from fuji.s1_policy.serving.hl_trace import plot_trace_vs_reference
+    from flore.s1_policy.serving.hl_trace import plot_trace_vs_reference
 
     n = 40
     t = np.arange(n) / 30.0
@@ -315,7 +315,7 @@ def test_the_sheet_creates_its_output_directory(tmp_path):
     """--trace-dir defaults to a path that does not exist yet (``<repo>/data/traces``), and the
     first save must not fail on that."""
     pytest.importorskip("matplotlib")
-    from fuji.s1_policy.serving.hl_trace import plot_trace_vs_reference
+    from flore.s1_policy.serving.hl_trace import plot_trace_vs_reference
 
     tr = ExecutionTrace()
     tr.arm(0.0)

@@ -10,10 +10,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.client.s0_driver import _RESERVED_WIRE_KEYS, _merge_extra
-from fuji.s1_policy.data.layout import get_layout
-from fuji.s1_policy.serving import hl_offline
-from fuji.s1_policy.serving.hl_dense import KEYPOINT_GATE_TOL_M, PostAnchorConfig
+from flore.client.s0_driver import _RESERVED_WIRE_KEYS, _merge_extra
+from flore.s1_policy.data.layout import get_layout
+from flore.s1_policy.serving import hl_offline
+from flore.s1_policy.serving.hl_dense import KEYPOINT_GATE_TOL_M, PostAnchorConfig
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ def _state(n_samples: int = 100, n_episodes: int = 5) -> dict:
 @pytest.mark.parametrize("action", ["predict", "run", "reset", "auto"])
 def test_simple_verbs_queue_a_request(action):
     st = _state()
-    line = hl_offline.apply_control(st, {"cmd": "fuji", "action": action})
+    line = hl_offline.apply_control(st, {"cmd": "flore", "action": action})
     assert st["req"] == action
     assert action in line
 
@@ -35,31 +35,31 @@ def test_simple_verbs_queue_a_request(action):
 def test_stop_is_a_latch_that_a_later_verb_cannot_overwrite():
     """The one verb whose value is that it cannot be lost — see ``apply_control``."""
     st = _state()
-    hl_offline.apply_control(st, {"cmd": "fuji", "action": "stop"})
+    hl_offline.apply_control(st, {"cmd": "flore", "action": "stop"})
     assert st["stop"] is True
-    hl_offline.apply_control(st, {"cmd": "fuji", "action": "predict"})
+    hl_offline.apply_control(st, {"cmd": "flore", "action": "predict"})
     assert st["req"] == "predict"
     assert st["stop"] is True, "a later verb cleared a latched STOP"
 
 
 def test_sample_out_of_range_is_refused_and_names_the_range():
     st = _state(n_samples=10)
-    line = hl_offline.apply_control(st, {"cmd": "fuji", "action": "sample", "index": 10})
+    line = hl_offline.apply_control(st, {"cmd": "flore", "action": "sample", "index": 10})
     assert st["want_sample"] is None and st["req"] is None
     assert "0..9" in line
 
 
 def test_episode_out_of_range_is_refused():
     st = _state(n_episodes=3)
-    line = hl_offline.apply_control(st, {"cmd": "fuji", "action": "episode", "index": -1})
+    line = hl_offline.apply_control(st, {"cmd": "flore", "action": "episode", "index": -1})
     assert st["want_episode"] is None and st["req"] is None
     assert "0..2" in line
 
 
 @pytest.mark.parametrize("msg", [
-    {"cmd": "fuji", "action": "sample"},                  # no index
-    {"cmd": "fuji", "action": "sample", "index": "x"},     # not an int
-    {"cmd": "fuji", "action": "sample", "index": None},
+    {"cmd": "flore", "action": "sample"},                  # no index
+    {"cmd": "flore", "action": "sample", "index": "x"},     # not an int
+    {"cmd": "flore", "action": "sample", "index": None},
 ])
 def test_malformed_index_requests_are_refused(msg):
     st = _state()
@@ -70,7 +70,7 @@ def test_malformed_index_requests_are_refused(msg):
 
 def test_unknown_action_is_refused_by_name():
     st = _state()
-    line = hl_offline.apply_control(st, {"cmd": "fuji", "action": "fly"})
+    line = hl_offline.apply_control(st, {"cmd": "flore", "action": "fly"})
     assert st["req"] is None
     assert "'fly'" in line
 
@@ -92,7 +92,7 @@ def test_recalibrate_is_mapped_to_reset():
 
 def test_non_object_message_is_refused():
     st = _state()
-    assert "non-object" in hl_offline.apply_control(st, ["fuji", "predict"])
+    assert "non-object" in hl_offline.apply_control(st, ["flore", "predict"])
 
 
 # ---------------------------------------------------------------------------
@@ -200,10 +200,10 @@ def test_page_extras_carries_the_gate_key_and_the_ack():
                                 state="staged", message="hi", layout_note="wholebody",
                                 chunk_steps=50, exec_steps=16, step=3, ghost_step=4, ack=2)
     assert out[hl_offline.PAGE_GATE_KEY] == 1234
-    assert out["fuji_ack"] == 2
-    assert out["fuji_sample"] == 7 and out["fuji_episode"] == 3
-    assert out["fuji_episode_index"] == 2 and out["fuji_split"] == "train"
-    assert out["fuji_state"] == "staged" and out["fuji_step"] == 3
+    assert out["flore_ack"] == 2
+    assert out["flore_sample"] == 7 and out["flore_episode"] == 3
+    assert out["flore_episode_index"] == 2 and out["flore_split"] == "train"
+    assert out["flore_state"] == "staged" and out["flore_step"] == 3
 
 
 def test_page_extras_refuses_an_unknown_state():
@@ -223,7 +223,7 @@ def test_page_extras_keys_never_collide_with_the_wire_and_are_json_safe():
     out.update(hl_offline.ghost_extras(np.zeros(2), ["a", "b"]))
     assert not _RESERVED_WIRE_KEYS.intersection(out)
     json.loads(json.dumps(out))       # no numpy scalars, no NaN
-    assert len(out["fuji_msg"]) <= 240 and len(out["fuji_layout"]) <= 120
+    assert len(out["flore_msg"]) <= 240 and len(out["flore_layout"]) <= 120
 
 
 @pytest.mark.parametrize("key", sorted(_RESERVED_WIRE_KEYS))
@@ -283,7 +283,7 @@ def _wire(**kw) -> hl_offline.ThreePointWire:
 
 
 def test_three_point_labels_are_the_first_three_of_the_five():
-    from fuji.s1_policy.serving.hl_dense import FIVE_POINT_LABELS
+    from flore.s1_policy.serving.hl_dense import FIVE_POINT_LABELS
 
     assert hl_offline.THREE_POINT_N == 3
     assert hl_offline.THREE_POINT_LABELS == FIVE_POINT_LABELS[:3]
@@ -355,9 +355,9 @@ def test_publish_gates_non_finite_and_denormalised_quaternions():
     ok, why = w.publish(s0, (_READY_POS, _READY_ORN * 0.5), None)
     assert not ok and "norm" in why
     assert sent == [], "an unsafe frame reached the socket"
-    ok, why = w.publish(s0, w.ready_frame, None, extra={"fuji_state": "hold"})
+    ok, why = w.publish(s0, w.ready_frame, None, extra={"flore_state": "hold"})
     assert ok and why == ""
-    assert sent[0][3] == {"fuji_state": "hold"}
+    assert sent[0][3] == {"flore_state": "hold"}
 
 
 def test_a_wrong_width_ready_frame_is_refused_at_construction():
@@ -391,8 +391,8 @@ def test_a_zero_relative_chunk_decodes_ONTO_the_anchor():
     on whatever it was decoded against. Decode against ``resolve_deploy_anchor`` and step 0 IS the
     ready pose, which IS the pre-arm gate's reference. Applying a lever on top would double it.
     """
-    from fuji.s1_policy.serving.hl_online import decode_chunk
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.s1_policy.serving.hl_online import decode_chunk
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     layout = get_layout("both_hands_head_dual")
     roles = tuple(layout.roles)

@@ -50,7 +50,7 @@ def test_default_mode_is_measured():
 
 
 def test_default_leak_is_inside_the_module_ceiling():
-    from fuji.s1_policy.serving import hl_anchor
+    from flore.s1_policy.serving import hl_anchor
 
     m = re.search(r'add_argument\("--anchor-eps",\s*type=float,\s*default=([0-9.]+)', _SRC)
     assert m, "--anchor-eps flag not found"
@@ -137,7 +137,7 @@ def test_launcher_passes_the_mode_through():
 
 
 def test_launcher_modes_match_the_parser_choices():
-    from fuji.s1_policy.serving import hl_anchor
+    from flore.s1_policy.serving import hl_anchor
 
     for mode in hl_anchor.ANCHOR_MODES:
         assert mode in _SH, f"launcher does not mention mode {mode!r}"

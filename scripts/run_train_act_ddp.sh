@@ -57,13 +57,13 @@ GPUS=$(IFS=,; echo "${ALL_GPUS[*]:0:$N_GPUS}")
 #
 # FH is the force-history bin count baked into that file, derived from SESSION and EXPORTED
 # (torchrun passes the environment to every rank). The zarr's hl_force_hist_len attr and
-# FUJI's resolved FORCE_HIST_LEN must agree or hl_dataset._check_file refuses the file;
+# FLoRe's resolved FORCE_HIST_LEN must agree or hl_dataset._check_file refuses the file;
 # pairing them here makes a mismatch impossible rather than merely detected. 0811_2110 vs
 # 0811_2110_fh6 are the SAME 105 episodes converted at L=1 (33 ms) and L=6 (200 ms) — that
 # pair is the force-look-back A/B, so run them with everything else held fixed.
 #
-# H is the ACTION-CHUNK length, exported as FUJI_ACTION_HORIZON the same way FH is exported as
-# FUJI_FORCE_HIST_LEN. UNLIKE FH it is not a property of the file: every shipped dataset stores
+# H is the ACTION-CHUNK length, exported as FLORE_ACTION_HORIZON the same way FH is exported as
+# FLORE_FORCE_HIST_LEN. UNLIKE FH it is not a property of the file: every shipped dataset stores
 # 50 steps at 30 Hz, and a shorter H trains on a strict PREFIX of that same chunk (t0-inclusive
 # grid, unchanged dt), so an H=30 vs H=50 A/B needs no re-convert. It still belongs in the
 # SESSION key rather than in the caller's environment, because NS/RUN/OUT are all derived from
@@ -184,7 +184,7 @@ case "$SESSION" in
     # 13.5-18.8 s of sustained wiping, 1817 anchors = 5.3% of the 34293 usable.
     #
     # The _h30 twin is the SAME file (a 30-step chunk is a strict PREFIX of the stored 50 on the
-    # t0-inclusive grid) with its OWN norm stats, fitted with FUJI_ACTION_HORIZON=30 exported
+    # t0-inclusive grid) with its OWN norm stats, fitted with FLORE_ACTION_HORIZON=30 exported
     # (norm_stats_hl_left_wipe_board_new_h30.json) -- exactly the wipe_board_h30 / 0823_merged_h30 rule.
     wipe_board_new)     DS=(third_party/UMI_collection/data/datasets/session_2026.09.13_wipe_board_new_v3_left_clean181.zarr.zip); FH=1; VAL_EPS=4 ;;
     wipe_board_new_h30) DS=(third_party/UMI_collection/data/datasets/session_2026.09.13_wipe_board_new_v3_left_clean181.zarr.zip); FH=1; H=30; VAL_EPS=4 ;;
@@ -194,8 +194,8 @@ case "$SESSION" in
             "0823_merged 0823_merged_h30 wipe_board wipe_board_new wipe_board_new_h30," \
             "got '$SESSION'" >&2; exit 1 ;;
 esac
-export FUJI_FORCE_HIST_LEN="$FH"
-export FUJI_ACTION_HORIZON="$H"
+export FLORE_FORCE_HIST_LEN="$FH"
+export FLORE_ACTION_HORIZON="$H"
 NS=checkpoints/norm_stats_hl_left_${SESSION}.json
 RUN="act_${SESSION}_ddp${N_GPUS}"
 # Derived here rather than inlined at the torchrun call so any suffix below reaches BOTH the
@@ -218,14 +218,14 @@ WB_NAME="act-${SESSION}-ddp${N_GPUS}"
 # force_history entry is a broadcast error. fit_hl_norm_stats omits the key when no anchor
 # has a measured window, which is exactly this case.
 if [[ "${NOFORCE:-0}" == "1" ]]; then
-    export FUJI_DROP_FORCE=1
+    export FLORE_DROP_FORCE=1
     RUN="${RUN}_noforce"
     WB_NAME="${WB_NAME}-noforce"
     NS="${NS%.json}_noforce.json"
 fi
 # CKPT_ROOT is overridable because /data exists only on the 8-GPU workstation; on a box
 # without it every guard below passes and the run dies at the first save.
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 OUT="$CKPT_ROOT/$RUN"
 [[ -d "$CKPT_ROOT" ]] || mkdir -p "$CKPT_ROOT" 2>/dev/null || {
     echo "FATAL: checkpoint root '$CKPT_ROOT' is missing and not creatable." >&2
@@ -317,7 +317,7 @@ EOF
 mkdir -p logs
 set -o pipefail
 # --standalone: single-node rendezvous, no external etcd. Each rank gets RANK/LOCAL_RANK/
-# WORLD_SIZE from torchrun, which is exactly what fuji...training.distributed reads.
+# WORLD_SIZE from torchrun, which is exactly what flore...training.distributed reads.
 CUDA_VISIBLE_DEVICES="$GPUS" .venv/bin/torchrun \
     --standalone --nnodes 1 --nproc-per-node "$N_GPUS" \
     scripts/train_s1.py \

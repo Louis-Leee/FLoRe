@@ -192,7 +192,7 @@ UMI_TRACKER_ROLE = {
     "head": "head",
     # The two 5pt FOOT pucks (`--mode 5pt-direct` only). Collection's recorder writes them to
     # `tracker_left_foot.npy` / `tracker_right_foot.npy` under exactly these names
-    # (`recording_format.TRACKER_FILE_BY_ROLE`), which are also FUJI's own five-keypoint role
+    # (`recording_format.TRACKER_FILE_BY_ROLE`), which are also FLoRe's own five-keypoint role
     # names — so a teleop-recorded 5-puck session lands in the same files a collection-recorded
     # one does. Present unconditionally: the map is keyed on roles that only exist when the
     # mode activates them, and a missing entry here would drop a puck from the recording with
@@ -2518,7 +2518,7 @@ def main():
         "--mc-umi-dir",
         default=None,
         help="the UMI_collection checkout holding motion_completion/ (default "
-        "$MC_UMI_DIR or ~/FUJI/third_party/UMI_collection).",
+        "$MC_UMI_DIR or ~/FLoRe/third_party/UMI_collection).",
     )
     # --- RAW tracker feed for UMI_collection's recorder (OFF unless a port is given) ---
     ap.add_argument(

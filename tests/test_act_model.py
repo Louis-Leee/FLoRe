@@ -15,8 +15,8 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fuji.s1_policy.data import layout
-from fuji.s1_policy.model.dp_act import DPACTConfig, DPACTModel, _sinusoid_encoding_table
+from flore.s1_policy.data import layout
+from flore.s1_policy.model.dp_act import DPACTConfig, DPACTModel, _sinusoid_encoding_table
 
 # HL-v2 left_only shape on the v3 grid. These size the STUB tensors below and are
 # deliberately literal — the model must handle the shape it is handed, independent of what
@@ -113,22 +113,22 @@ def test_the_sinusoid_table_matches_upstream_bit_for_bit():
 def test_the_backbone_renormalizes_to_imagenet_statistics():
     """LOAD-BEARING for the pretrained trunk. The ResNet is ImageNet-pretrained with FROZEN
     BatchNorm, so its baked-in statistics only transfer if the input distribution matches —
-    and FUJI's shared dataset emits (x/255-0.5)/0.5, whose std is 2.23x too small. Measured
+    and FLoRe's shared dataset emits (x/255-0.5)/0.5, whose std is 2.23x too small. Measured
     without the fix: layer4 features at cosine 0.671 / relative L2 0.765 versus the correct
     path, with 69.4% of activations ReLU-dead instead of 59.6%.
 
     Asserts the folded affine reproduces upstream's `Normalize(ImageNet)` on a [0,1] image
     EXACTLY, which is the only way the frozen-BN argument holds."""
-    from fuji.s1_policy.model.act.detr_backbone import IMAGENET_MEAN, IMAGENET_STD, ResNetBackbone
+    from flore.s1_policy.model.act.detr_backbone import IMAGENET_MEAN, IMAGENET_STD, ResNetBackbone
 
     torch.manual_seed(0)
     raw = torch.randint(0, 256, (2, 3, 64, 64)).float()
-    fuji_in = (raw / 255.0 - 0.5) / 0.5          # exactly what HLDataset._load_image yields
+    flore_in = (raw / 255.0 - 0.5) / 0.5          # exactly what HLDataset._load_image yields
     import torchvision.transforms as T
     upstream_in = T.Normalize(IMAGENET_MEAN, IMAGENET_STD)(raw / 255.0)   # policy.py:20-22
 
     bb = ResNetBackbone("resnet18", 64, pretrained=False, renormalize=True)
-    recovered = fuji_in * bb.renorm_scale + bb.renorm_shift
+    recovered = flore_in * bb.renorm_scale + bb.renorm_shift
     torch.testing.assert_close(recovered, upstream_in, rtol=0, atol=1e-6)
 
     # And it is OPT-OUTABLE, staying a pass-through when disabled.
@@ -140,7 +140,7 @@ def test_the_dataset_image_affine_is_pushed_into_the_act_config():
     """The re-normalization must INVERT the dataset's own affine, so a drift between
     hl_data.image_mean/std and act.dataset_image_mean/std would feed the frozen-BN trunk
     out-of-distribution input — the exact failure it exists to prevent. Pushed, not set."""
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     cfg = TrainConfig(algo="act", pipeline="hl",
                       hl_data=HLDataConfig(image_mean=0.25, image_std=0.75,
@@ -153,7 +153,7 @@ def test_state_projection_cannot_be_disabled_for_act():
     """ACT has no zero-padded state slot (state is a transformer token), so clearing this
     would send validate_model_layout down the zero-pad branch and AttributeError on a
     `filled_state_dim` that does not exist. Refuse with the reason instead."""
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     with pytest.raises(ValueError, match="state_projection cannot be False"):
         TrainConfig(algo="act", act=DPACTConfig(state_projection=False),
@@ -190,7 +190,7 @@ def test_truncating_the_decoder_to_the_readout_depth_is_bit_identical():
     checkpoint: 4.84 -> 3.01 ms per CUDA forward, 1.61x, max |Δaction| = 0.0. This pins the
     equality so the optimization can never start silently changing the policy — and so the
     truncation stays tied to `_READOUT_LAYER_INDEX` instead of being a stale hardcoded 1."""
-    from fuji.s1_policy.model.dp_act import _READOUT_LAYER_INDEX
+    from flore.s1_policy.model.dp_act import _READOUT_LAYER_INDEX
 
     model = _tiny_model(dec_layers=4).eval()
     batch = _batch(batch_size=2)
@@ -295,7 +295,7 @@ def test_the_l1_term_divides_by_valid_count_not_numel():
     With half the chunk masked, upstream's L1 halves purely because the denominator still
     counts the masked entries — which silently reweights L1 against the KL term sample by
     sample. On this dataset only 83.7% of anchors have a full 50-step horizon, so that
-    drift would be real and per-sample. FUJI's L1 is a true masked mean, so masking half
+    drift would be real and per-sample. FLoRe's L1 is a true masked mean, so masking half
     the steps must leave it UNCHANGED when the surviving residuals are unchanged.
     """
     model = _tiny_model()
@@ -359,7 +359,7 @@ def test_metric_sums_are_absolute_not_squared_errors():
     out = model(_batch(batch_size=1))
     pred = out["aux"]["pred"].detach()
     target = torch.zeros_like(pred)
-    from fuji.s1_policy.model.loss_metrics import absolute_error_sums
+    from flore.s1_policy.model.loss_metrics import absolute_error_sums
 
     expected = absolute_error_sums(pred, target)["overall"]
     got = absolute_error_sums(pred, target, group_dims={})["overall"]
@@ -519,7 +519,7 @@ def test_the_chunk_tracks_the_OBSERVATION_and_is_never_a_stale_cache():
 
 
 def test_the_force_INPUT_actually_changes_the_prediction():
-    """Force in/out is the reason this preset exists on FUJI rather than upstream ALOHA, and
+    """Force in/out is the reason this preset exists on FLoRe rather than upstream ALOHA, and
     every other force test is satisfied by a token that is present but INERT: multiplying
     the force token by 0.0 (leaving the encoder, the projection and the token count intact)
     passed the entire suite. So assert the only thing that matters — that changing ONLY the
@@ -563,7 +563,7 @@ def test_sample_actions_relocates_a_cpu_generator_for_a_cuda_model():
 # Force path
 # ---------------------------------------------------------------------------
 def test_force_adds_exactly_one_token_and_no_force_matches_upstream_token_count():
-    """The force token is FUJI's one addition to ACT's sequence (ALOHA has no F/T sensor).
+    """The force token is FLoRe's one addition to ACT's sequence (ALOHA has no F/T sensor).
     It must be exactly one token appended AFTER z and state, because additional_pos_embed
     rows are positional: inserting anywhere else would re-map every later token."""
     with_force = _tiny_model()
@@ -740,9 +740,9 @@ def test_the_trainer_ACTUALLY_consumes_param_groups(tmp_path, monkeypatch):
     trunk/head ratio survive warmup + cosine for the whole run."""
     from tests.test_hl_dataset import _write_hl_zarr
 
-    from fuji.s1_policy.model.dp_act import DPACTConfig
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
-    from fuji.s1_policy.training.trainer import Trainer
+    from flore.s1_policy.model.dp_act import DPACTConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.trainer import Trainer
 
     pytest.importorskip("zarr")
     zarr_path = _write_hl_zarr(tmp_path / "pg.zarr.zip", n_frames=8, n_episodes=2, image_hw=8)
@@ -780,10 +780,10 @@ def test_flow_still_gets_a_single_optimizer_group(tmp_path, monkeypatch):
     LR), so this pins the behavior rather than the absence of the method: at scale 1.0 the
     hook returns ``self.parameters()`` and the optimizer has exactly one group. Asserting
     ``not hasattr`` would have made adding the knob look like a regression."""
-    from fuji.s1_policy.model.dp_act import DPACTModel
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
-    from fuji.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
-    from fuji.s1_policy.model.umi_parity import encoder_lr_param_groups
+    from flore.s1_policy.model.dp_act import DPACTModel
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
+    from flore.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
+    from flore.s1_policy.model.umi_parity import encoder_lr_param_groups
 
     assert hasattr(DPACTModel, "param_groups")
     for cls in (DPFlowModel, DPDiffusionModel):
@@ -813,14 +813,14 @@ def test_train_config_pushes_layout_dims_onto_the_act_block_only():
     """The trap this guards: ``active_model`` used to fall through to the FLOW config for
     any algo it did not name, so every layout-derived dimension landed on ``model`` while
     the ``act`` block shipped with never-configured defaults."""
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     cfg = TrainConfig(algo="act", pipeline="hl", hl_data=HLDataConfig(norm_stats_path="s.json"))
     assert cfg.active_model is cfg.act
     assert cfg.act.action_dim == ACTION_DIM
     # Against the LAYOUT, not this module's ACTION_HORIZON: that literal only sizes the stub
     # tensors below, while this assertion is about what _post_init_hl PUSHES, and the layout
-    # value is re-pinnable per process (FUJI_ACTION_HORIZON, for an H=50 vs H=30 A/B).
+    # value is re-pinnable per process (FLORE_ACTION_HORIZON, for an H=50 vs H=30 A/B).
     assert cfg.act.action_horizon == layout.ACTION_HORIZON
     assert cfg.act.state_dim == STATE_DIM
     assert cfg.act.layout_mode == "left_only"
@@ -830,7 +830,7 @@ def test_train_config_pushes_layout_dims_onto_the_act_block_only():
 
 
 def test_act_defaults_to_no_ema():
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     hl = HLDataConfig(norm_stats_path="s.json")
     assert TrainConfig(algo="act", hl_data=hl).ema is False
@@ -847,7 +847,7 @@ def test_act_defaults_to_no_ema():
     (dict(backbone="resnet99"), "backbone"),
 ])
 def test_act_config_validation(kwargs, message):
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     with pytest.raises(ValueError, match=message):
         TrainConfig(algo="act", act=DPACTConfig(**kwargs),
@@ -860,7 +860,7 @@ def test_act_refuses_to_train_unnormalized():
     grip 21.6%, force 43.3%, **torque 4.9%** — the torque columns end up effectively
     unsupervised while the loss still looks perfectly healthy. Same class of silent trap the
     diffusion sibling's clip_sample refusal exists for."""
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     with pytest.raises(ValueError, match="requires a norm_stats path"):
         TrainConfig(algo="act", pipeline="hl")
@@ -873,7 +873,7 @@ def test_rtc_is_refused_for_act_instead_of_landing_on_the_flow_config():
     """The old guard named only diffusion, so ``--rtc-delay-range`` with algo='act' skipped
     the refusal and then wrote ``self.model.rtc_delay_range`` — mutating the INACTIVE flow
     config while the ACT run silently got no RTC."""
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     with pytest.raises(ValueError, match="Real-Time Chunking"):
         TrainConfig(algo="act", rtc_delay_range=(0, 5),
@@ -883,7 +883,7 @@ def test_rtc_is_refused_for_act_instead_of_landing_on_the_flow_config():
 def test_legacy_pipeline_is_refused_for_act():
     """``_post_init_legacy`` hardcodes ``self.model.*``, so this combination would have
     configured the FLOW config for an ACT run."""
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     with pytest.raises(ValueError, match="flow-only"):
         TrainConfig(algo="act", pipeline="legacy",
@@ -891,7 +891,7 @@ def test_legacy_pipeline_is_refused_for_act():
 
 
 def test_an_unknown_algo_is_refused_by_both_the_enum_and_active_model():
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     with pytest.raises(ValueError, match="algo must be one of"):
         TrainConfig(algo="bogus")
@@ -906,7 +906,7 @@ def test_the_algo_config_field_map_covers_every_algo_and_names_real_fields():
     entry must name an actual TrainConfig field, or a loader reads a missing key."""
     import dataclasses
 
-    from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD, ALGOS, TrainConfig
+    from flore.s1_policy.training.config import ALGO_CONFIG_FIELD, ALGOS, TrainConfig
 
     fields = {f.name for f in dataclasses.fields(TrainConfig)}
     assert set(ALGO_CONFIG_FIELD) == set(ALGOS)
@@ -924,7 +924,7 @@ def test_a_checkpoint_predating_a_new_algo_still_resumes():
 
     An INACTIVE block missing from one side is elided; the ACTIVE block, `algo` itself, and
     any key present on BOTH sides are still compared in full."""
-    from fuji.s1_policy.training.trainer import _align_inactive_algo_blocks
+    from flore.s1_policy.training.trainer import _align_inactive_algo_blocks
 
     # A flow checkpoint written before `act` existed.
     saved = {"algo": "flow", "model": {"vit": "vit_b"}, "diffusion": {"vit": "vit_b"}}
@@ -956,8 +956,8 @@ def test_a_checkpoint_predating_a_new_algo_still_resumes():
 def test_the_trainer_algo_table_agrees_with_the_config_map():
     """Two tables (trainer model classes, config field names) that must not drift: a
     mismatch builds the right model from the wrong config block."""
-    from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
-    from fuji.s1_policy.training.trainer import _ALGO_MODELS
+    from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
+    from flore.s1_policy.training.trainer import _ALGO_MODELS
 
     assert set(_ALGO_MODELS) == set(ALGO_CONFIG_FIELD)
     for algo, (model_name, field_name, loss_key) in _ALGO_MODELS.items():
@@ -965,7 +965,7 @@ def test_the_trainer_algo_table_agrees_with_the_config_map():
         assert loss_key.endswith("_loss")
         # The class is held by NAME and resolved late (so tests can monkeypatch a stub in);
         # that only works if the name really is importable from the trainer's namespace.
-        import fuji.s1_policy.training.trainer as trainer_module
+        import flore.s1_policy.training.trainer as trainer_module
 
         assert isinstance(getattr(trainer_module, model_name), type), \
             f"{algo!r} names {model_name!r}, which is not a class in the trainer's globals"

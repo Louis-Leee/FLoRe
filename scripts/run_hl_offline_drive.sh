@@ -27,7 +27,7 @@
 #       prints the exact line for you at startup:
 #         wholebody             bash third_party/holosoma_extensions/scripts/_vive_teleop5_build.sh --mode dense
 #         both_hands_head_dual  bash third_party/holosoma_extensions/scripts/_vive_teleop3_build.sh
-#       Then open the URL it serves. It connects to :8770 by itself, and the FUJI panel appears
+#       Then open the URL it serves. It connects to :8770 by itself, and the FLoRe panel appears
 #       in the page the moment it does.
 #
 #   ⚠️ Do NOT also start 1_vive_bridge.sh — this script IS the :8770 producer, and two writers on
@@ -64,7 +64,7 @@
 #   PORT=8771 ./scripts/run_hl_offline_drive.sh --checkpoint <ckpt> --exec-steps 30
 #
 # Env knobs:
-#   FUJI_PY  python (default: <repo>/.venv/bin/python)
+#   FLORE_PY  python (default: <repo>/.venv/bin/python)
 #   PORT     the :8770 wire port (default 8770 — the browser build's own default)
 #   DEVICE   torch device (default cuda)
 #   HOLD     sample|ready — shorthand for --hold
@@ -76,17 +76,17 @@
 #   GRIPPER  1|0 — shorthand for --command-gripper. OFF by default, and NOT on the :8770 wire:
 #            the jaws are reached over the gripper bridge's own socket (:8784 / :8785), so this
 #            drives REAL CAN hardware even while the low level is a browser sim.
-#   FUJI_ACTION_HORIZON  DO NOT SET IT — derived from the checkpoint, as every other launcher
-#            does, because fuji/s1_policy/data/layout.py resolves it at IMPORT time.
+#   FLORE_ACTION_HORIZON  DO NOT SET IT — derived from the checkpoint, as every other launcher
+#            does, because flore/s1_policy/data/layout.py resolves it at IMPORT time.
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
 PORT="${PORT:-8770}"
 DEVICE="${DEVICE:-cuda}"
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv sync --locked)" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv sync --locked)" >&2
   exit 2
 fi
 
@@ -114,7 +114,7 @@ fi
 # by name, but that costs a model load and several GB of VRAM first; the likely mistake is
 # reaching for this launcher with a checkpoint whose family has no browser build.
 read -r CKPT_MODE CKPT_ALGO <<EOF
-$("$FUJI_PY" -c "import json,sys; c=json.load(open(sys.argv[1])); print((c.get('hl_data') or {}).get('mode',''), c.get('algo',''))" "$CKPT/config.json")
+$("$FLORE_PY" -c "import json,sys; c=json.load(open(sys.argv[1])); print((c.get('hl_data') or {}).get('mode',''), c.get('algo',''))" "$CKPT/config.json")
 EOF
 case "$CKPT_MODE" in
   wholebody)                        FAMILY=dense; BROWSER="scripts/_vive_teleop5_build.sh --mode dense" ;;
@@ -132,13 +132,13 @@ case "$CKPT_MODE" in
 esac
 
 # ACTION-CHUNK PIN, DERIVED FROM THE CHECKPOINT — same contract and the same helper shape as
-# run_hl_serving{,_mc,_wholebody}.sh: layout.py resolves ACTION_HORIZON from FUJI_ACTION_HORIZON at
+# run_hl_serving{,_mc,_wholebody}.sh: layout.py resolves ACTION_HORIZON from FLORE_ACTION_HORIZON at
 # IMPORT time, so a shell launcher is the only place that can still set it. It must come from the
 # ACTIVE algorithm's block (the trainer leaves the other two at their dataclass defaults).
-if ! CKPT_H="$("$FUJI_PY" - "$CKPT/config.json" <<'PY'
+if ! CKPT_H="$("$FLORE_PY" - "$CKPT/config.json" <<'PY'
 import json, sys
 # Imported, not duplicated: a second copy of the algo->block map here would drift silently.
-from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
 raw = json.load(open(sys.argv[1]))
 algo = raw.get("algo")
@@ -157,12 +157,12 @@ PY
   echo "[run] FATAL: could not read the action horizon from $CKPT/config.json (above)" >&2
   exit 2
 fi
-if [ -n "${FUJI_ACTION_HORIZON:-}" ] && [ "$FUJI_ACTION_HORIZON" != "$CKPT_H" ]; then
-  echo "[run] FATAL: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON in the environment, but" >&2
+if [ -n "${FLORE_ACTION_HORIZON:-}" ] && [ "$FLORE_ACTION_HORIZON" != "$CKPT_H" ]; then
+  echo "[run] FATAL: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON in the environment, but" >&2
   echo "[run]        $CKPT declares action_horizon=$CKPT_H. Refusing to guess which is meant." >&2
   exit 2
 fi
-export FUJI_ACTION_HORIZON="$CKPT_H"
+export FLORE_ACTION_HORIZON="$CKPT_H"
 
 EXTRA=()
 case " $* " in *" --algo "*) ;; *) [ -n "$CKPT_ALGO" ] && EXTRA=(--algo "$CKPT_ALGO") ;; esac
@@ -205,9 +205,9 @@ case " $* " in
 esac
 
 echo "[run] OFFLINE-SAMPLE DRIVER — a dataset anchor, through the policy, into a REAL low level."
-echo "[run]   python: $FUJI_PY (device=$DEVICE)"
+echo "[run]   python: $FLORE_PY (device=$DEVICE)"
 echo "[run]   checkpoint: $CKPT  algo=${CKPT_ALGO:-?}  layout=$CKPT_MODE  ->  $FAMILY wire"
-echo "[run]              chunk=$FUJI_ACTION_HORIZON steps @ 30 Hz"
+echo "[run]              chunk=$FLORE_ACTION_HORIZON steps @ 30 Hz"
 echo "[run]   wire: ws://127.0.0.1:$PORT  (this process is the SERVER; the browser connects to it)"
 echo "[run]   hold pose: ${HOLD:-sample}  (sample = ramp to the demo's own step-0 posture first)"
 echo "[run]   post-anchor: ${ANCHOR:-off}   jaws: ${GRIPPER:-0}  (1 = --command-gripper, real CAN)"
@@ -228,15 +228,15 @@ if [ "${GRIPPER:-0}" != "0" ] && [ -n "${GRIPPER:-}" ]; then
   echo "[run]        bash third_party/holosoma_extensions/force_deploy/5_dual_gripper_keyboard.sh"
 fi
 echo "[run]   T2 — THE LOW LEVEL, IN A BROWSER:"
-echo "[run]     bash $FUJI_ROOT/third_party/holosoma_extensions/$BROWSER"
-echo "[run]   then open the URL it prints. The FUJI panel appears in the page on connect."
+echo "[run]     bash $FLORE_ROOT/third_party/holosoma_extensions/$BROWSER"
+echo "[run]   then open the URL it prints. The FLoRe panel appears in the page on connect."
 echo "[run]   ⚠️  Do NOT also start 1_vive_bridge.sh — this process is the :8770 producer."
 echo "[run]   ⚠️  OPEN LOOP: the observation is the DATASET's, not the robot's. '▶▶ auto' walks"
 echo "[run]     the cursor forward and re-infers; it is a rehearsal, not a closed loop."
 echo "[run]   No browser? ./scripts/smoke_test_hl_offline.py --spawn --checkpoint $CKPT"
 echo "[run]"
 
-exec "$FUJI_PY" "$FUJI_ROOT/scripts/hl_offline_drive.py" \
+exec "$FLORE_PY" "$FLORE_ROOT/scripts/hl_offline_drive.py" \
   --device "$DEVICE" \
   --s0-ws-port "$PORT" \
   "${EXTRA[@]}" \

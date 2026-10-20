@@ -97,14 +97,14 @@ def main(argv: list[str] | None = None) -> int:
         "action_horizon")
     if isinstance(horizon, int) and horizon != 50:
         # Same contract as the launchers: layout.py resolves the pin at IMPORT, so it has to be set
-        # before the first fuji import below.
-        os.environ["FUJI_ACTION_HORIZON"] = str(horizon)
+        # before the first flore import below.
+        os.environ["FLORE_ACTION_HORIZON"] = str(horizon)
 
-    from fuji.s1_policy.data import wb_geom
-    from fuji.s1_policy.data.layout import get_layout
-    from fuji.s1_policy.inference import ready_pose as RP
-    from fuji.s1_policy.serving import hl_5pt, hl_dense
-    from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
+    from flore.s1_policy.data import wb_geom
+    from flore.s1_policy.data.layout import get_layout
+    from flore.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.serving import hl_5pt, hl_dense
+    from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
 
     print(f"\n[1] LAYOUT — {args.checkpoint}")
     mode = str(raw.get("hl_data", {}).get("mode") or "")
@@ -155,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
 
         ap = np.stack([anchor.pos[r] for r in layout.roles])
         ar = np.stack([rotmat_to_rot6d(anchor.rotmat[r]) for r in layout.roles])
-        from fuji.s1_policy.serving.hl_online import decode_chunk
+        from flore.s1_policy.serving.hl_online import decode_chunk
 
         chunk = decode_chunk(res.predicted_actions, layout, ap, ar,
                              force_enabled=False, gate_n=0.0)
@@ -254,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         # observation assembly, and a hand-built LoadedHLModel would be a second definition of the
         # contract under test. It costs a second 673 MB load, which is the right price for a smoke
         # test that must exercise the path the rig runs.
-        from fuji.s1_policy.serving.hl_online import load_hl_model
+        from flore.s1_policy.serving.hl_online import load_hl_model
 
         loaded = load_hl_model(args.checkpoint, algo, device=args.device,
                                max_cameras=max(1, len(tuple(session.source.image_keys))))
@@ -289,7 +289,7 @@ def main(argv: list[str] | None = None) -> int:
             _geom2, written2 = planner.geom_state()
             check("a commit clears the UNMEASURED flag", written2)
         else:
-            from fuji.s1_policy.data.transforms import rot6d_relative
+            from flore.s1_policy.data.transforms import rot6d_relative
 
             ident = rotmat_to_rot6d(np.eye(3))
             for ri, role in enumerate(layout.roles):
@@ -314,7 +314,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.ik:
             print("\n[6] THE DISPLAY IK (violet body)")
-            from fuji.s1_policy.inference.keypoint_ik import IK_ROLES, KeypointIK
+            from flore.s1_policy.inference.keypoint_ik import IK_ROLES, KeypointIK
 
             ik, why = KeypointIK.load()
             check("the IK loads", ik is not None, why)
@@ -333,7 +333,7 @@ def main(argv: list[str] | None = None) -> int:
                 print("       DISPLAY ONLY — the low level solves its own body from the wire.")
 
         print("\n[7] REACH COMPENSATION on the HANDS (--reach-ki; default OFF) — against THIS chunk")
-        from fuji.s1_policy.serving.hl_reach import ReachConfig
+        from flore.s1_policy.serving.hl_reach import ReachConfig
 
         hand_roles = tuple(r for r in layout.roles if r in hl_5pt.HandReach.HANDS)
         frames = [wire.frame(plan, i) for i in range(plan["n"])]
@@ -384,11 +384,11 @@ def main(argv: list[str] | None = None) -> int:
 def _open_session(checkpoint: str, algo: str, device: str):
     """The offline inference session for ``algo`` — the one place the three differ."""
     if algo == "diffusion":
-        from fuji.s1_policy.inference.diffusion import DiffusionInferenceSession as S
+        from flore.s1_policy.inference.diffusion import DiffusionInferenceSession as S
     elif algo == "flow":
-        from fuji.s1_policy.inference.flow import FlowInferenceSession as S
+        from flore.s1_policy.inference.flow import FlowInferenceSession as S
     else:
-        from fuji.s1_policy.inference.act import ACTInferenceSession as S
+        from flore.s1_policy.inference.act import ACTInferenceSession as S
     return S(checkpoint, device=device)
 
 

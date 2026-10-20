@@ -85,7 +85,7 @@ already ``[L, R]``).
 
 REPLAYING A RECORDED EPISODE ON THIS WIRE (``--replay-zarr``, 2026-09-19)
 ========================================================================
-``hl_serving.py``'s recorded-episode replay (``fuji/s1_policy/serving/hl_replay.py``), on the 5pt
+``hl_serving.py``'s recorded-episode replay (``flore/s1_policy/serving/hl_replay.py``), on the 5pt
 wire: pick an episode of the checkpoint's own training zarr in the page and ▶▶ plays it — the
 RECORDED hand pose(s) as the chunk, the RECORDED jaw as the jaw command, and the RECORDED Bota
 wrench as ``F^cmd`` (through the same ``hl_5pt.force_command``: ``-F_meas``, gated on magnitude,
@@ -147,9 +147,9 @@ from pathlib import Path
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
@@ -158,12 +158,12 @@ if _HERE not in sys.path:
 # Importing the module is side-effect-free (it binds nothing and parses no args until main()).
 import hl_serving as HL  # noqa: E402
 
-from fuji.client.s0_driver import S0Driver  # noqa: E402
-from fuji.s1_policy.data.layout import ACTION_DT, ACTION_HZ  # noqa: E402
-from fuji.s1_policy.data.transforms import delta_ee_to_absolute  # noqa: E402
-from fuji.s1_policy.inference import ready_pose as RP  # noqa: E402
-from fuji.s1_policy.inference.keypoint_ik import KeypointIK  # noqa: E402
-from fuji.s1_policy.serving import (  # noqa: E402
+from flore.client.s0_driver import S0Driver  # noqa: E402
+from flore.s1_policy.data.layout import ACTION_DT, ACTION_HZ  # noqa: E402
+from flore.s1_policy.data.transforms import delta_ee_to_absolute  # noqa: E402
+from flore.s1_policy.inference import ready_pose as RP  # noqa: E402
+from flore.s1_policy.inference.keypoint_ik import KeypointIK  # noqa: E402
+from flore.s1_policy.serving import (  # noqa: E402
     hl_5pt,
     hl_dense,
     hl_replay,
@@ -172,9 +172,9 @@ from fuji.s1_policy.serving import (  # noqa: E402
     tty_keys,
     walk_skill,
 )
-from fuji.s1_policy.serving.hl_reach import MAX_CLAMP_M, ReachConfig  # noqa: E402
-from fuji.s1_policy.serving.gil_yield import YieldGate  # noqa: E402
-from fuji.s1_policy.serving.hl_online import (  # noqa: E402
+from flore.s1_policy.serving.hl_reach import MAX_CLAMP_M, ReachConfig  # noqa: E402
+from flore.s1_policy.serving.gil_yield import YieldGate  # noqa: E402
+from flore.s1_policy.serving.hl_online import (  # noqa: E402
     ACTION_HORIZON,
     OBS_MAX_AGE_S,
     decode_chunk,
@@ -182,7 +182,7 @@ from fuji.s1_policy.serving.hl_online import (  # noqa: E402
     load_hl_model,
     snap_exec_steps,
 )
-from fuji.s1_policy.serving.live_robot import (  # noqa: E402
+from flore.s1_policy.serving.live_robot import (  # noqa: E402
     G1_29DOF_SDK_DOF_NAMES,
     JAW_JOINT_OPEN_M,
     build_sdk_to_urdf_index,
@@ -190,7 +190,7 @@ from fuji.s1_policy.serving.live_robot import (  # noqa: E402
     parse_record_frame,
     remap_dof_to_urdf,
 )
-from fuji.utils.rot6d import (  # noqa: E402
+from flore.utils.rot6d import (  # noqa: E402
     quat_xyzw_to_wxyz,
     rot6d_to_rotmat,
     rotmat_to_quat_xyzw,
@@ -283,7 +283,7 @@ RESET_REFUSED_ARMED = (
 
 #: Execute-N-of-S choices offered in the page, DERIVED from this process's horizon rather than
 #: hardcoded — see :func:`hl_online.exec_step_choices`. ``ACTION_HORIZON`` is resolved from
-#: ``FUJI_ACTION_HORIZON`` at import time and ``run_hl_serving_5pt.sh`` exports it from the
+#: ``FLORE_ACTION_HORIZON`` at import time and ``run_hl_serving_5pt.sh`` exports it from the
 #: checkpoint's own ``config.json``, so an H=100 checkpoint offers 100 and an H=200 one offers
 #: 100 and 200 with no flag. The pin is what makes deriving it here sound: a checkpoint whose
 #: horizon disagrees with the constant is refused outright by ``validate_model_layout``, so this
@@ -479,7 +479,7 @@ def build_parser() -> argparse.ArgumentParser:
                         "HOLOSOMA_INIT_READY_POSE=0.")
     d.set_defaults(zero_arms=True)
     d.add_argument("--yam-urdf", default=os.path.join(
-        _FUJI_ROOT, "third_party", "UMI_collection", "robot_assets", "g1_yam",
+        _FLORE_ROOT, "third_party", "UMI_collection", "robot_assets", "g1_yam",
         "g1_29dof_yam.urdf"), help="URDF for the drawn robot, the violet IK body and the FK")
 
     v = p.add_argument_group("the violet IK body")
@@ -509,7 +509,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     r = p.add_argument_group(
         "reach compensation (HANDS only; default OFF)",
-        description="run_hl_serving.sh's --reach-ki on this wire (fuji/s1_policy/serving/hl_5pt.py "
+        description="run_hl_serving.sh's --reach-ki on this wire (flore/s1_policy/serving/hl_5pt.py "
                     "HandReach over hl_reach.ReachCompensator): accumulate the part of the commanded "
                     "HAND motion the arm did not execute and add it to the PUBLISHED target, only while "
                     "the hand performed less than --reach-stall-frac of what was asked. Hands only: the "
@@ -547,12 +547,12 @@ def build_parser() -> argparse.ArgumentParser:
     w = p.add_argument_group(
         "walk skill (EXTENSION — always on the page; the bundled walk-with-box feet)",
         description="The walk-with-box clip's two FEET on the wire's two foot slots, under the wire's own "
-                    "(unchanged) upper three points — fuji/s1_policy/serving/walk_skill.py. One toggle "
+                    "(unchanged) upper three points — flore/s1_policy/serving/walk_skill.py. One toggle "
                     "button on the page: press to walk, press again to ramp the feet back and stop. A second "
                     "toggle (🦵 Legs ← clip, hotkey l) puts the SAME feet + legs under the RUNNING policy "
                     "instead — the planner keeps predicting the upper three points, the clip drives the feet, "
                     "press again to hand them back (the feet pursue the planner's own target). The "
-                    "feet ship with the package (fuji/s1_policy/serving/assets/walk_with_box_feet.npz), "
+                    "feet ship with the package (flore/s1_policy/serving/assets/walk_with_box_feet.npz), "
                     "so nothing here needs a flag.")
     w.add_argument("--walk-clip", default=str(walk_skill.BUNDLED_CLIP), metavar="PATH",
                    help="the clip to play: an extracted feet NPZ (scripts/extract_walk_feet.py) or a raw "
@@ -594,7 +594,7 @@ def build_parser() -> argparse.ArgumentParser:
     k.set_defaults(keys=True)
     rc = p.add_argument_group("run recorder (the ⏺ button: one recording per episode — from the first Predict / "
                               "▶▶ to STOP / Reset / the low level disarming — to a time-named folder)")
-    rc.add_argument("--record-dir", default=os.path.join(_FUJI_ROOT, "data", "rollouts"), metavar="DIR",
+    rc.add_argument("--record-dir", default=os.path.join(_FLORE_ROOT, "data", "rollouts"), metavar="DIR",
                     help="root of the recordings: DIR/<task>/<YYYY-MM-DD_HH-MM-SS>/, one folder per recording "
                          "(chunks / steps / published / measured / force / events .jsonl + meta.json). "
                          "Plot one with scripts/plot_rollout_record.py <folder>. Default data/rollouts.")
@@ -984,7 +984,7 @@ def main(argv=None) -> int:
                                  "pass an explicit .zarr.zip path.")
             replay_path = str(trained_paths[0])
             if not os.path.isabs(replay_path):
-                replay_path = os.path.join(_FUJI_ROOT, replay_path)
+                replay_path = os.path.join(_FLORE_ROOT, replay_path)
             _log(f"replay: resolved the checkpoint's training zarr -> {replay_path}")
         if family != "keypoint_subset":
             raise SystemExit(
@@ -1471,7 +1471,7 @@ def _run_viser(args, loaded, planner, wire, subs, s0, anchor, consumes_force, re
 
     # ---------------- the scene ----------------
     server = viser.ViserServer(host=args.host, port=args.port,
-                              label="FUJI FIVE-POINT planner (5 keypoints -> 5pt)")
+                              label="FLoRe FIVE-POINT planner (5 keypoints -> 5pt)")
     server.scene.set_up_direction("+z")
     server.scene.add_grid("/grid", plane="xy", shadow_opacity=0.0, infinite_grid=True,
                           cell_size=0.25)
@@ -2706,7 +2706,7 @@ def _run_viser(args, loaded, planner, wire, subs, s0, anchor, consumes_force, re
 
     # ---------------- the WALK SKILL (extension) ----------------
     # Always on the page, driving the ONE bundled clip (walk-with-box; `--walk-clip` overrides the
-    # file). The walk is a WIRE-level skill (fuji/s1_policy/serving/walk_skill.py): it publishes
+    # file). The walk is a WIRE-level skill (flore/s1_policy/serving/walk_skill.py): it publishes
     # frames the way `_drip` does (`_set_wire` -> `_send` -> `wire.commit`), holds `busy` AND
     # `dripping` for its whole duration so Predict/Run, both ▶▶ cadences and the heartbeat cannot
     # interleave a frame, and touches neither the planner's decode anchor nor its observation — the
@@ -3228,7 +3228,7 @@ def _run_viser(args, loaded, planner, wire, subs, s0, anchor, consumes_force, re
     # frame that reached :8770 (reach residual and leg override APPLIED, i.e. as published), every
     # RecordTap frame with the robot's five keypoints FK'd from its joints, every F/T frame — into
     # <--record-dir>/<task>/<YYYY-MM-DD_HH-MM-SS>/ for scripts/plot_rollout_record.py (the xyz and
-    # force comparison curves). It is a TAP and nothing else (fuji/s1_policy/serving/rollout_record.py):
+    # force comparison curves). It is a TAP and nothing else (flore/s1_policy/serving/rollout_record.py):
     # the reviewed page above holds `taps` and its one-line calls at the publish funnel, the predict,
     # the two execute loops and the ▶▶ start; this block owns the button, the folder and the FK. Blue =
     # will not record, green = will / is recording. The recording is the operator's EPISODE (2026-09-20):
@@ -3277,7 +3277,7 @@ def _run_viser(args, loaded, planner, wire, subs, s0, anchor, consumes_force, re
 
     def _rec_git_sha() -> str:
         try:
-            out = subprocess.run(["git", "-C", _FUJI_ROOT, "rev-parse", "--short", "HEAD"],
+            out = subprocess.run(["git", "-C", _FLORE_ROOT, "rev-parse", "--short", "HEAD"],
                                  capture_output=True, text=True, timeout=2.0)
             return out.stdout.strip() if out.returncode == 0 else "unknown"
         except Exception:  # noqa: BLE001 - provenance, never a stop
@@ -3991,7 +3991,7 @@ def _run_viser(args, loaded, planner, wire, subs, s0, anchor, consumes_force, re
     def _(_e) -> None:
         flags["reset"] = True
 
-    # ---------------- terminal HOTKEYS (extension; fuji/s1_policy/serving/tty_keys.py) ----------------
+    # ---------------- terminal HOTKEYS (extension; flore/s1_policy/serving/tty_keys.py) ----------------
     # The page's most-pressed buttons on the keyboard of the terminal that launched it. Each key calls
     # the SAME closure its button does (`_auto_start` / `_auto_retire` / `_walk_toggle` / `_legs_toggle`
     # / `_stop_now`, and `_jaws_both` = the Manual-jaws ⬛/⬜ bodies for both hands at once); the only

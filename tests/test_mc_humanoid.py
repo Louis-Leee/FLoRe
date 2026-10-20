@@ -26,8 +26,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.s1_policy.inference.display import DISPLAY_HOME_POS
-from fuji.s1_policy.inference.mc_humanoid import (
+from flore.s1_policy.inference.display import DISPLAY_HOME_POS
+from flore.s1_policy.inference.mc_humanoid import (
     REQUIRED_ROLES, SERIES, MCHumanoid, _find_umi_replay_dir, options_from_args,
 )
 
@@ -147,7 +147,7 @@ def _cond_from_stub(mc_modules, *, series="prediction", home_anchored=True, role
     what the overlay's GUI would hand in. Both are here because their precedence is the
     contract: an operator sweeping dz on the panel must still win over a caller's default.
     """
-    from fuji.s1_policy.inference.display import wrist_pose_from_stored
+    from flore.s1_policy.inference.display import wrist_pose_from_stored
 
     mc = MCHumanoid(None, enabled=False, series=series, dz_wrist=dz_wrist,
                     placement_note=placement_note)
@@ -239,7 +239,7 @@ def test_the_uncalibrated_display_home_placement_warns_by_name(mc_modules):
     # ...and it goes quiet once the caller HAS placed the take.
     _, placed = _cond_from_stub(mc_modules, dz_wrist=0.0, placement_note="G1 deploy ready pose")
     assert not any("UNCALIBRATED" in w for w in placed.warnings()), placed.warnings()
-    assert placed.src["fuji_placement"] == "G1 deploy ready pose"
+    assert placed.src["flore_placement"] == "G1 deploy ready pose"
 
 
 def test_the_raw_frame_is_allowed_but_warns_that_the_robot_leaves_the_grid(mc_modules):

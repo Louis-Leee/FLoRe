@@ -6,7 +6,7 @@
 #
 # This is a TWO-PROCESS tool because the UVA model and viser live in mutually
 # exclusive environments (see scripts/muse_force_rollout_viz.py's docstring):
-#   * the FRONT-END (viser + mink IK) runs in FUJI's own .venv;
+#   * the FRONT-END (viser + mink IK) runs in FLoRe's own .venv;
 #   * the BACK-END (the UVA model) runs in the `uvaforce` conda env, spawned as a
 #     child process and spoken to over a pipe.
 # This launcher wires the two Pythons together. It does NOT modify ~/UMI_collection
@@ -19,7 +19,7 @@
 #   PORT=8088 ./scripts/run_muse_force_rollout_viz.sh --episode 3 --device cpu
 #
 # Env knobs (no code edits):
-#   FUJI_PY        front-end python           (default: <repo>/.venv/bin/python)
+#   FLORE_PY        front-end python           (default: <repo>/.venv/bin/python)
 #   BACKEND_PY     uvaforce python            (default: ~/miniconda3/envs/uvaforce/bin/python)
 #   DATASET_ROOT   dir with the muse_force zarr(default: third_party/UMI_collection/data/datasets)
 #   PORT           viser port                 (default: 8087)
@@ -29,10 +29,10 @@
 # (--checkpoint, --episode, --device, --model-size, --tcp-extrinsic, ...).
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
 BACKEND_PY="${BACKEND_PY:-$HOME/miniconda3/envs/uvaforce/bin/python}"
-UMI="$FUJI_ROOT/third_party/UMI_collection"
+UMI="$FLORE_ROOT/third_party/UMI_collection"
 IK_SRC="$UMI/third_party/humi_ik"
 VIZ_SRC="$UMI/viz"
 REPLAY_SRC="$UMI/replay"
@@ -46,8 +46,8 @@ if [ -d "$DATASET_ROOT" ]; then
   DATASET_ROOT="$(cd "$DATASET_ROOT" && pwd)"
 fi
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
   exit 2
 fi
 if [ ! -x "$BACKEND_PY" ]; then
@@ -62,10 +62,10 @@ if [ -n "${FORCE_FUSION:-}" ]; then
 fi
 
 echo "[run] muse-force rollout viz on http://localhost:$PORT  (Ctrl-C to stop)"
-echo "[run]   front-end: $FUJI_PY"
+echo "[run]   front-end: $FLORE_PY"
 echo "[run]   back-end : $BACKEND_PY (dataset-root $DATASET_ROOT)"
-PYTHONPATH="$IK_SRC:$VIZ_SRC:$REPLAY_SRC:${PYTHONPATH:-}" "$FUJI_PY" \
-  "$FUJI_ROOT/scripts/muse_force_rollout_viz.py" \
+PYTHONPATH="$IK_SRC:$VIZ_SRC:$REPLAY_SRC:${PYTHONPATH:-}" "$FLORE_PY" \
+  "$FLORE_ROOT/scripts/muse_force_rollout_viz.py" \
   --backend-python "$BACKEND_PY" \
   --dataset-root "$DATASET_ROOT" \
   --port "$PORT" \

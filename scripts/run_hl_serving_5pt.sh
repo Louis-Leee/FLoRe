@@ -137,7 +137,7 @@
 # is on the page as `sampler seed` and in every `staged:` message.
 #
 # Env knobs:
-#   FUJI_PY   python (default: <repo>/.venv/bin/python)
+#   FLORE_PY   python (default: <repo>/.venv/bin/python)
 #   PORT      viser port (default: 8092 — distinct from 8088/8090/8091 so all four coexist)
 #   DEVICE    torch device (default: cuda)
 #   TASK, H   a shorthand for --checkpoint: checkpoints/umi_5pt_${TASK}/h${H} (H defaults to 50),
@@ -162,12 +162,12 @@
 #             `stream` is HATO's asynchronous one. See docs/RUNBOOK_hl_serving_5pt.md §4.
 #   ENSEMBLE  avg|act|new|old — [stream] how the overlapping chunks become one command. `avg` is
 #             both HATO's default and the measured best on jerk; live on the page.
-#   FUJI_ACTION_HORIZON  DO NOT SET IT — derived from the checkpoint, exactly as the sibling
+#   FLORE_ACTION_HORIZON  DO NOT SET IT — derived from the checkpoint, exactly as the sibling
 #             launchers do, because layout.py resolves it at IMPORT time.
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
 PORT="${PORT:-8092}"
 DEVICE="${DEVICE:-cuda}"
 
@@ -200,8 +200,8 @@ for _v in MOTION_COMPLETION_DIR MOTION_COMPLETION_PY MOTION_COMPLETION_CKPT; do
   fi
 done
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
   exit 2
 fi
 
@@ -233,7 +233,7 @@ if [ -z "$CKPT" ] && [ -n "${TASK:-}" ]; then
     30|50|100|200) ;;
     *) echo "[run] FATAL: H=${H} — the per-task checkpoints exist at H=50 / 100 (wipe_board: 30 / 50; 200 is a training cell only)." >&2; exit 2 ;;
   esac
-  CKPT="$FUJI_ROOT/checkpoints/umi_5pt_${TASK}/h${H:-50}"
+  CKPT="$FLORE_ROOT/checkpoints/umi_5pt_${TASK}/h${H:-50}"
   if [ ! -f "$CKPT/config.json" ]; then
     echo "[run] FATAL: TASK=$TASK H=${H:-50} names $CKPT, which is not on disk. Pull it with" >&2
     echo "[run]     scripts/fetch_checkpoint.sh ${TASK}_5pt_h${H:-50}" >&2
@@ -265,7 +265,7 @@ fi
 # (by name, in hl_5pt.validate_layout), but that costs a model load and several GB of VRAM first —
 # and the most likely mistake is reaching for this launcher with a 3-tracker or wholebody
 # checkpoint, each of which has its own working launcher.
-CKPT_MODE="$("$FUJI_PY" -c \
+CKPT_MODE="$("$FLORE_PY" -c \
   "import json,sys; print(json.load(open(sys.argv[1])).get('hl_data',{}).get('mode',''))" \
   "$CKPT/config.json")"
 FAMILY=fivepoint
@@ -291,13 +291,13 @@ esac
 # which wire slots are HELD, and WHAT IT WAS TRAINED ON (the split's zarr basenames + episode count,
 # from _provenance — the one line that tells merged3 from merged2 when the local dir is named for
 # the TASK, not the dataset). Read here only to be ECHOED; the planner derives all of it again.
-read -r CKPT_NCAM CKPT_HELD CKPT_DATA <<<"$("$FUJI_PY" - "$CKPT/config.json" <<'PY2'
+read -r CKPT_NCAM CKPT_HELD CKPT_DATA <<<"$("$FLORE_PY" - "$CKPT/config.json" <<'PY2'
 import json, os, sys
 raw = json.load(open(sys.argv[1]))
 hl = raw.get("hl_data", {})
 keys = hl.get("image_keys") or [hl.get("image_key", "camera0_rgb")]
-from fuji.s1_policy.data.layout import get_layout
-from fuji.s1_policy.serving.hl_5pt import held_roles
+from flore.s1_policy.data.layout import get_layout
+from flore.s1_policy.serving.hl_5pt import held_roles
 held = held_roles(get_layout(str(hl.get("mode", "left_only"))))
 split = raw.get("_provenance", {}).get("split", {})
 zarrs = split.get("dataset_knobs", {}).get("zarr_paths") or hl.get("zarr_paths") or []
@@ -310,14 +310,14 @@ PY2
 )"
 
 # ACTION-CHUNK PIN, DERIVED FROM THE CHECKPOINT — same contract, same reasoning and the same helper
-# shape as the sibling launchers: fuji/s1_policy/data/layout.py resolves ACTION_HORIZON from
-# FUJI_ACTION_HORIZON at IMPORT time, so a shell launcher is the only place that can still set it.
+# shape as the sibling launchers: flore/s1_policy/data/layout.py resolves ACTION_HORIZON from
+# FLORE_ACTION_HORIZON at IMPORT time, so a shell launcher is the only place that can still set it.
 # It must come from the ACTIVE algorithm's block (the trainer leaves the other two at their
 # dataclass defaults), which is why config.json's own `algo` picks the block.
-if ! CKPT_H="$("$FUJI_PY" - "$CKPT/config.json" <<'PY'
+if ! CKPT_H="$("$FLORE_PY" - "$CKPT/config.json" <<'PY'
 import json, sys
 # Imported, not duplicated: a second copy of the algo->block map here would drift silently.
-from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
 raw = json.load(open(sys.argv[1]))
 algo = raw.get("algo")
@@ -336,16 +336,16 @@ PY
   echo "[run] FATAL: could not read the action horizon from $CKPT/config.json (above)" >&2
   exit 2
 fi
-if [ -n "${FUJI_ACTION_HORIZON:-}" ] && [ "$FUJI_ACTION_HORIZON" != "$CKPT_H" ]; then
-  echo "[run] FATAL: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON in the environment, but" >&2
+if [ -n "${FLORE_ACTION_HORIZON:-}" ] && [ "$FLORE_ACTION_HORIZON" != "$CKPT_H" ]; then
+  echo "[run] FATAL: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON in the environment, but" >&2
   echo "[run]        $CKPT declares action_horizon=$CKPT_H. Refusing to guess which is meant." >&2
   exit 2
 fi
-export FUJI_ACTION_HORIZON="$CKPT_H"
+export FLORE_ACTION_HORIZON="$CKPT_H"
 
 # The ALGO defaults to diffusion in the planner, but the checkpoint states its own — pass it
 # through so a flow/act five-point checkpoint does not need the flag spelled twice.
-CKPT_ALGO="$("$FUJI_PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('algo',''))" \
+CKPT_ALGO="$("$FLORE_PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('algo',''))" \
   "$CKPT/config.json")"
 EXTRA=()
 case " $* " in *" --algo "*) ;; *) [ -n "$CKPT_ALGO" ] && EXTRA=(--algo "$CKPT_ALGO") ;; esac
@@ -477,13 +477,13 @@ if [ -n "${REPLAY_MODE:-}" ]; then
 fi
 
 echo "[run] FIVE-POINT PLANNER (5 keypoints -> 5pt, NO completion) on http://localhost:$PORT"
-echo "[run]   python: $FUJI_PY (device=$DEVICE)"
+echo "[run]   python: $FLORE_PY (device=$DEVICE)"
 echo "[run]   checkpoint: $CKPT  algo=${CKPT_ALGO:-?}  layout=$CKPT_MODE  family=$FAMILY"
 echo "[run]              trained on: $CKPT_DATA"
 if [ "$FAMILY" = fivepoint ]; then
-  echo "[run]              chunk=$FUJI_ACTION_HORIZON steps @ 30 Hz  ->  5 poses + 2 grips + 2 wrenches"
+  echo "[run]              chunk=$FLORE_ACTION_HORIZON steps @ 30 Hz  ->  5 poses + 2 grips + 2 wrenches"
 else
-  echo "[run]              chunk=$FUJI_ACTION_HORIZON steps @ 30 Hz  ->  the predicted role(s) only;"
+  echo "[run]              chunk=$FLORE_ACTION_HORIZON steps @ 30 Hz  ->  the predicted role(s) only;"
   echo "[run]              wire slots HELD at the READY POSE for the whole run: ${CKPT_HELD}"
   echo "[run]              (the clutch publishes their base = the gate's own reference; a Predict"
   echo "[run]               never moves them; their f_cmd is a hard zero; only the predicted hand's"
@@ -529,7 +529,7 @@ else
   echo "[run]     EXECUTED step — where the robot already is. ▶▶ continues with NO Reset."
 fi
 echo "[run]   COMPANION LOW LEVEL — 5pt, ABSOLUTE, RecordTap on (W&B run pq9shxs7):"
-echo "[run]     cd $FUJI_ROOT/third_party/holosoma_extensions/force_deploy && \\"
+echo "[run]     cd $FLORE_ROOT/third_party/holosoma_extensions/force_deploy && \\"
 echo "[run]       MODE=5pt-unified-anneal HOLOSOMA_VIVE_RELATIVE=0 RECORD=1 ${LL_FORCE_ENV}\\"
 echo "[run]       bash 3_run_policy_vive_force.sh"
 if [ -z "$LL_FORCE_ENV" ]; then
@@ -580,7 +580,7 @@ echo "[run]   ⚠️  Gantry-suspended for first runs: this low level balances o
 echo "[run]   ⏺ RECORD a run: the blue button under Control → green = the next Predict / ▶▶ opens a"
 echo "[run]     recording (predicted xyz + wrench, executed steps, every published frame, RecordTap →"
 echo "[run]     measured keypoints, the F/T stream, every frame of each camera the model reads → camera/<key>/*.jpg)"
-echo "[run]     into ${RECORD_DIR:-$FUJI_ROOT/data/rollouts}/${TASK:-<task>}/<time>/. It runs across chunks,"
+echo "[run]     into ${RECORD_DIR:-$FLORE_ROOT/data/rollouts}/${TASK:-<task>}/<time>/. It runs across chunks,"
 echo "[run]     manual Predict/Run presses and ▶▶ runs (⏹ and the ceiling do NOT end it) until STOP /"
 echo "[run]     Reset / the low level disarming (joystick start). Plots: scripts/plot_rollout_record.py <folder>"
 echo "[run]     (spawned automatically when a recording is saved). RECORD_EVERY=1 = no click per recording;"
@@ -597,7 +597,7 @@ else
   echo "[run]     RECORDED demonstration (poses, jaw, wrench as F^cmd) instead of the policy. RUNBOOK §4c."
 fi
 
-exec "$FUJI_PY" "$FUJI_ROOT/scripts/hl_serving_5pt.py" \
+exec "$FLORE_PY" "$FLORE_ROOT/scripts/hl_serving_5pt.py" \
   --device "$DEVICE" \
   --port "$PORT" \
   ${TASK_EXTRA[@]+"${TASK_EXTRA[@]}"} \

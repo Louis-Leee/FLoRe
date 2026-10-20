@@ -23,10 +23,10 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fuji.s1_policy.data.layout import ACTION_HORIZON, FORCE_DIM, FORCE_HIST_LEN, get_layout
-from fuji.s1_policy.model.force_encoder import ForceHistoryEncoder
-from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
-from fuji.s1_policy.training.trainer import collate_hl_batch
+from flore.s1_policy.data.layout import ACTION_HORIZON, FORCE_DIM, FORCE_HIST_LEN, get_layout
+from flore.s1_policy.model.force_encoder import ForceHistoryEncoder
+from flore.s1_policy.training.config import HLDataConfig, TrainConfig
+from flore.s1_policy.training.trainer import collate_hl_batch
 
 # Reuse the synthetic-zarr BUILDER rather than a second copy of it: a drifting second schema
 # writer is how a loader test starts passing against data no converter produces. The fixtures
@@ -77,7 +77,7 @@ def _train_config(**hl_kw) -> TrainConfig:
 
 
 def _model(cfg_diffusion):
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionModel
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionModel
 
     cfg_diffusion.pretrained = False
     return DPDiffusionModel(cfg_diffusion, encoder=TinyEncoder())
@@ -435,7 +435,7 @@ def test_offline_inference_carries_both_cameras_into_the_observation(dual_zarr):
     ``camera0_rgb`` produces a shape-correct observation and a plausible-looking rollout,
     with the second ViT tower reading a repeat of the first. So the assertion is on the
     COUNT of decoded conditioning images, not merely on the source loading."""
-    from fuji.s1_policy.inference.common import HLSampleSource
+    from flore.s1_policy.inference.common import HLSampleSource
 
     source = HLSampleSource(_dual_hl_data(dual_zarr))
     try:
@@ -452,9 +452,9 @@ def test_serving_still_refuses_a_multi_camera_checkpoint_by_name():
     """Offline scoring and SERVING are separate milestones, and only serving is blocked:
     the live planner subscribes to one D405, so its num_cameras pin must stay explicit
     rather than following the checkpoint the way the dataset-backed tools now do."""
-    from fuji.s1_policy.data.layout import get_layout as _get_layout
-    from fuji.s1_policy.inference.common import validate_model_layout
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig
+    from flore.s1_policy.data.layout import get_layout as _get_layout
+    from flore.s1_policy.inference.common import validate_model_layout
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig
 
     layout = _get_layout(MODE)
     hl_data = _dual_hl_data("unused.zarr.zip")
@@ -479,7 +479,7 @@ def test_a_pre_multicamera_checkpoint_still_loads_its_hl_data():
     """``image_keys`` is OPTIONAL in the allow-list: it did not exist when every shipped
     checkpoint was written, and a bidirectional membership check would refuse all of them
     for lacking a key they could not have had."""
-    from fuji.s1_policy.inference.common import HLSampleSource
+    from flore.s1_policy.inference.common import HLSampleSource
 
     hl_data = {
         "zarr_paths": [],            # forces a later, DIFFERENT error

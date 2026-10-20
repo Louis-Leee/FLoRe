@@ -307,7 +307,7 @@ esac
 # Do the per-tick slew caps (HOLOSOMA_VIVE_MAX_POS_STEP / _ORN_STEP, pinned below) cover the 5pt
 # FEET? Default 0 = NO: the two foot slots pass through un-slewed and the caps cover only the
 # three upper points (hands + torso). The caps turn a far hand target into a glide; a GAIT is a
-# far foot target by construction — FUJI's walk skill (scripts/hl_serving_5pt.py, the walk-with-box
+# far foot target by construction — FLoRe's walk skill (scripts/hl_serving_5pt.py, the walk-with-box
 # feet) demands 19-46 mm/tick against the 5 mm cap, so a slewed foot does not walk slowly, it
 # crawls toward a target that keeps running away. SLEW_FEET=1 restores the whole-vector pool
 # (every preset before 2026-09-07). Only the 5pt family has feet; other MODEs ignore it.
@@ -318,13 +318,13 @@ case "${SLEW_FEET_RAW,,}" in
   *) echo "[3_run_policy_vive_force] bad SLEW_FEET='$SLEW_FEET_RAW' (want 1|0|true|false|yes|no|on|off)"; exit 2 ;;
 esac
 # Does a 5pt wire frame's OPTIONAL `ref_joints` (29 reference joint targets + velocities BY NAME —
-# FUJI's walk skill sends the gait clip's own legs while it plays) override the policy's
+# FLoRe's walk skill sends the gait clip's own legs while it plays) override the policy's
 # command_lower_body obs term? Default 1 = yes. That 24-D term is the reference motion's leg joints
 # and on the live path it is read from the FROZEN idle clip — so under a walk the legs were told
 # "stand" while the two foot keypoints said "swing", and the robot stepped in place. With the clip's
 # legs on the wire the policy sees exactly what a baked walk clip feeds it in mjswan (where it walks).
 # 5pt only, armed only, never slewed; a frame without the field is byte-identical. REF_JOINTS=0 ignores
-# the field (an A/B on the robot with FUJI untouched). Reported on RecordTap as `ref_joints_live`.
+# the field (an A/B on the robot with FLoRe untouched). Reported on RecordTap as `ref_joints_live`.
 REF_JOINTS_RAW="${REF_JOINTS:-1}"
 case "${REF_JOINTS_RAW,,}" in
   1|true|yes|on) REF_JOINTS=1 ;;

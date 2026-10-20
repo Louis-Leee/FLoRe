@@ -1,4 +1,4 @@
-"""Contract tests for the single action-layout registry (``fuji.s1_policy.data.layout``).
+"""Contract tests for the single action-layout registry (``flore.s1_policy.data.layout``).
 
 These pin the column meaning of every trained checkpoint. A failure here means a
 model's learned columns no longer mean what the dataset writes into them, which is
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from fuji.s1_policy.data.layout import (
+from flore.s1_policy.data.layout import (
     ACTION_DT,
     ACTION_HORIZON,
     ACTION_HORIZON_DEFAULT,
@@ -52,7 +52,7 @@ def test_block_widths_are_the_documented_contract():
     assert HAND_BLOCK_DIM == 16      # the per-hand ACTION block (pos3+rot6+grip1+force6)
     assert HEAD_BLOCK_DIM == 9
     # 30 Hz == CAMERA_PUBLISH_HZ, so the obs grid and the action grid coincide. The RATE is
-    # literal; the step COUNT is asserted on the DEFAULT because FUJI_ACTION_HORIZON may pin
+    # literal; the step COUNT is asserted on the DEFAULT because FLORE_ACTION_HORIZON may pin
     # this process to a shorter chunk (an H=50 vs H=30 A/B) — same treatment as
     # FORCE_HIST_LEN below, and for the same reason.
     assert ACTION_HORIZON_DEFAULT == 50
@@ -62,7 +62,7 @@ def test_block_widths_are_the_documented_contract():
     assert ACTION_SPAN_S == pytest.approx(ACTION_HORIZON * ACTION_DT)
     # No look-back: the observation is the single anchor frame t0. The one force bin is
     # exactly one action step wide. Asserted on the DEFAULT, not on the resolved value —
-    # FUJI_FORCE_HIST_LEN may pin this process to another L (an L=1 vs L=6 A/B), and this
+    # FLORE_FORCE_HIST_LEN may pin this process to another L (an L=1 vs L=6 A/B), and this
     # test's job is to pin the CONTRACT that HLGrid mirrors, not to forbid the pin.
     assert FORCE_HIST_LEN_DEFAULT == 1
     # The derivation holds under ANY pin: bins are one action step wide, always.
@@ -75,7 +75,7 @@ def test_block_widths_are_the_documented_contract():
     [(None, FORCE_HIST_LEN_DEFAULT), ("", FORCE_HIST_LEN_DEFAULT), ("1", 1), ("6", 6), (" 8 ", 8)],
 )
 def test_force_hist_len_pin_resolves(monkeypatch, env, expect):
-    """``FUJI_FORCE_HIST_LEN`` re-pins the bin count for ONE process."""
+    """``FLORE_FORCE_HIST_LEN`` re-pins the bin count for ONE process."""
     if env is None:
         monkeypatch.delenv(FORCE_HIST_LEN_ENV, raising=False)
     else:
@@ -101,7 +101,7 @@ def test_force_hist_len_pin_refuses_nonsense(monkeypatch, env):
     [(None, ACTION_HORIZON_DEFAULT), ("", ACTION_HORIZON_DEFAULT), ("50", 50), ("30", 30), (" 16 ", 16)],
 )
 def test_action_horizon_pin_resolves(monkeypatch, env, expect):
-    """``FUJI_ACTION_HORIZON`` re-pins the chunk length for ONE process (H=50 vs H=30 A/B)."""
+    """``FLORE_ACTION_HORIZON`` re-pins the chunk length for ONE process (H=50 vs H=30 A/B)."""
     if env is None:
         monkeypatch.delenv(ACTION_HORIZON_ENV, raising=False)
     else:
@@ -142,7 +142,7 @@ def test_action_horizon_pin_may_exceed_the_default(monkeypatch, env, expect):
     ("1", True), ("true", True), ("TRUE", True), ("yes", True), ("on", True), (" 1 ", True),
 ])
 def test_drop_force_pin_parses(monkeypatch, env, expect):
-    """The pure-position pin that ``FUJI_FORCE_HIST_LEN=0`` deliberately refuses to be."""
+    """The pure-position pin that ``FLORE_FORCE_HIST_LEN=0`` deliberately refuses to be."""
     if env is None:
         monkeypatch.delenv(DROP_FORCE_ENV, raising=False)
     else:
@@ -169,7 +169,7 @@ def test_drop_force_empties_declared_force_but_moves_no_column():
     declaration untouched. Otherwise the ablation would not be comparable, metric for
     metric, against the force-ful run it exists to be compared against.
     """
-    from fuji.s1_policy.data import layout as layout_mod
+    from flore.s1_policy.data import layout as layout_mod
 
     for mode in (m for m in MODES if m != "legacy32"):
         full = get_layout(mode)
@@ -214,7 +214,7 @@ def test_drop_force_input_pin_refuses_nonsense(monkeypatch, env):
 
 def test_drop_force_input_removes_the_input_and_keeps_the_output_supervised():
     """The whole point of the ablation, and the one thing that distinguishes it from
-    ``FUJI_DROP_FORCE``.
+    ``FLORE_DROP_FORCE``.
 
     Asks "is the measured wrench useful as an INPUT, or is it already predictable from vision
     plus state?" — which is only answerable if the force COLUMNS stay supervised, so the
@@ -225,7 +225,7 @@ def test_drop_force_input_removes_the_input_and_keeps_the_output_supervised():
     file describes) must all be untouched — that last one is what lets this run reuse the
     force-ful run's stats file byte for byte and train on a bit-identical anchor set.
     """
-    from fuji.s1_policy.data import layout as layout_mod
+    from flore.s1_policy.data import layout as layout_mod
 
     for mode in (m for m in MODES if m != "legacy32"):
         full = get_layout(mode)
@@ -265,14 +265,14 @@ def test_drop_force_input_removes_the_input_and_keeps_the_output_supervised():
 
 
 def test_the_two_force_ablations_compose_rather_than_contradict():
-    """``FUJI_DROP_FORCE`` implies no force input, and setting both is still pure position.
+    """``FLORE_DROP_FORCE`` implies no force input, and setting both is still pure position.
 
     They are different experiments, but a rig with no sensor cannot condition on one. Without
     this, ``DROP_FORCE`` alone would leave ``force_input=True`` with 0 channels behind it —
     coherent by accident today (``force_input_channels`` multiplies through an empty
     ``force_roles``) and a trap the moment either property is computed differently.
     """
-    from fuji.s1_policy.data import layout as layout_mod
+    from flore.s1_policy.data import layout as layout_mod
 
     for drop, drop_input in ((True, False), (True, True), (False, True)):
         with pytest.MonkeyPatch.context() as mp:
@@ -420,7 +420,7 @@ def test_legacy32_is_frozen_and_padded():
 def test_legacy32_matches_the_historical_dataset_slot_table():
     """Cross-check against the live pre-v2 dataset module, which the deployed
     checkpoint was trained with. If these ever disagree, the old ckpt is mis-sliced."""
-    from fuji.s1_policy.data.umi_dataset import _HEAD, _LEFT, _RIGHT, ACTION_DIM
+    from flore.s1_policy.data.umi_dataset import _HEAD, _LEFT, _RIGHT, ACTION_DIM
 
     lay = get_layout("legacy32")
     assert lay.action_dim == ACTION_DIM
@@ -430,7 +430,7 @@ def test_legacy32_matches_the_historical_dataset_slot_table():
 
 
 def test_legacy32_matches_the_transforms_ref_frame_slots():
-    from fuji.s1_policy.data.transforms import _REF_FRAME_SLOTS
+    from flore.s1_policy.data.transforms import _REF_FRAME_SLOTS
 
     lay = get_layout("legacy32")
     for role, (pos_sl, rot_sl) in _REF_FRAME_SLOTS.items():
@@ -601,7 +601,7 @@ def test_mode_role_tuples_are_in_keypoint_order():
     """_build_v2 lays roles out in the order GIVEN — it does not sort. So the invariant
     has to hold where the modes are DECLARED, or a mode written out of order would
     silently permute a checkpoint's columns."""
-    from fuji.s1_policy.data.layout import KEYPOINT_ORDER, _V2_MODES
+    from flore.s1_policy.data.layout import KEYPOINT_ORDER, _V2_MODES
 
     rank = {r: i for i, r in enumerate(KEYPOINT_ORDER)}
     for mode, (roles, force_roles, gripper_roles) in _V2_MODES.items():

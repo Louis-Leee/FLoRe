@@ -3,10 +3,10 @@
 Two halves, and the split is deliberate:
 
 * **No URDF needed** — the wire, the clutch, the observation assembly and the refusals. Pure
-  numpy over :mod:`fuji.s1_policy.serving.hl_5pt`, so every safety claim in that module's
+  numpy over :mod:`flore.s1_policy.serving.hl_5pt`, so every safety claim in that module's
   docstring is checkable in CI.
 * **URDF needed** (skipped without the ``UMI_collection`` submodule / ``yourdfpy``) — the anchor,
-  the readout's own numbers, and :mod:`fuji.s1_policy.inference.keypoint_ik`. The IK's round trip
+  the readout's own numbers, and :mod:`flore.s1_policy.inference.keypoint_ik`. The IK's round trip
   through the SAME FK the dataset and the wire are built on is the one test that can catch a lever,
   a chain or a root-placement mistake, so it is worth the skip.
 
@@ -22,10 +22,10 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data.layout import get_layout
-from fuji.s1_policy.serving import hl_5pt, hl_dense
-from fuji.s1_policy.serving.hl_online import decode_chunk, replay_only_model
-from fuji.utils.rot6d import rotmat_to_rot6d
+from flore.s1_policy.data.layout import get_layout
+from flore.s1_policy.serving import hl_5pt, hl_dense
+from flore.s1_policy.serving.hl_online import decode_chunk, replay_only_model
+from flore.utils.rot6d import rotmat_to_rot6d
 
 _URDF = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -509,7 +509,7 @@ def test_the_state_is_the_anchors_own_geometry_then_the_two_grippers():
     """The load-bearing claim: the state is computed from the anchor poses through the SAME
     ``wb_geom.geom_from_bodies`` training used, with no pelvis correction (``rel_xy3`` is
     translation-invariant and the anchor frame's pelvis rotation is identity)."""
-    from fuji.s1_policy.data import wb_geom
+    from flore.s1_policy.data import wb_geom
 
     planner = _planner(To=2)
     pos = np.array([[0.44, 0.15, 0.85], [0.44, -0.15, 0.85], [0.0, 0.0, 1.15],
@@ -579,7 +579,7 @@ def test_infer_chunk_refuses_a_planner_with_no_policy():
 # ---------------------------------------------------------------------------
 @needs_rig
 def test_the_deploy_anchor_answers_for_all_five_roles():
-    from fuji.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference import ready_pose as RP
 
     anchor, why = RP.resolve_deploy_anchor(LAY.roles)
     assert anchor is not None, why
@@ -594,7 +594,7 @@ def test_the_ready_pose_wire_is_holosomas_own_gate_reference():
     """The readout pelvis must be the ANCHOR's ``(0, 0, pelvis_z)`` and never
     ``mc_frames.PELVIS_STAND_Z`` (0.79186), which belongs to the teleop path's ``cond_mode=home``
     placement and would put every keypoint 35 mm low."""
-    from fuji.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference import ready_pose as RP
 
     anchor, why = RP.resolve_deploy_anchor(LAY.roles)
     assert anchor is not None, why
@@ -614,8 +614,8 @@ def test_the_ik_reproduces_the_ready_pose_exactly():
     configuration into five keypoints, solve them back, FK the answer. Any disagreement between
     this IK and the FK the dataset and the wire are built on shows up here as millimetres."""
     pytest.importorskip("yourdfpy")
-    from fuji.s1_policy.inference import ready_pose as RP
-    from fuji.s1_policy.inference.keypoint_ik import KeypointIK
+    from flore.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference.keypoint_ik import KeypointIK
 
     ik, why = KeypointIK.load()
     assert ik is not None, why
@@ -631,8 +631,8 @@ def test_the_ik_round_trips_an_arbitrary_reachable_posture():
     """Not only the ready pose: a perturbed configuration exercises all four chains away from the
     seed, which is where a wrong Jacobian axis or a swapped chain would show."""
     pytest.importorskip("yourdfpy")
-    from fuji.s1_policy.inference import ready_pose as RP
-    from fuji.s1_policy.inference.keypoint_ik import KeypointIK
+    from flore.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference.keypoint_ik import KeypointIK
 
     ik, _ = KeypointIK.load()
     anchor, _ = RP.resolve_deploy_anchor(LAY.roles)
@@ -651,8 +651,8 @@ def test_the_chest_is_the_root_so_its_residual_is_structurally_zero():
     the drawn pelvis is a display artefact. If the chest were ever solved instead, its residual
     would become non-zero and the claim in the panel would quietly stop being true."""
     pytest.importorskip("yourdfpy")
-    from fuji.s1_policy.inference import ready_pose as RP
-    from fuji.s1_policy.inference.keypoint_ik import IK_ROLES, ROOT_ROLE, KeypointIK
+    from flore.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference.keypoint_ik import IK_ROLES, ROOT_ROLE, KeypointIK
 
     ik, _ = KeypointIK.load()
     anchor, _ = RP.resolve_deploy_anchor(LAY.roles)
@@ -667,7 +667,7 @@ def test_the_chest_is_the_root_so_its_residual_is_structurally_zero():
 @needs_rig
 def test_the_ik_refuses_a_layout_it_cannot_draw_a_body_from():
     pytest.importorskip("yourdfpy")
-    from fuji.s1_policy.inference.keypoint_ik import IK_ROLES, KeypointIK
+    from flore.s1_policy.inference.keypoint_ik import IK_ROLES, KeypointIK
 
     ik, _ = KeypointIK.load()
     partial = {r: (np.zeros((2, 3)), np.tile(np.eye(3), (2, 1, 1)))
@@ -681,7 +681,7 @@ def test_the_ik_chains_are_seven_seven_six_six():
     """An arm is redundant (7 against a 6-DoF target) and a leg is determined (6). A URDF rename
     that made the substring match select the wrong set is refused at construction, by name."""
     pytest.importorskip("yourdfpy")
-    from fuji.s1_policy.inference.keypoint_ik import CHAIN_DOF, CHAIN_SPEC
+    from flore.s1_policy.inference.keypoint_ik import CHAIN_DOF, CHAIN_SPEC
 
     assert set(CHAIN_SPEC) == set(CHAIN_DOF)
     assert [CHAIN_DOF[r] for r in ("left", "right", "left_foot", "right_foot")] == [7, 7, 6, 6]
@@ -692,8 +692,8 @@ def test_the_ik_dof_and_cfg_are_the_same_solution():
     """``cfg`` drives the ViserUrdf and ``dof`` is the SDK view of it; a caller that FKs ``dof``
     back must land where the drawn body is. The two must agree under the by-name remap."""
     pytest.importorskip("yourdfpy")
-    from fuji.s1_policy.inference import ready_pose as RP
-    from fuji.s1_policy.inference.keypoint_ik import IK_ROLES, KeypointIK
+    from flore.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference.keypoint_ik import IK_ROLES, KeypointIK
 
     ik, _ = KeypointIK.load()
     anchor, _ = RP.resolve_deploy_anchor(LAY.roles)
@@ -851,8 +851,8 @@ def test_give_up_from_a_retired_solve_does_not_clear_a_newer_pending():
 # ---------------------------------------------------------------------------
 def test_the_violet_is_the_same_violet_everywhere():
     """One vocabulary across the offline pages and the rig: violet = what is about to happen."""
-    from fuji.s1_policy.inference import keypoint_humanoid as KH
-    from fuji.s1_policy.inference import wholebody_viewer as WV
+    from flore.s1_policy.inference import keypoint_humanoid as KH
+    from flore.s1_policy.inference import wholebody_viewer as WV
 
     assert KH.PREDICTION_RGBA == WV.PREDICTION_RGBA
     assert KH.TARGET_RGBA == WV.TARGET_RGBA
@@ -976,7 +976,7 @@ def test_a_held_slot_survives_the_streamed_two_row_integrator():
     """The CONTINUOUS cadence hands the wire ``mini_chunk``'s two rows of the PREDICTED roles only;
     the wire fills the held slots exactly as it does for a full chunk, so streaming a left_only
     checkpoint is the same clutch arithmetic on the same five-slot frame."""
-    from fuji.s1_policy.serving import hl_stream
+    from flore.s1_policy.serving import hl_stream
 
     chunk = _chunk(h=8, layout=LEFT)
     held = {r: (READY_POS[3 * k:3 * k + 3], rotmat_to_rot6d(np.eye(3)))
@@ -1034,7 +1034,7 @@ def test_a_five_point_wire_with_nothing_held_is_byte_identical_to_before():
 
 
 def test_force_command_is_always_both_hands_wide_with_a_zero_for_a_hand_not_predicted():
-    from fuji.utils.force_frame import cmd_from_meas_force
+    from flore.utils.force_frame import cmd_from_meas_force
 
     row = np.array([0.0, 0.0, -5.0, 0.1, 0.2, 0.3])
     out = hl_5pt.force_command({"left": row}, gate_n=1.5)              # left_only
@@ -1086,8 +1086,8 @@ def test_the_subset_state_is_the_identity_at_the_seed_then_R_start_T_R_now():
     then the jaw. Identity before anything is commanded (every episode's frame 0), the committed
     rotation relative to the SEEDED one after — and ``state_readout`` must equal what
     ``snapshot_obs`` feeds the model."""
-    from fuji.s1_policy.data.transforms import rot6d_relative
-    from fuji.utils.rot6d import rot6d_to_rotmat as _r6, rotmat_to_rot6d as _r
+    from flore.s1_policy.data.transforms import rot6d_relative
+    from flore.utils.rot6d import rot6d_to_rotmat as _r6, rotmat_to_rot6d as _r
 
     def rz(deg):
         c, s_ = np.cos(np.deg2rad(deg)), np.sin(np.deg2rad(deg))
@@ -1150,8 +1150,8 @@ def _fake_rollout(h: int = 4):
 
 
 def test_the_offline_overlay_holds_the_missing_roles_for_both_bodies():
-    from fuji.s1_policy.inference import keypoint_humanoid as KH
-    from fuji.s1_policy.inference.keypoint_ik import IK_ROLES
+    from flore.s1_policy.inference import keypoint_humanoid as KH
+    from flore.s1_policy.inference.keypoint_ik import IK_ROLES
 
     held = {r: (np.full(3, 1.0 + k), np.eye(3)) for k, r in enumerate(IK_ROLES) if r != "left"}
     kh = KH.KeypointHumanoid(server=None, enabled=False, held_poses=held)
@@ -1173,7 +1173,7 @@ def test_the_offline_overlay_holds_the_missing_roles_for_both_bodies():
 
 
 def test_the_offline_overlay_still_refuses_an_unfilled_role_by_name():
-    from fuji.s1_policy.inference import keypoint_humanoid as KH
+    from flore.s1_policy.inference import keypoint_humanoid as KH
 
     kh = KH.KeypointHumanoid(server=None, enabled=False)
     kh.enabled, kh.ik, kh.disabled_reason = True, object(), ""
@@ -1348,7 +1348,7 @@ def test_a_reset_clutch_pins_step_zero_on_the_ready_frame_whatever_measured_says
 # only, published never committed, identity while un-armed, a silent Bota is contact — and the page
 # wiring, source-level, for the same reason the STOP / Reset tests above are.
 # ---------------------------------------------------------------------------------------------------
-from fuji.s1_policy.serving.hl_reach import ReachConfig  # noqa: E402
+from flore.s1_policy.serving.hl_reach import ReachConfig  # noqa: E402
 
 
 def _frame5(pos_by_role=None):
@@ -1546,7 +1546,7 @@ def test_reach_flags_default_off_and_mirror_run_hl_serving():
 # the observation's RANGE against the checkpoint's own norm stats (task-agnostic, 2026-09-12)
 # ---------------------------------------------------------------------------
 def _stats(q01, q99):
-    from fuji.s1_policy.data.norm_stats import NormStats
+    from flore.s1_policy.data.norm_stats import NormStats
 
     return NormStats(q01=np.asarray(q01, dtype=np.float64), q99=np.asarray(q99, dtype=np.float64))
 
@@ -1747,7 +1747,7 @@ def test_the_ood_gate_runs_before_the_sample_on_BOTH_cadences_and_ends_the_run()
 def _measured_frame_at(pos):
     """A ``(pos, orn)`` wire frame at ``pos`` (n,3) with identity rotations — what RecordTap's FK
     gives the clutch and now the belief leash."""
-    from fuji.utils.rot6d import rotmat_to_quat_xyzw
+    from flore.utils.rot6d import rotmat_to_quat_xyzw
 
     p = np.asarray(pos, dtype=np.float64).reshape(-1, 3)
     q = np.tile(rotmat_to_quat_xyzw(np.eye(3)), (p.shape[0], 1))
@@ -1901,7 +1901,7 @@ def test_the_ood_default_is_past_a_recovering_start_and_inside_a_runaway():
 def _wire_frame(pos5, rotmats5):
     """A five-slot ``(pos, orn)`` wire frame — what ``FivePointWire.measured_keypoints`` hands the
     leash — with one rotation per WIRE slot."""
-    from fuji.utils.rot6d import rotmat_to_quat_xyzw
+    from flore.utils.rot6d import rotmat_to_quat_xyzw
 
     p = np.asarray(pos5, dtype=np.float64).reshape(5, 3)
     q = np.stack([rotmat_to_quat_xyzw(np.asarray(r, dtype=np.float64)) for r in rotmats5])
@@ -1939,7 +1939,7 @@ def test_the_leash_compares_the_anchor_and_the_readback_in_ONE_frame():
     down. ``_belief_bound`` now converts the readback with ``hl_5pt.wire_frame_to_anchor``; the
     ready pose's own wire frame must come back as the anchor, and the planners must read ZERO lead
     through it. The raw gap is pinned too, so the bug cannot return silently."""
-    from fuji.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference import ready_pose as RP
 
     anchor, why = RP.resolve_deploy_anchor(hl_5pt.WIRE_ROLES)
     if anchor is None:
@@ -1987,7 +1987,7 @@ def test_the_subset_leash_bounds_the_ROTATION_the_wrt_start_state_reads():
     had — and the state (``R_start^T R_anchor``) walked 1.65 band widths out while the WIRE stayed
     bounded. With the 10° leash the believed rotation is at most 10° past the measured one, and the
     observation follows the correction at THIS Predict."""
-    from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rotvec, rotvec_to_rotmat
+    from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rotvec, rotvec_to_rotmat
 
     pl = _subset_planner("left_only", To=1)
     slot = hl_5pt.WIRE_ROLES.index("left")

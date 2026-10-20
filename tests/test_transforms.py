@@ -6,13 +6,13 @@ from __future__ import annotations
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from fuji.s1_policy.data.norm_stats import (
+from flore.s1_policy.data.norm_stats import (
     NormStats,
     compute_quantile_stats,
     normalize_quantile,
     unnormalize_quantile,
 )
-from fuji.s1_policy.data.transforms import (
+from flore.s1_policy.data.transforms import (
     absolute_to_delta_ee,
     delta_ee_to_absolute,
     gripper_norm_to_width,

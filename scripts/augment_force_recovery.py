@@ -4,12 +4,12 @@
 Reads the stored ``hl_<role>_action_force`` chunks — the exact wrench targets the model is
 trained to emit — picks the windows where a recovery is well-posed (in contact, force actually
 moving, every step supervised), and for each one synthesizes
-:attr:`~fuji.utils.force_funnel.FunnelConfig.n_aug` trajectories that start out-of-distribution
-and funnel back onto the demonstration. See :mod:`fuji.utils.force_funnel` for the method and
+:attr:`~flore.utils.force_funnel.FunnelConfig.n_aug` trajectories that start out-of-distribution
+and funnel back onto the demonstration. See :mod:`flore.utils.force_funnel` for the method and
 its mapping onto 1001-Demos (``docs/papers/1001demos.pdf``).
 
 **This script only WRITES a new file.** It opens the dataset read-only, touches no converter,
-no ``HLDataset``, no training code, and nothing under ``fuji/s1_policy/``. The output is a
+no ``HLDataset``, no training code, and nothing under ``flore/s1_policy/``. The output is a
 self-describing ``.npz`` sidecar; no training run reads it yet.
 
     uv run scripts/augment_force_recovery.py <dataset.zarr.zip> -o bank.npz
@@ -41,7 +41,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fuji.utils.force_funnel import (  # noqa: E402
+from flore.utils.force_funnel import (  # noqa: E402
     FORCE_SLICE,
     TARGET_MODES,
     FunnelConfig,
@@ -273,8 +273,8 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     meta = {
         "tool": "scripts/augment_force_recovery.py",
-        "method": "fuji.utils.force_funnel (1001-Demos funnel augmentation in wrench space)",
-        "fuji_git_sha": _git_sha(repo_root),
+        "method": "flore.utils.force_funnel (1001-Demos funnel augmentation in wrench space)",
+        "flore_git_sha": _git_sha(repo_root),
         "dataset": os.path.abspath(args.zarr_path),
         "dataset_attrs": {k: attrs.get(k) for k in
                           ("hl_action_horizon", "hl_action_hz", "hl_force_hist_len",

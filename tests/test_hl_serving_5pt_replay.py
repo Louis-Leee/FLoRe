@@ -21,10 +21,10 @@ import subprocess
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data.layout import get_layout
-from fuji.s1_policy.serving import hl_5pt, hl_dense, hl_replay
-from fuji.s1_policy.serving.hl_online import decode_chunk
-from fuji.utils.rot6d import rotmat_to_rot6d
+from flore.s1_policy.data.layout import get_layout
+from flore.s1_policy.serving import hl_5pt, hl_dense, hl_replay
+from flore.s1_policy.serving.hl_online import decode_chunk
+from flore.utils.rot6d import rotmat_to_rot6d
 
 zarr = pytest.importorskip("zarr")
 
@@ -216,7 +216,7 @@ def test_reset_rewinds_the_recorded_episode_and_the_recorder_learns_the_source()
     assert '"source": source, "replay": rp_info' in info
     assert '"replay_zarr": (None if replay is None else os.path.abspath(replay.path))' in src
     # the recorder's chunk record carries the source (the tap signature grew two OPTIONAL fields)
-    from fuji.s1_policy.serving import rollout_record as R
+    from flore.s1_policy.serving import rollout_record as R
     import inspect
 
     params = inspect.signature(R.RunRecorder.chunk).parameters

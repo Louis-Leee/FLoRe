@@ -11,8 +11,8 @@ from __future__ import annotations
 import pytest
 import torch
 
-from fuji.s1_policy.data.layout import FORCE_DIM, FORCE_HIST_LEN
-from fuji.s1_policy.model.force_encoder import ForceHistoryEncoder
+from flore.s1_policy.data.layout import FORCE_DIM, FORCE_HIST_LEN
+from flore.s1_policy.model.force_encoder import ForceHistoryEncoder
 
 
 def _enc(**kw):
@@ -193,7 +193,7 @@ def test_both_tensors_are_moved_together_by_the_model():
     because Trainer._move_batch moves everything. Move both or neither."""
     import inspect
 
-    from fuji.s1_policy.model import dp_flow
+    from flore.s1_policy.model import dp_flow
 
     src = inspect.getsource(dp_flow.DPFlowModel._encode_global_cond)
     assert "fh.to(device)" in src
@@ -226,7 +226,7 @@ def test_masked_targets_cannot_influence_the_loss(num_draws, rtc):
     This test is the pin: two batches differing ONLY inside ~action_mask must give a
     bit-identical loss, every per-group metric, AND an identical v_t. Reverting the fix
     leaves the rest of the suite green, so nothing else catches it."""
-    from fuji.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
+    from flore.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
 
     torch.manual_seed(0)
     model = DPFlowModel(DPFlowConfig(
@@ -269,7 +269,7 @@ def test_legacy_mask_path_is_untouched_by_the_interpolant_gate():
     the already-deployed 32-dim checkpoint stays reproducible."""
     import inspect
 
-    from fuji.s1_policy.model import base
+    from flore.s1_policy.model import base
 
     src = inspect.getsource(base.FlowMatchingVLABase.forward)
     i = src.index("x_t = time_expanded")

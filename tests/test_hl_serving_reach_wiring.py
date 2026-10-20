@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.s1_policy.serving.hl_reach import ReachCompensator, ReachConfig
+from flore.s1_policy.serving.hl_reach import ReachCompensator, ReachConfig
 
 _SRC_PATH = Path(__file__).resolve().parents[1] / "scripts" / "hl_serving.py"
 _SRC = _SRC_PATH.read_text()
@@ -145,7 +145,7 @@ def test_tuner_defaults_match_the_launcher():
 def test_clamp_ceiling_is_enforced_at_config_level():
     """The launcher exposes --reach-clamp, so the ceiling has to be enforced where the value is
     consumed rather than in the argparse help text."""
-    from fuji.s1_policy.serving.hl_reach import MAX_CLAMP_M
+    from flore.s1_policy.serving.hl_reach import MAX_CLAMP_M
 
     with pytest.raises(ValueError):
         ReachConfig(ki=0.1, clamp_m=MAX_CLAMP_M + 1e-6)

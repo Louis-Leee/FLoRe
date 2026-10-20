@@ -188,7 +188,7 @@ GPUS=$(IFS=,; echo "${ALL_GPUS[*]:0:$N_GPUS}")
 # so every entry here is a `_wb.zarr.zip`, and the un-augmented sibling is refused by name.
 #
 # FH / H are EXPORTED, not taken from the caller: torchrun passes the environment to every
-# rank and both are resolved at IMPORT by fuji.s1_policy.data.layout, so the ranks must agree
+# rank and both are resolved at IMPORT by flore.s1_policy.data.layout, so the ranks must agree
 # before the first collective.
 #
 # The exclusions are the SOURCE conversion's -- see run_train_diffusion_umi_3tracker.sh for
@@ -215,7 +215,7 @@ case "$WB_TARGET" in
 esac
 # WB_STATE -> layout mode. A named MODE rather than a flag or an env pin because state_dim moves
 # with the composition and `layout_mode` is what validate_model_layout pins a checkpoint against;
-# see the header and fuji/s1_policy/data/layout.py. `joints` is the default so an existing
+# see the header and flore/s1_policy/data/layout.py. `joints` is the default so an existing
 # command trains exactly the same bytes it did before this axis existed.
 WB_STATE=${WB_STATE:-joints}
 case "$WB_STATE" in
@@ -317,8 +317,8 @@ if (( H > STORED_H )); then
     echo "       ...or use SESSION=0902_merged3_h200 (see docs/RUNBOOK_wb_geom_ablation.md)." >&2
     exit 1
 fi
-export FUJI_FORCE_HIST_LEN="$FH"
-export FUJI_ACTION_HORIZON="$H"
+export FLORE_FORCE_HIST_LEN="$FH"
+export FLORE_ACTION_HORIZON="$H"
 
 CAMS=(camera0_rgb camera1_rgb)
 
@@ -372,7 +372,7 @@ if (( N_GPUS > 1 )); then
     RUN="${RUN}_ddp${N_GPUS}"; WB_NAME="${WB_NAME}-ddp${N_GPUS}"
 fi
 
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 OUT="$CKPT_ROOT/$RUN"
 # The plan, BEFORE anything is created or checked: the caller (the grid queue) needs these four
 # strings precisely so it can decide whether to fit stats and whether to skip.
@@ -405,7 +405,7 @@ if [[ ! -f "$NS" ]]; then
     echo "             --zarr-paths ${DS[*]} --mode $MODE \\" >&2
     echo "             --image-keys ${CAMS[*]} --val-last-episodes $VAL_EPS \\" >&2
     echo "             --wb-joint-target $WB_TARGET --out $NS" >&2
-    echo "       ...with FUJI_ACTION_HORIZON=$H exported FIRST (the fitted quantiles depend on" >&2
+    echo "       ...with FLORE_ACTION_HORIZON=$H exported FIRST (the fitted quantiles depend on" >&2
     echo "       the horizon, and the pin is resolved at import)." >&2
     exit 1
 fi

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Launch the FUJI S1 DP-Flow gRPC policy server.
+"""Launch the FLoRe S1 DP-Flow gRPC policy server.
 
 Loads a DP-Flow checkpoint, wraps it in the RTC scheduler (default) or a
-synchronous drip wrapper, and serves ``FujiPolicyService`` over gRPC.
+synchronous drip wrapper, and serves ``FlorePolicyService`` over gRPC.
 
 Examples::
 
@@ -18,7 +18,7 @@ import logging
 
 import tyro
 
-from fuji.s1_policy.serving.server import build_server, load_dpflow_chunk_policy, make_servicer
+from flore.s1_policy.serving.server import build_server, load_dpflow_chunk_policy, make_servicer
 
 logger = logging.getLogger(__name__)
 

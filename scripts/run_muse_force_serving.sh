@@ -7,7 +7,7 @@
 # rollout + predicted force + gripper + low-level online/offline status in viser.
 #
 # TWO PROCESSES (mutually exclusive envs, same split as the rollout viz):
-#   * FRONT-END (viser + mink IK) runs in FUJI's .venv;
+#   * FRONT-END (viser + mink IK) runs in FLoRe's .venv;
 #   * BACK-END (the UVA force model + live obs-builder + S0Driver) runs in the
 #     `uvaforce` conda env, spawned as a child and spoken to over a pipe.
 # It modifies NOTHING in the other sim2real scripts or run_muse_force_rollout_viz.sh.
@@ -30,7 +30,7 @@
 #       --checkpoint third_party/unified_video_action/artifacts/best-ckpt-slim/epoch=0193-val_action_l2_distances=0.112.slim.pt
 #
 # Env knobs (no code edits):
-#   FUJI_PY     front-end python  (default: <repo>/.venv/bin/python)
+#   FLORE_PY     front-end python  (default: <repo>/.venv/bin/python)
 #   BACKEND_PY  uvaforce python   (default: ~/miniconda3/envs/uvaforce/bin/python)
 #   PORT        viser port        (default: 8087)
 #   DEVICE      backend torch device (default: cuda)
@@ -46,18 +46,18 @@
 #                       the 6-DoF --pipeline stream — the model was trained on 6-DoF force).
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
 BACKEND_PY="${BACKEND_PY:-$HOME/miniconda3/envs/uvaforce/bin/python}"
-UMI="$FUJI_ROOT/third_party/UMI_collection"
+UMI="$FLORE_ROOT/third_party/UMI_collection"
 IK_SRC="$UMI/third_party/humi_ik"
 VIZ_SRC="$UMI/viz"
 REPLAY_SRC="$UMI/replay"
 PORT="${PORT:-8087}"
 DEVICE="${DEVICE:-cuda}"
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
   exit 2
 fi
 if [ ! -x "$BACKEND_PY" ]; then
@@ -81,15 +81,15 @@ if [ "${COMMAND_GRIPPER:-1}" != "0" ]; then
 fi
 
 echo "[run] MuSe-force PLANNER on http://localhost:$PORT  (Ctrl-C to stop)"
-echo "[run]   front-end: $FUJI_PY"
+echo "[run]   front-end: $FLORE_PY"
 echo "[run]   back-end : $BACKEND_PY (device=$DEVICE)"
 echo "[run]   REMINDER: run T2 as 'bash 2_ft_bridge.sh --pipeline' (6-DoF force for the planner),"
 echo "[run]            and launch the LOW-LEVEL in ABSOLUTE mode:"
-echo "[run]     cd $FUJI_ROOT/third_party/holosoma_extensions/force_deploy && \\"
+echo "[run]     cd $FLORE_ROOT/third_party/holosoma_extensions/force_deploy && \\"
 echo "[run]       MODE=3pt-unified-anneal HOLOSOMA_VIVE_RELATIVE=0 RECORD=1 \\"
 echo "[run]       ONNX=logs/WBT-Holosoma/iss0qs71/model_15500.onnx bash 3_run_policy_vive_force.sh"
-PYTHONPATH="$IK_SRC:$VIZ_SRC:$REPLAY_SRC:${PYTHONPATH:-}" "$FUJI_PY" \
-  "$FUJI_ROOT/scripts/muse_force_serving_viz.py" \
+PYTHONPATH="$IK_SRC:$VIZ_SRC:$REPLAY_SRC:${PYTHONPATH:-}" "$FLORE_PY" \
+  "$FLORE_ROOT/scripts/muse_force_serving_viz.py" \
   --backend-python "$BACKEND_PY" \
   --device "$DEVICE" \
   --port "$PORT" \

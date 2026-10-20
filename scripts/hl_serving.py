@@ -4,8 +4,8 @@ drives the low-level G1 controller on :8770, mirroring the muse_force_serving UX
 (predict → preview → execute) but for the HL-v2 flow/diffusion checkpoints.
 
 WHY single-process (unlike muse_force_serving's two-process backend+frontend): the
-MuSe/UVA planner is forced into a hard conda split (uvaforce torch vs FUJI-.venv
-viser). The HL-v2 flow/diffusion models load in the SAME FUJI ``.venv`` that already
+MuSe/UVA planner is forced into a hard conda split (uvaforce torch vs FLoRe-.venv
+viser). The HL-v2 flow/diffusion models load in the SAME FLoRe ``.venv`` that already
 holds viser + mink + mujoco (verified: torch cu130 + diffusers + viser coexist), so
 the model, the viser page, the S0Driver, and the sensor threads all live in ONE
 process. The base64-npz IPC, stdout-poisoning discipline, and spawn/handshake are
@@ -43,7 +43,7 @@ place on the publish path (``_gate_wire_force``) and in exactly one place per vi
 every force surface on the page (arrow, charts, readout) shows F^cmd so what is displayed is
 the direction the arm will push. The one exception, labelled as such, is the "F/T sensor
 (F_meas)" panel, which is a raw measurement. Derivation + witnesses:
-:mod:`fuji.utils.force_frame`. See :mod:`fuji.s1_policy.serving.hl_online` for the gate +
+:mod:`flore.utils.force_frame`. See :mod:`flore.s1_policy.serving.hl_online` for the gate +
 decode contract, and the holosoma submodule edits (vive_live_source / holosoma_wbt) for the
 F^cmd wire ingest.
 
@@ -58,7 +58,7 @@ actually being pressed. Above 40 N of measured force the low level STOPS itself
 (``FORCE_ESTOP_N``, the joystick-B path); the planner sees that as its RecordTap going
 stale and drops the abandoned plan (see the LOW-LEVEL-LOST watchdog in ``_status_tick``).
 
-Runs in FUJI's ``.venv``; reads only committed files + the checkpoint; writes nothing.
+Runs in FLoRe's ``.venv``; reads only committed files + the checkpoint; writes nothing.
 The launcher ``run_hl_serving.sh`` wires PYTHONPATH (UMI ik/viz) + ports + --algo.
 """
 from __future__ import annotations
@@ -76,8 +76,8 @@ from pathlib import Path
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_UMI = os.path.join(_FUJI_ROOT, "third_party", "UMI_collection")
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_UMI = os.path.join(_FLORE_ROOT, "third_party", "UMI_collection")
 for _p in (
     os.path.join(_UMI, "third_party", "humi_ik"),
     os.path.join(_UMI, "viz"),
@@ -85,18 +85,18 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 
-from fuji.s1_policy.data.transforms import (  # noqa: E402
+from flore.s1_policy.data.transforms import (  # noqa: E402
     delta_ee_to_absolute as _delta_ee_to_absolute,
 )
-from fuji.s1_policy.inference.display import (  # noqa: E402
+from flore.s1_policy.inference.display import (  # noqa: E402
     TRIAD_DRAW_SIZES,
     triad_offsets_from_tcp,
 )
-from fuji.s1_policy.data.layout import ACTION_HZ  # noqa: E402
-from fuji.s1_policy.serving.hl_online import (  # noqa: E402
+from flore.s1_policy.data.layout import ACTION_HZ  # noqa: E402
+from flore.s1_policy.serving.hl_online import (  # noqa: E402
     ACTION_HORIZON,
     GRIP_MAX_AGE_S,
     OBS_MAX_AGE_S,
@@ -107,25 +107,25 @@ from fuji.s1_policy.serving.hl_online import (  # noqa: E402
     resize_center_crop_224 as _resize_center_crop_224,
     snap_exec_steps,
 )
-from fuji.s1_policy.serving import hl_anchor, hl_reach, rollout_record  # noqa: E402
-from fuji.s1_policy.serving.gil_yield import YieldGate  # noqa: E402
-from fuji.s1_policy.serving.hl_muse import (  # noqa: E402
+from flore.s1_policy.serving import hl_anchor, hl_reach, rollout_record  # noqa: E402
+from flore.s1_policy.serving.gil_yield import YieldGate  # noqa: E402
+from flore.s1_policy.serving.hl_muse import (  # noqa: E402
     MUSE_ALGO,
     MuseLivePlanner,
     load_muse_model,
     resolve_backend_python,
 )
-from fuji.s1_policy.serving.hl_anchor import AnchorConfig, ChunkAnchor  # noqa: E402
-from fuji.s1_policy.serving.hl_reach import ReachCompensator, ReachConfig  # noqa: E402
-from fuji.s1_policy.serving.hl_record import RecordedPrediction, TakeRecorder  # noqa: E402
-from fuji.s1_policy.serving.hl_trace import (  # noqa: E402
+from flore.s1_policy.serving.hl_anchor import AnchorConfig, ChunkAnchor  # noqa: E402
+from flore.s1_policy.serving.hl_reach import ReachCompensator, ReachConfig  # noqa: E402
+from flore.s1_policy.serving.hl_record import RecordedPrediction, TakeRecorder  # noqa: E402
+from flore.s1_policy.serving.hl_trace import (  # noqa: E402
     ExecutionTrace,
     ReferencePath,
     plot_trace_vs_reference,
     resample_reference_to_trace,
     trace_stats,
 )
-from fuji.s1_policy.serving.live_robot import (  # noqa: E402
+from flore.s1_policy.serving.live_robot import (  # noqa: E402
     G1_29DOF_SDK_DOF_NAMES,
     JAW_JOINT_OPEN_M,
     N_SDK_DOF,
@@ -134,14 +134,14 @@ from fuji.s1_policy.serving.live_robot import (  # noqa: E402
     parse_record_frame,
     remap_dof_to_urdf,
 )
-from fuji.utils.dataset_paths import resolve_dataset_path  # noqa: E402
-from fuji.utils.force_frame import (  # noqa: E402
+from flore.utils.dataset_paths import resolve_dataset_path  # noqa: E402
+from flore.utils.force_frame import (  # noqa: E402
     CMD_FROM_MEAS_NOTE,
     TCP_FROM_SENSOR_NOTE,
     cmd_from_meas_force,
     cmd_from_meas_wrench,
 )
-from fuji.utils.rot6d import (  # noqa: E402
+from flore.utils.rot6d import (  # noqa: E402
     quat_xyzw_to_rotmat,
     rot6d_to_rotmat,
     rotmat_to_quat_xyzw,
@@ -331,7 +331,7 @@ def _model_rot6d_to_urdf(rot6d: np.ndarray) -> np.ndarray:
         rot6d_to_rotmat(np.asarray(rot6d, dtype=np.float64)) @ _MODEL_SEAM.T).astype(np.float64)
 
 _HOME_ANCHOR_PATH = os.path.join(
-    _FUJI_ROOT, "third_party", "holosoma_extensions", "src", "extensions", "wbt_wrappers",
+    _FLORE_ROOT, "third_party", "holosoma_extensions", "src", "extensions", "wbt_wrappers",
     "wbt_realtime_eval", "wbt_realtime_eval", "vive", "home_anchor.json")
 
 
@@ -939,7 +939,7 @@ def _checkpoint_zarr(checkpoint: str) -> str | None:
     None if absent.
 
     Since training moved to a remote workstation the recorded path is typically that box's
-    (``/data/fuji/...``), so it is relocated by basename into the local dataset dir —
+    (``/data/flore/...``), so it is relocated by basename into the local dataset dir —
     otherwise the seam derivation would exit on a file that is right here under another
     path. The relocation cannot smuggle in a wrong frame: the seam comes from whatever file
     is opened, and a pre-2026-08-06 extrinsic is still hard-refused below.
@@ -951,7 +951,7 @@ def _checkpoint_zarr(checkpoint: str) -> str | None:
     paths = cfg.get("hl_data", {}).get("zarr_paths") or []
     if not paths:
         return None
-    return resolve_dataset_path(str(paths[0]), repo_root=_FUJI_ROOT, log=_log)
+    return resolve_dataset_path(str(paths[0]), repo_root=_FLORE_ROOT, log=_log)
 
 
 def _install_frame_seam(args, replay_only: bool) -> None:
@@ -1101,7 +1101,7 @@ def _obs_freshness(planner, *, max_age_s: float, grip_max_age_s: float,
     the same thing the training converter does for an unmeasured jaw. That is a deliberate
     asymmetry: refuse when the model would be guessing, degrade when it can absorb it.
 
-    ``consumes_force=False`` (a PURE-POSITION checkpoint — ``FUJI_DROP_FORCE``) takes the F/T
+    ``consumes_force=False`` (a PURE-POSITION checkpoint — ``FLORE_DROP_FORCE``) takes the F/T
     OUT of the blocking set. This is the same relaxation :func:`_self_check` makes at startup,
     but here it is not merely vacuous — it is fatal without it: an empty ``force_roles`` makes
     ``_pick_force_channels`` return None for every frame *and* leaves ``require_6dof`` False,
@@ -1148,7 +1148,7 @@ def _self_check(subs: dict, *, require_6dof: bool, replay_only: bool = False,
     playback on a sensor the playback never reads. The gripper check is advisory in both modes.
 
     ``force_advisory`` downgrades the SAME two F/T checks for a PURE-POSITION checkpoint
-    (``FUJI_DROP_FORCE``), for the same reason and with one difference: the camera stays
+    (``FLORE_DROP_FORCE``), for the same reason and with one difference: the camera stays
     REQUIRED. A force-free model still consumes images — it is only the wrench it never reads,
     so demanding a 6-DoF ``--pipeline`` bridge before it may start is a prerequisite with
     nothing behind it.
@@ -1336,7 +1336,7 @@ def main(argv=None) -> int:
     # predict→preview→execute→commit pipeline (same wire, same execute-N-of-S, same gate,
     # same anchor clutch), so "what the demo did" and "what the policy predicts" are
     # comparable on the same rig under the same conditions. The chunk SOURCE is the only
-    # difference; see fuji/s1_policy/serving/hl_replay.py for why the recorded chunk is fed
+    # difference; see flore/s1_policy/serving/hl_replay.py for why the recorded chunk is fed
     # in the model's own anchor-RELATIVE form (the recorded world frame cancels exactly).
     p.add_argument("--replay-zarr", default=None, metavar="PATH",
                    help="enable RECORDED-EPISODE REPLAY from a converted .zarr.zip (e.g. the "
@@ -1378,7 +1378,7 @@ def main(argv=None) -> int:
     # (TASK=, RECORD_EVERY=1, RECORD_CAMERA_EVERY=N) plus ROLLOUT_DIR= for the root.
     ro = p.add_argument_group("run recorder (the ⏺ button: one recording per episode — from the first Predict / "
                               "▶▶ to Reset / the low level disarming — to a time-named folder)")
-    ro.add_argument("--rollout-dir", default=os.path.join(_FUJI_ROOT, "data", "rollouts"), metavar="DIR",
+    ro.add_argument("--rollout-dir", default=os.path.join(_FLORE_ROOT, "data", "rollouts"), metavar="DIR",
                     help="root of the ⏺ run recordings: DIR/<task>/<YYYY-MM-DD_HH-MM-SS>/, one folder per "
                          "recording (chunks / steps / published / measured / force / events .jsonl + camera/ + "
                          "meta.json — the five-point page's format). Plot one with "
@@ -1405,7 +1405,7 @@ def main(argv=None) -> int:
     # measured-pose re-anchor forgives that residual on every Predict. Nothing in the loop keeps
     # score, which is why a 3-4 cm fine adjustment never lands. --reach-ki supplies the missing
     # integral term on the PUBLISHED WIRE ONLY (never the obs, never the decode anchor, never the
-    # chunk). See fuji/s1_policy/serving/hl_reach.py for the full measurement writeup.
+    # chunk). See flore/s1_policy/serving/hl_reach.py for the full measurement writeup.
     p.add_argument("--reach-ki", type=float, default=0.0, metavar="KI",
                    help="ENABLE reach compensation with this integral gain (default 0 = OFF, "
                         "byte-identical). Accumulates the part of the commanded motion the arm "
@@ -1488,7 +1488,7 @@ def main(argv=None) -> int:
     # Where the "Save comparison plot" button writes. NOTHING is written unless that button is
     # pressed — the trace is in-memory only — so this just decides the destination, and the page
     # reports the resolved absolute path after each save.
-    p.add_argument("--trace-dir", default=os.path.join(_FUJI_ROOT, "data", "traces"),
+    p.add_argument("--trace-dir", default=os.path.join(_FLORE_ROOT, "data", "traces"),
                    help="directory for saved executed-vs-recorded comparison PNGs (default "
                         "<repo>/data/traces). Created on first save; nothing is written unless "
                         "you press 'Save comparison plot' in the page.")
@@ -1580,7 +1580,7 @@ def main(argv=None) -> int:
         loaded = load_hl_model(args.checkpoint, args.algo, device=args.device, num_steps=args.num_steps)
     # LEFT-canonical means "there is a LEFT keypoint to DECODE motion for", which is a claim
     # about roles, not about sensors. This used to test force_roles and so refused a
-    # pure-position checkpoint (FUJI_DROP_FORCE leaves force_roles empty) even though such a
+    # pure-position checkpoint (FLORE_DROP_FORCE leaves force_roles empty) even though such a
     # model decodes the left hand exactly the same way — it just never reads a wrench.
     if "left" not in loaded.layout.roles:
         raise SystemExit(f"checkpoint layout {loaded.layout.mode!r} has no LEFT role; "
@@ -1668,7 +1668,7 @@ def main(argv=None) -> int:
     # --- optional recorded-episode replay source ---
     replay = None
     if args.replay_zarr:
-        from fuji.s1_policy.serving.hl_replay import RecordedEpisodeSource
+        from flore.s1_policy.serving.hl_replay import RecordedEpisodeSource
 
         replay_path = args.replay_zarr
         if replay_path == "checkpoint":
@@ -1686,7 +1686,7 @@ def main(argv=None) -> int:
                                  "hl_data.zarr_paths; pass an explicit .zarr.zip path.")
             replay_path = trained_paths[0]
             if not os.path.isabs(replay_path):
-                replay_path = os.path.join(_FUJI_ROOT, replay_path)
+                replay_path = os.path.join(_FLORE_ROOT, replay_path)
             _log(f"replay: resolved checkpoint training zarr -> {replay_path}")
         # Report a bad dataset as a one-line operator error, not a traceback: --replay-zarr
         # takes a free-form path typed by hand (or ZARR= in the launcher), so "wrong path" and
@@ -1725,7 +1725,7 @@ def main(argv=None) -> int:
             if trained_zarr and os.path.basename(str(trained_zarr)) != os.path.basename(replay.path):
                 _tp = str(trained_zarr)
                 if not os.path.isabs(_tp):
-                    _tp = os.path.join(_FUJI_ROOT, _tp)
+                    _tp = os.path.join(_FLORE_ROOT, _tp)
                 try:
                     import zarr as _zarr
 
@@ -1808,7 +1808,7 @@ def main(argv=None) -> int:
     # take, so all of one bring-up's takes land together and are ordered on disk the way the
     # operator ran them.
     record_dir = args.record_dir or os.path.join(
-        _FUJI_ROOT, "data", "deploy_takes", time.strftime("%Y%m%d_%H%M%S", time.localtime()))
+        _FLORE_ROOT, "data", "deploy_takes", time.strftime("%Y%m%d_%H%M%S", time.localtime()))
     recorder = TakeRecorder(
         record_dir,
         {
@@ -1886,7 +1886,7 @@ def main(argv=None) -> int:
             s.start()
     calib = GripperCalib(width_open_m=0.095, width_closed_m=0.0)
 
-    from fuji.client.s0_driver import S0Driver
+    from flore.client.s0_driver import S0Driver
 
     s0 = S0Driver(host=args.s0_ws_host, port=args.s0_ws_port)
     if not args.offline:
@@ -2004,7 +2004,7 @@ def main(argv=None) -> int:
     # Measured with ckpt_0814_diff_umi (ViT-B + UNet, 16 DDIM steps): a predict costs 46 ms with
     # the ghost idle, 3543 ms with it solving (77x), 59 ms with it yielding through this gate.
     # GPU utilization during the fight is ~1.3% — the GPU is idle because the thread that feeds
-    # it cannot get the interpreter. See fuji/s1_policy/serving/gil_yield.py.
+    # it cannot get the interpreter. See flore/s1_policy/serving/gil_yield.py.
     infer_gate = YieldGate()
     staged = {"out": None}
     force_roles = loaded.layout.force_roles
@@ -2279,7 +2279,7 @@ def main(argv=None) -> int:
         """Build the SAME drip payload from a RECORDED episode instead of the model.
 
         The recorded chunk arrives as anchor-RELATIVE deltas (exactly the model's own output
-        form — see :mod:`fuji.s1_policy.serving.hl_replay`) and is decoded by the SAME
+        form — see :mod:`flore.s1_policy.serving.hl_replay`) and is decoded by the SAME
         ``decode_chunk`` against the SAME live anchor, so every downstream stage (URDF flip,
         wire build, force gate, drip, anchor commit) is byte-identical to the model path.
         The recorded WORLD frame never enters: only its deltas do, so replay reproduces the
@@ -2292,11 +2292,11 @@ def main(argv=None) -> int:
         its own path (to 2e-14°, vs 50° mean error for a world-frame variant), keeps the
         lighthouse world cancelling exactly, keeps every episode reachable, and keeps the chunk
         equal to the policy's training target. See
-        :func:`fuji.s1_policy.serving.hl_replay._body_vs_world_transport` for the measurements.
+        :func:`flore.s1_policy.serving.hl_replay._body_vs_world_transport` for the measurements.
 
         Returns the payload plus the replay identity/cursor bookkeeping ``_drip`` needs to
         advance the episode after a real execution."""
-        from fuji.s1_policy.serving.hl_online import decode_chunk
+        from flore.s1_policy.serving.hl_online import decode_chunk
 
         with replay_lock:  # one atomic cursor snapshot — never splice two episodes' frames
             episode = int(replay_ctl["episode"])
@@ -2338,7 +2338,7 @@ def main(argv=None) -> int:
         was truncated at a glitch hole) so ``_drip`` and the sequential runner can tell an
         open-loop play from a per-chunk one and skip the cursor bookkeeping (there is no cursor:
         the whole episode is one chunk)."""
-        from fuji.s1_policy.serving.hl_online import decode_chunk
+        from flore.s1_policy.serving.hl_online import decode_chunk
 
         plan = replay.episode_plan(episode, start_frame)
         anchor_pos, anchor_rot6d = planner.snapshot_anchor()
@@ -2532,7 +2532,7 @@ def main(argv=None) -> int:
         demonstrated contact is ``-F_meas``. Publishing the prediction verbatim would ask the
         arm to pull AWAY from the surface the demo pressed on, and leave the servo error at
         ``2·F_meas`` — it winds the integrator up instead of settling. See
-        ``fuji.utils.force_frame`` for the derivation and the three witnesses.
+        ``flore.utils.force_frame`` for the derivation and the three witnesses.
 
         A scalar commutes with every rotation, so flipping here does NOT trespass on the
         low level's job of rotating sensor→pelvis (which needs joint readback this process does
@@ -2582,7 +2582,7 @@ def main(argv=None) -> int:
     # --- REACH COMPENSATION -------------------------------------------------------------------
     # Default OFF. The state lives here, beside the other wire writers, because this is the only
     # thing that may alter a published target — and it alters ONLY that: not the observation, not
-    # the decode anchor, not the chunk. See fuji/s1_policy/serving/hl_reach.py for the measurement
+    # the decode anchor, not the chunk. See flore/s1_policy/serving/hl_reach.py for the measurement
     # that motivates it (the low level follows wire VELOCITY and ignores a standing offset, so the
     # re-anchor forgives the residual and a fine adjustment never lands).
     reach_lock = threading.Lock()
@@ -2717,7 +2717,7 @@ def main(argv=None) -> int:
 
         FRAME CONTRACT — the reason this works at all: the blend happens in ABSOLUTE space,
         after ``decode_chunk`` has un-relativized each chunk against the anchor that was live
-        when it was predicted. FUJI's chunks are ANCHOR-RELATIVE, so blending raw values would
+        when it was predicted. FLoRe's chunks are ANCHOR-RELATIVE, so blending raw values would
         mix frames (up to 82 cm at the H=50 window's oldest survivor at 0.5 m/s). That is also
         why the per-step anchor re-sync below does NOT reset the ensembler: an older prediction
         is still expressed in the same world frame and stays valid, and blending predictions
@@ -2932,7 +2932,7 @@ def main(argv=None) -> int:
         commanded without correction. That is the entire point: the executed-vs-recorded error
         this produces is a true open-loop tracking number, not one confounded by a reference that
         is re-drawn from the arm's own lagging pose every chunk (see
-        :class:`fuji.s1_policy.serving.hl_replay.EpisodePlan`).
+        :class:`flore.s1_policy.serving.hl_replay.EpisodePlan`).
 
         Still fully interruptible: ``stop`` (Stop button / teardown) breaks the loop between
         steps and mid-resend, exactly as in :func:`_drip`, so an open-loop play is no less
@@ -3122,7 +3122,7 @@ def _run_viser(
     from g1_right_hand_ik import YamConfigMapper, yam_actuated_joint_names
     from g1_three_point_ik import ThreePointIK
 
-    #: Does the CHECKPOINT read a wrench? False for a pure-position model (``FUJI_DROP_FORCE``),
+    #: Does the CHECKPOINT read a wrench? False for a pure-position model (``FLORE_DROP_FORCE``),
     #: which is what takes the F/T out of the Predict freshness gate (see :func:`_obs_freshness`).
     #: Same definition main() uses (``bool(loaded.layout.force_roles)``), read off what was passed.
     _consumes_force = bool(force_roles)
@@ -3138,7 +3138,7 @@ def _run_viser(
     ik = ThreePointIK(config_name=args.ik_config, reach_scale=args.reach_scale, active_roles=("left",))
     yam_mapper = YamConfigMapper(ik._humi_joint_names, yam_actuated_joint_names(args.yam_urdf))
 
-    server = viser.ViserServer(host=args.host, port=args.port, label="FUJI HL-v2 PLANNER")
+    server = viser.ViserServer(host=args.host, port=args.port, label="FLoRe HL-v2 PLANNER")
     server.scene.set_up_direction("+z")
     server.scene.add_grid("/grid", plane="xy", shadow_opacity=0.0, infinite_grid=True, cell_size=0.25)
     base_xyz = np.asarray(ik.home_q()[0:3], dtype=float).copy()
@@ -4129,7 +4129,7 @@ def _run_viser(
     # the robot's three wire points FK'd from its 29 joints, every F/T frame, every camera frame —
     # into <--rollout-dir>/<task>/<YYYY-MM-DD_HH-MM-SS>/, the SAME layout scripts/hl_serving_5pt.py
     # writes, for scripts/plot_rollout_record.py and overleaf/tools/gen_fig_rollout_force_pred.py.
-    # It is a TAP and nothing else (fuji/s1_policy/serving/rollout_record.py): main() holds `taps`
+    # It is a TAP and nothing else (flore/s1_policy/serving/rollout_record.py): main() holds `taps`
     # and its one-line calls at _s0_send, the three executors and the three bridge subscribers;
     # this block owns the button, the folder and the measured-wire FK. Blue = will not record,
     # green = will / is recording. ⏹, the seconds ceiling and the low level leaving :8779 end the
@@ -4207,7 +4207,7 @@ def _run_viser(
         try:
             import subprocess
 
-            out = subprocess.run(["git", "-C", _FUJI_ROOT, "rev-parse", "--short", "HEAD"],
+            out = subprocess.run(["git", "-C", _FLORE_ROOT, "rev-parse", "--short", "HEAD"],
                                  capture_output=True, text=True, timeout=2.0)
             return out.stdout.strip() if out.returncode == 0 else "unknown"
         except Exception:  # noqa: BLE001 - provenance, never a stop
@@ -4573,7 +4573,7 @@ def _run_viser(
 
     # --- EXECUTION TRACE: what the arm actually did, for the red line + the QC sheet ---
     # Written by the render loop (the only thread already FKing the live wrist every tick) and
-    # read by GUI callbacks. See fuji/s1_policy/serving/hl_trace.py for why the reference it is
+    # read by GUI callbacks. See flore/s1_policy/serving/hl_trace.py for why the reference it is
     # compared against is the TRANSPORTED (commanded) demo rather than the raw recorded world
     # pose: the ~55 deg ready-pose reorientation is physical, and differencing against the raw
     # recording would report it as a huge tracking error while hiding the real one.
@@ -4869,7 +4869,7 @@ def _run_viser(
 
         The one-shot alternative to :func:`_replay_play_sequential`. It seeds the decode anchor
         to the arm ONCE (a single clutch), decodes the ENTIRE episode as one anchor-relative
-        :class:`fuji.s1_policy.serving.hl_replay.EpisodePlan`, and drips every step without ever
+        :class:`flore.s1_policy.serving.hl_replay.EpisodePlan`, and drips every step without ever
         re-anchoring. The operator's ask: "compute the whole trajectory in the robot frame at the
         start, then replay it in one go, and read the mean error" — that error is then a true
         open-loop tracking number, not one measured against a reference redrawn from the arm's own
@@ -6162,7 +6162,7 @@ def _run_viser(
                 #
                 # The wrench handed over is the RAW MEASURED sensor triple; WrenchArrows applies
                 # the sensor->TCP relabel (its SENSOR_TO_TCP, pinned against
-                # fuji.utils.force_frame.TCP_FROM_SENSOR) AND the meas->cmd negation itself. Doing
+                # flore.utils.force_frame.TCP_FROM_SENSOR) AND the meas->cmd negation itself. Doing
                 # either here would double-apply it, and both are involutions, so the second
                 # application is invisible — that is how the arrow once pointed INTO the wiped
                 # surface (169° wrong).

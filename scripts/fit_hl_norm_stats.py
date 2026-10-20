@@ -37,8 +37,8 @@ import logging
 
 import numpy as np
 
-from fuji.s1_policy.data.hl_dataset import HLDataset
-from fuji.s1_policy.data.layout import (
+from flore.s1_policy.data.hl_dataset import HLDataset
+from flore.s1_policy.data.layout import (
     ACTION_SPAN_S,
     FORCE_DIM,
     FORCE_HIST_SPAN_S,
@@ -48,7 +48,7 @@ from fuji.s1_policy.data.layout import (
     WB_JOINT_TARGETS,
     get_layout,
 )
-from fuji.s1_policy.data.norm_stats import NormStats, save_norm_stats
+from flore.s1_policy.data.norm_stats import NormStats, save_norm_stats
 
 logger = logging.getLogger("fit_hl_norm_stats")
 
@@ -263,7 +263,7 @@ def main() -> None:
         layout.state_dim, "state")
 
     # The layout check is not redundant with the observation count: a force-free layout
-    # (``FUJI_DROP_FORCE``) still yields "valid" windows, they are just 0 CHANNELS wide, so
+    # (``FLORE_DROP_FORCE``) still yields "valid" windows, they are just 0 CHANNELS wide, so
     # a naive emptiness test passes while there is nothing to fit. Writing the 0-width entry
     # that produced instead is worse than omitting it — the summary log below reduces over
     # ``q99 - q01`` and a zero-size array has no minimum, so the tool wrote the file and

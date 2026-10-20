@@ -28,8 +28,8 @@ import numpy as np
 import websockets
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from fuji.s1_policy.inference import ready_pose  # noqa: E402
-from fuji.s1_policy.serving.hl_5pt import WIRE_ROLES  # noqa: E402
+from flore.s1_policy.inference import ready_pose  # noqa: E402
+from flore.s1_policy.serving.hl_5pt import WIRE_ROLES  # noqa: E402
 
 anchor, _why = ready_pose.resolve_deploy_anchor(WIRE_ROLES)
 if anchor is None or anchor.dof is None:

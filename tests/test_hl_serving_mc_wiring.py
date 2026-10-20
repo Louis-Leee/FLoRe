@@ -358,7 +358,7 @@ def test_the_foot_ik_switch_always_passes_the_iteration_count():
 def test_set_post_process_really_is_set_or_clear_for_the_iteration_count():
     """The functional half of the test above, against the shipped class — so the comment in the
     planner is checked rather than trusted."""
-    from fuji.s1_policy.serving import hl_dense
+    from flore.s1_policy.serving import hl_dense
     c = hl_dense.ChunkCompleter(umi_dir="/definitely/not/here")
     c.set_post_process(foot_fix="inertialize", foot_ik_iters=40)
     assert (c._foot_fix, c._foot_ik_iters) == ("inertialize", 40)

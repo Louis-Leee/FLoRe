@@ -1,9 +1,9 @@
-"""The force half of the hardware deploy contract, across the FUJI/holosoma seam.
+"""The force half of the hardware deploy contract, across the FLoRe/holosoma seam.
 
 Four things must agree between two repos with two different venvs, so none of them can be
 checked by importing both sides:
 
-1. **The frame.** FUJI's measured ``TCP_FROM_SENSOR`` and holosoma's ``R_SENSOR`` are the
+1. **The frame.** FLoRe's measured ``TCP_FROM_SENSOR`` and holosoma's ``R_SENSOR`` are the
    SAME rotation, and both equal the URDF ``{side}_ft_sensor_joint rpy=(0, -pi/2, pi)``.
    That is what makes the wire's sensor-frame ``F^cmd`` land where the planner drew it: the
    planner does not rotate the command at all, the low level rotates it with ``R_SENSOR``,
@@ -24,7 +24,7 @@ checked by importing both sides:
 
 The holosoma side is read as SOURCE (``ast`` / text), the same technique
 ``test_force_frame.py`` uses for the UMI copy of the relabel and for the same reason: the
-submodule's imports are not installed in FUJI's venv.
+submodule's imports are not installed in FLoRe's venv.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.utils.force_frame import CMD_FROM_MEAS_SIGN, TCP_FROM_SENSOR, world_force_from_sensor
+from flore.utils.force_frame import CMD_FROM_MEAS_SIGN, TCP_FROM_SENSOR, world_force_from_sensor
 
 _REPO = Path(__file__).resolve().parents[1]
 _HOLOSOMA = _REPO / "third_party" / "holosoma_extensions"
@@ -97,12 +97,12 @@ def _shell_default(path: Path, name: str) -> str:
 # 1. The frame
 # ---------------------------------------------------------------------------
 @_needs_holosoma
-def test_fuji_relabel_is_the_same_rotation_as_the_low_levels_r_sensor():
+def test_flore_relabel_is_the_same_rotation_as_the_low_levels_r_sensor():
     """``TCP_FROM_SENSOR`` (measured on the rig) == ``R_SENSOR`` (read off the URDF).
 
     Two independent derivations of one physical mounting, and the reason the display fix
     was display-ONLY: the low level was already rotating both F_meas and F^cmd correctly,
-    so only FUJI's arrows were wrong. A future edit to either constant that does not touch
+    so only FLoRe's arrows were wrong. A future edit to either constant that does not touch
     the other is a frame split between what the operator SEES and what the robot DOES.
     """
     np.testing.assert_array_equal(_np_array_literal(_FORCE_MATH, "R_SENSOR"), TCP_FROM_SENSOR)
@@ -143,10 +143,10 @@ def test_the_planner_publishes_the_command_unrotated():
 # ---------------------------------------------------------------------------
 @_needs_holosoma
 def test_the_low_levels_force_loop_makes_the_command_oppose_the_measurement():
-    """``servo_step``'s error is ``F_cmd + F_meas``, driven to zero — the ONLY reason FUJI
+    """``servo_step``'s error is ``F_cmd + F_meas``, driven to zero — the ONLY reason FLoRe
     negates.
 
-    This is the load-bearing fact behind :data:`fuji.utils.force_frame.CMD_FROM_MEAS_SIGN`, and
+    This is the load-bearing fact behind :data:`flore.utils.force_frame.CMD_FROM_MEAS_SIGN`, and
     it lives in the OTHER repo, so it is read as source. If holosoma ever changes to
     ``F_cmd - F_meas`` (the other common convention), the planner's flip becomes the bug it
     currently prevents — and nothing else in either repo would notice, because each side stays
@@ -167,7 +167,7 @@ def test_the_planner_negates_the_prediction_before_publishing_it():
     verbatim asks the arm to pull away from the surface the demo pressed on, and leaves the
     servo error at ``2·F_meas``, so the integrator winds up rather than settling. An inline
     ``-force3`` would work but would be a second spelling of the sign — the point of routing it
-    through :mod:`fuji.utils.force_frame` is that the wire and the arrows cannot disagree.
+    through :mod:`flore.utils.force_frame` is that the wire and the arrows cannot disagree.
     """
     src = _PLANNER.read_text()
     body = src[src.index("def _gate_wire_force"):]
@@ -175,12 +175,12 @@ def test_the_planner_negates_the_prediction_before_publishing_it():
     assert body.count("cmd_from_meas_force(") == 1, (
         "_gate_wire_force must apply the meas→cmd sign exactly once, through the shared helper"
     )
-    assert "from fuji.utils.force_frame import" in src and "cmd_from_meas_force" in src
+    assert "from flore.utils.force_frame import" in src and "cmd_from_meas_force" in src
 
 
 @_needs_holosoma
 def test_the_drawn_measured_force_is_the_vector_the_servo_consumes():
-    """FUJI's ``world_force_from_sensor(f, R_rel)`` == holosoma's
+    """FLoRe's ``world_force_from_sensor(f, R_rel)`` == holosoma's
     ``sensor_force_to_pelvis(f, R_rel, +1)``, vector for vector.
 
     This is what makes the planner's CYAN ``F_meas`` arrow trustworthy. It is drawn at the live
@@ -320,7 +320,7 @@ def test_the_hard_stop_fires_below_the_runaway_valve(launcher):
 def test_the_hard_stop_runs_the_joystick_b_handler():
     """It must reuse ``_handle_stop_policy``, not a bespoke shutdown.
 
-    Two payoffs: one stopped state to reason about, and the FUJI planner detects it for
+    Two payoffs: one stopped state to reason about, and the FLoRe planner detects it for
     free — its LOW-LEVEL-LOST watchdog spots joystick B by the RecordTap stream stopping,
     which is exactly what this produces, so no new wire field is needed.
     """

@@ -13,10 +13,10 @@ Four things are pinned here:
    ``test_deploy_force_contract.py``; what is pinned HERE is that the arrow actually carries it,
    exactly once, and that it can be turned off to see the raw measurement.
 4. **The UMI Collection copy agrees** on both the rotation and the sign. ``replay_common.py``
-   cannot import from ``fuji`` (the submodule has its own venv), so it carries copies — the same
+   cannot import from ``flore`` (the submodule has its own venv), so it carries copies — the same
    arrangement as the triad offsets in ``test_inference_display.py``, and pinned the same way.
 
-The empirical provenance of the matrix lives in ``fuji/utils/force_frame.py``'s docstring; the
+The empirical provenance of the matrix lives in ``flore/utils/force_frame.py``'s docstring; the
 one property asserted here is the CONSEQUENCE that makes the old behaviour a bug — the relabel
 is ~180 deg from identity, so drawing the raw triple against a TCP-oriented frame pointed the
 force the wrong way, not merely along a permuted axis.
@@ -30,13 +30,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.s1_policy.inference.display import (
+from flore.s1_policy.inference.display import (
     FORCE_ARROW_MAX_LEN_M,
     FORCE_ARROW_MIN_N,
     FORCE_ARROW_SCALE_M_PER_N,
     force_arrow_local_segment,
 )
-from fuji.utils.force_frame import (
+from flore.utils.force_frame import (
     CMD_FROM_MEAS_NOTE,
     CMD_FROM_MEAS_SIGN,
     TCP_FROM_SENSOR,
@@ -75,7 +75,7 @@ def _np_array_literal_from_source(path: Path, name: str) -> np.ndarray:
 
     ``ast.literal_eval`` cannot evaluate the ``np.array(...)`` call, so the nested-list
     argument is lifted out and evaluated on its own. Reading the SOURCE (rather than importing)
-    is what keeps this test runnable in FUJI's venv, which has no viser for the submodule.
+    is what keeps this test runnable in FLoRe's venv, which has no viser for the submodule.
     """
     tree = ast.parse(path.read_text())
     for node in ast.walk(tree):
@@ -334,7 +334,7 @@ def test_arrow_colours_are_exactly_the_colours_of_the_trajectories_they_belong_t
     a line colour cannot silently leave its arrow behind. Imported at module level in
     ``viewer.py``, which stays importable without viser.
     """
-    from fuji.s1_policy.inference import viewer as v
+    from flore.s1_policy.inference import viewer as v
 
     assert v._FORCE_TARGET_COLOR == tuple(int(c) for c in v._TARGET_BLUE)
     assert v._FORCE_PREDICTION_COLOR == tuple(int(c) for c in v._PREDICTION_ORANGE)
@@ -360,7 +360,7 @@ def test_umi_replay_copy_of_the_relabel_matches():
     means the offline inference viewer and the two replay tools disagree about which way the
     contact force points — the exact class of split this repo's triad-offset test exists to
     prevent. Imported by SOURCE because the submodule's module-level ``import viser`` is not
-    installed in FUJI's venv.
+    installed in FLoRe's venv.
     """
     copy = _np_array_literal_from_source(_UMI_REPLAY / "replay_common.py", "SENSOR_TO_TCP")
     np.testing.assert_array_equal(copy, TCP_FROM_SENSOR)

@@ -70,7 +70,7 @@
 # PREREQUISITE -- two post-processes over one conversion, in this order:
 #   1  UMI_collection: ./run_mc_to_hl_wholebody.sh <dual>.zarr.zip -o <dual>_wbabs.zarr.zip \
 #          --cond-mode absolute --dz-anchor hand
-#   2  FUJI:  uv run scripts/add_foot_targets.py <dual>_wbabs.zarr.zip -o <...>_5pt.zarr.zip
+#   2  FLoRe:  uv run scripts/add_foot_targets.py <dual>_wbabs.zarr.zip -o <...>_5pt.zarr.zip
 #             uv run scripts/add_foot_targets.py <...>_5pt.zarr.zip --check
 # Step 2 needs `yourdfpy` plus the two submodules the FK reads (see the runbook's prerequisites);
 # it is CPU-only, no GPU and no conda env.
@@ -85,7 +85,7 @@
 #   ./scripts/run_train_diffusion_umi_5pt.sh [n_gpus] [low|high|all] [extra train_s1.py args]
 #   H=200 WB_STATE=xy3_rpy ./scripts/run_train_diffusion_umi_5pt.sh 4 low
 #
-#   INIT_FROM=/data/fuji/checkpoints/<base>/step_00100000 SESSION=rotate_box_merged6_h200 \
+#   INIT_FROM=/data/flore/checkpoints/<base>/step_00100000 SESSION=rotate_box_merged6_h200 \
 #       ./scripts/run_train_diffusion_umi_5pt.sh 4 --max-steps 2000 --warmup-steps 100 \
 #           --lr 3e-5 --save-every 500          # FINETUNE onto a supplementary session
 #   ⚠️ No `--` before the extra args: tyro treats everything after one as POSITIONAL and dies
@@ -375,7 +375,7 @@ case "$SESSION" in
        echo "       To add one, run BOTH post-processes over a --hands both_head_dual zarr:" >&2
        echo "         (UMI) ./run_mc_to_hl_wholebody.sh <dual>.zarr.zip -o <dual>_wbabs.zarr.zip \\" >&2
        echo "                   --cond-mode absolute --dz-anchor hand" >&2
-       echo "         (FUJI) uv run scripts/add_foot_targets.py <dual>_wbabs.zarr.zip \\" >&2
+       echo "         (FLoRe) uv run scripts/add_foot_targets.py <dual>_wbabs.zarr.zip \\" >&2
        echo "                   -o <dual>_wbabs_5pt.zarr.zip" >&2
        exit 1 ;;
 esac
@@ -390,10 +390,10 @@ if (( H > STORED_H )); then
 fi
 
 # FH / H are EXPORTED, not taken from the caller: torchrun passes the environment to every rank
-# and both are resolved at IMPORT by fuji.s1_policy.data.layout, so the ranks must agree before
+# and both are resolved at IMPORT by flore.s1_policy.data.layout, so the ranks must agree before
 # the first collective.
-export FUJI_FORCE_HIST_LEN="$FH"
-export FUJI_ACTION_HORIZON="$H"
+export FLORE_FORCE_HIST_LEN="$FH"
+export FLORE_ACTION_HORIZON="$H"
 
 CAMS=(camera0_rgb camera1_rgb)
 
@@ -450,7 +450,7 @@ if (( N_GPUS > 1 )); then
     RUN="${RUN}_ddp${N_GPUS}"; WB_NAME="${WB_NAME}-ddp${N_GPUS}"
 fi
 
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 OUT="$CKPT_ROOT/$RUN"
 if (( PRINT_PLAN )); then
     printf '%s\t%s\t%s\t%s\n' "$MODE" "${DS[0]}" "$NS" "$OUT"
@@ -474,7 +474,7 @@ if [[ ! -f "$NS" ]]; then
     echo "       Fit them over the SAME mode, the SAME cameras and the SAME horizon --" >&2
     echo "       HLDataset records all three in its split provenance and the trainer compares" >&2
     echo "       that dict exactly:" >&2
-    echo "         FUJI_ACTION_HORIZON=$H .venv/bin/python scripts/fit_hl_norm_stats.py \\" >&2
+    echo "         FLORE_ACTION_HORIZON=$H .venv/bin/python scripts/fit_hl_norm_stats.py \\" >&2
     echo "             --zarr-paths ${DS[*]} --mode $MODE \\" >&2
     echo "             --image-keys ${CAMS[*]} --val-last-episodes $VAL_EPS --out $NS" >&2
     echo "       The pin must be exported BEFORE the fit: it is resolved at import." >&2

@@ -1,4 +1,4 @@
-"""The WALK SKILL (``fuji/s1_policy/serving/walk_skill.py``) and its wiring into the 5pt page.
+"""The WALK SKILL (``flore/s1_policy/serving/walk_skill.py``) and its wiring into the 5pt page.
 
 Every claim the module's docstring makes that can be checked on a CPU with no clip, no model and
 no robot is checked here against a SYNTHETIC holosoma-shaped NPZ; the bundled walk-with-box feet
@@ -17,8 +17,8 @@ import numpy as np
 import pytest
 from scipy.spatial.transform import Rotation
 
-from fuji.s1_policy.serving import hl_dense, walk_skill as W
-from fuji.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES as SDK
+from flore.s1_policy.serving import hl_dense, walk_skill as W
+from flore.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES as SDK
 
 _ROOT = Path(__file__).resolve().parents[1]
 _PAGE = _ROOT / "scripts" / "hl_serving_5pt.py"
@@ -224,7 +224,7 @@ def test_load_refuses_a_bundle_whose_feet_are_not_the_wires(tmp_path):
     with pytest.raises(ValueError, match="foot_bodies"):
         W.load_walk_clip(tmp_path / "swapped.npz")
     d["foot_bodies"] = np.array(list(W.FOOT_BODIES))
-    d["schema"] = np.array("fuji.walk_feet.v0")
+    d["schema"] = np.array("flore.walk_feet.v0")
     np.savez(tmp_path / "old.npz", **d)
     with pytest.raises(ValueError, match="schema"):
         W.load_walk_clip(tmp_path / "old.npz")
@@ -275,7 +275,7 @@ def test_the_foot_slots_are_the_wires_last_two_bodies_in_wire_order():
 
 
 def test_the_tick_rate_matches_hl_5pt():
-    from fuji.s1_policy.serving import hl_5pt
+    from flore.s1_policy.serving import hl_5pt
 
     assert W.LOW_LEVEL_HZ == hl_5pt.LOW_LEVEL_HZ
 
@@ -810,7 +810,7 @@ def test_the_player_refuses_malformed_start_joints_by_value(tmp_path):
 def test_the_bundled_clips_lead_in_from_the_ready_legs_is_what_the_page_will_publish():
     """The real clip against the real ready pose: the numbers the robot sees on the first press."""
     clip = W.load_default_clip()
-    from fuji.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference import ready_pose as RP
 
     anchor, why = RP.resolve_deploy_anchor(("left", "right", "head"))
     if anchor is None or anchor.dof is None:

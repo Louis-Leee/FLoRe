@@ -31,7 +31,7 @@ _SRC_PATH = Path(__file__).resolve().parents[1] / "scripts" / "hl_serving.py"
 _SRC = _SRC_PATH.read_text()
 _TREE = ast.parse(_SRC)
 
-_DRIVER_PATH = Path(__file__).resolve().parents[1] / "fuji" / "client" / "s0_driver.py"
+_DRIVER_PATH = Path(__file__).resolve().parents[1] / "flore" / "client" / "s0_driver.py"
 
 
 def _fn_node(name: str) -> ast.FunctionDef:

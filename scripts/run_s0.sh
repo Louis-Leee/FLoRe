@@ -3,10 +3,10 @@
 # the Unitree G1. This is a thin wrapper around holosoma_extensions'
 # `wbt_wrappers_inference.run_policy` (branch hybrid_control-sim2real-inference).
 #
-# S0 consumes 3pt targets from the FUJI client over WS :8770 (holosoma's
+# S0 consumes 3pt targets from the FLoRe client over WS :8770 (holosoma's
 # ViveLiveSource connects as a client). With NO F/T bridge running, the force
 # obs terms read zeros → the 168-D 3pt-hybrid policy degrades to pure 3pt
-# position tracking (the FUJI deploy mode; force integration is a later TODO).
+# position tracking (the FLoRe deploy mode; force integration is a later TODO).
 #
 # Prereqs (one-time, see docs/deployment.md):
 #   - holosoma conda env `hsinference` provisioned (setup_inference.sh + bootstrap-holosoma.sh)
@@ -18,7 +18,7 @@
 #   IFACE=eth0 ONNX=/path/to.onnx bash scripts/run_s0.sh
 #
 # Launch ORDER (see docs/deployment.md): run S0 first (it comes up in ready
-# pose, waits for `A`), then the S1 server, then the FUJI client. The client
+# pose, waits for `A`), then the S1 server, then the FLoRe client. The client
 # gates until S0 connects on :8770 AND the first S1 chunk lands.
 set -euo pipefail
 
@@ -44,7 +44,7 @@ done
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOLO="$REPO_ROOT/third_party/holosoma_extensions"
 
-# holosoma runs under its own conda env (NOT the FUJI uv venv). Override PY to
+# holosoma runs under its own conda env (NOT the FLoRe uv venv). Override PY to
 # point at a different interpreter.
 PY="${PY:-$HOME/.holosoma_deps/miniconda3/envs/hsinference/bin/python}"
 PRESET="${PRESET:-g1-29dof-holosoma-3pt-hybrid-wbt}"
@@ -60,10 +60,10 @@ if [ ! -x "$PY" ]; then
 fi
 
 echo "[run_s0] preset=$PRESET onnx=$ONNX iface=$IFACE"
-echo "[run_s0] The FUJI client must serve WS :8770 (run scripts/run_client.py); holosoma connects to it."
+echo "[run_s0] The FLoRe client must serve WS :8770 (run scripts/run_client.py); holosoma connects to it."
 echo "[run_s0] No F/T bridge => force obs = zeros => pure 3pt position tracking (deploy mode)."
 
-# The FUJI client is the VIVE bridge impersonator on :8770. HOLOSOMA_VIVE_RELATIVE
+# The FLoRe client is the VIVE bridge impersonator on :8770. HOLOSOMA_VIVE_RELATIVE
 # and slew caps match the force_deploy defaults; the client sends ABSOLUTE
 # pelvis-frame targets so we run in the same mode the real bridge does.
 cd "$HOLO/src/extensions/wbt_wrappers"

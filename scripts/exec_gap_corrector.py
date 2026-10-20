@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Design and falsify a corrector for the HL→LL execution gap. Robot-free, CPU-only, OFFLINE.
 
-This script does not touch the serving path and nothing under ``fuji/`` imports it. It reads the
+This script does not touch the serving path and nothing under ``flore/`` imports it. It reads the
 recorded deploy takes, fits candidate correction laws, and tries to kill them on the same data.
 
 WHY IT IS SEPARATE FROM ``measure_exec_gap.py``
@@ -53,7 +53,7 @@ sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE.parent))
 
 import measure_exec_gap as meg  # noqa: E402
-from fuji.s1_policy.serving.hl_take import DeployTake, find_takes  # noqa: E402
+from flore.s1_policy.serving.hl_take import DeployTake, find_takes  # noqa: E402
 
 #: Correction is designed at the CHUNK timescale, not per tick. ``measure_exec_gap``'s M5 shows
 #: the realized fraction is frequency dependent — 0.44 over one 54 ms tick, 0.61 over ~1 s — so a

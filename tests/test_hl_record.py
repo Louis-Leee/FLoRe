@@ -1,5 +1,5 @@
 """Contract tests for the DEPLOY RECORDER + its reader
-(:mod:`fuji.s1_policy.serving.hl_record`, :mod:`fuji.s1_policy.serving.hl_take`).
+(:mod:`flore.s1_policy.serving.hl_record`, :mod:`flore.s1_policy.serving.hl_take`).
 
 What is pinned here is what decides whether a recorded deploy take can be TRUSTED as evidence
 about a real-robot run — i.e. whether "re-infer this take" answers a question about the
@@ -29,21 +29,21 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data.layout import get_layout
-from fuji.s1_policy.serving.hl_online import (
+from flore.s1_policy.data.layout import get_layout
+from flore.s1_policy.serving.hl_online import (
     ObsSnapshot,
     denormalize_image_hwc,
     normalize_image_chw,
     resize_center_crop_224,
 )
-from fuji.s1_policy.serving.hl_record import (
+from flore.s1_policy.serving.hl_record import (
     CMD_COLS,
     EXEC_COLS,
     RecordedPrediction,
     TakeRecorder,
 )
-from fuji.s1_policy.serving.hl_take import DeployTake, find_takes
-from fuji.utils.rot6d import rotmat_to_rot6d
+from flore.s1_policy.serving.hl_take import DeployTake, find_takes
+from flore.utils.rot6d import rotmat_to_rot6d
 
 _IDENT6 = rotmat_to_rot6d(np.eye(3))
 _LAYOUT = get_layout("left_only")
@@ -523,7 +523,7 @@ def test_the_observation_cap_is_bounded_and_reported(tmp_path, monkeypatch):
     grow ~600 KiB of RAM per step (measured) — ~360 MB for a 20 s rollout inside a live control
     process. Past the cap the observation is dropped but the PLAN is kept, and the count is
     written to the take so a truncated take can never look complete."""
-    import fuji.s1_policy.serving.hl_record as hr
+    import flore.s1_policy.serving.hl_record as hr
 
     monkeypatch.setattr(hr, "MAX_FULL_PREDICTIONS", 2)
     rng = np.random.default_rng(21)

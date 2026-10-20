@@ -1,4 +1,4 @@
-"""Contract tests for :class:`fuji.s1_policy.data.hl_dataset.HLDataset`.
+"""Contract tests for :class:`flore.s1_policy.data.hl_dataset.HLDataset`.
 
 Builds synthetic ``.zarr.zip`` files carrying the HL-v2 ``hl_*`` schema (no camera
 hardware, no real session needed), then pins the properties the trained policy depends
@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 import torch
 
-from fuji.s1_policy.data.layout import (
+from flore.s1_policy.data.layout import (
     ACTION_DT,
     ACTION_HORIZON,
     ACTION_HZ,
@@ -57,7 +57,7 @@ def _write_hl_zarr(
 
     ``store_horizon`` writes a chunk WIDER than this build trains on (and stamps the
     matching attrs at the same dt), which is the shipped-dataset case once
-    ``FUJI_ACTION_HORIZON`` shortens the horizon: an H=50 file feeding an H=30 run. Default
+    ``FLORE_ACTION_HORIZON`` shortens the horizon: an H=50 file feeding an H=30 run. Default
     ``None`` == exactly ``ACTION_HORIZON``, so every existing fixture is unchanged.
     """
     rng = np.random.default_rng(seed)
@@ -220,13 +220,13 @@ def dual_zarr(tmp_path):
 
 
 def _ds(path, **kw):
-    from fuji.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.hl_dataset import HLDataset
 
     return HLDataset(path, **kw)
 
 
 def test_source_fingerprint_is_full_file_sha256(left_zarr):
-    from fuji.s1_policy.data.hl_dataset import zip_content_fingerprint
+    from flore.s1_policy.data.hl_dataset import zip_content_fingerprint
 
     expected = hashlib.sha256()
     with open(left_zarr, "rb") as stream:
@@ -283,7 +283,7 @@ def test_collate_hl_batch_splits_history_into_pseudo_cameras():
     To-pseudo-camera global_cond. Pin: To frames -> To 'images' entries (oldest-first,
     matching images[t] to the sample's frame t), To matching img_masks, and (B,To,SD)
     state; To==1 -> length-1 lists."""
-    from fuji.s1_policy.training.trainer import collate_hl_batch
+    from flore.s1_policy.training.trainer import collate_hl_batch
 
     def _sample(To):
         img = (
@@ -321,7 +321,7 @@ def test_wrt_start_is_orientation_relative_to_episode_start(tmp_path):
     its EPISODE-START frame (R_start^T R_now) — never the absolute orientation. At the
     episode's first frame it is the identity; deeper in it is the accumulated rotation.
     Frame-invariant to the world origin, which is what makes it OOD-safe to feed."""
-    from fuji.s1_policy.data.transforms import (
+    from flore.s1_policy.data.transforms import (
         IDENTITY_ROT6D,
         rot6d_relative,
         rot6d_to_rotmat,
@@ -358,7 +358,7 @@ def test_wrt_start_routes_per_role_for_head_and_right_primary(tmp_path):
     not the primary's. Covers the head (a body reference: wrt_start-only, no gripper) in
     a 3-role file, and a right-PRIMARY file where the right hand lives in robot0_*.
     The left-only value test above cannot catch a role-crossing bug on head/right."""
-    from fuji.s1_policy.data.transforms import rot6d_relative, rotvec_to_rot6d
+    from flore.s1_policy.data.transforms import rot6d_relative, rotvec_to_rot6d
 
     # 3-role file: assert head + right wrt_start equal rot6d_relative(cur, start) read
     # from each role's own rot key (head_rot_axis_angle / robot1_eef_rot_axis_angle).
@@ -523,7 +523,7 @@ def test_three_role_shapes_and_dims(three_zarr):
 def test_relative_to_absolute_roundtrip_is_exact(left_zarr):
     """THE load-bearing invariant. Serving un-relativizes the model's chunk against
     the anchor; if this is not an exact inverse, every deployed target is wrong."""
-    from fuji.s1_policy.data.transforms import delta_ee_to_absolute, rotvec_to_rot6d
+    from flore.s1_policy.data.transforms import delta_ee_to_absolute, rotvec_to_rot6d
 
     ds = _ds(left_zarr)
     root, store = ds._open(left_zarr)
@@ -605,7 +605,7 @@ def test_multi_hand_force_channels_do_not_cross(tmp_path, monkeypatch):
     two. When a second is added, the history channels must stay per-role in keypoint
     order — a crossed slice would train on the wrong hand's contact. Simulate that
     future rig by declaring both hands, and assert the channel routing."""
-    from fuji.s1_policy.data import layout as layout_mod
+    from flore.s1_policy.data import layout as layout_mod
 
     modes = dict(layout_mod._V2_MODES)
     modes["both_hands"] = (("left", "right"), ("left", "right"), ("left", "right"))
@@ -906,7 +906,7 @@ def test_whole_episode_wipeout_warns(tmp_path, caplog):
     root["data"].create_dataset("robot0_pose_glitch", data=pg, overwrite=True)
     store.close()
 
-    with caplog.at_level(_logging.WARNING, logger="fuji.s1_policy.data.hl_dataset"):
+    with caplog.at_level(_logging.WARNING, logger="flore.s1_policy.data.hl_dataset"):
         ds = _ds(p, drop_glitch_windows=True)
     assert any("lost ALL" in r.message for r in caplog.records), "expected a wipeout warning"
     # Episode 1 still contributes, so the dataset is not empty.
@@ -1004,7 +1004,7 @@ def test_longer_stored_horizon_is_prefix_truncated(tmp_path):
     """A file storing MORE steps than this build trains on is loaded as its own prefix.
 
     This is what lets one shipped dataset feed an H=50 and an H=30 run
-    (``FUJI_ACTION_HORIZON``) with no re-convert, so the two runs differ only in the
+    (``FLORE_ACTION_HORIZON``) with no re-convert, so the two runs differ only in the
     horizon. Asserted on VALUES, not just shape: the truncation must take the FIRST rows
     (step k stays at t0 + k*dt), because taking any other slice would silently re-phase
     every label while every shape still matched.
@@ -1251,7 +1251,7 @@ def test_pickles_without_live_handles(left_zarr):
 def test_lazy_worker_open_checks_file_identity_without_rehashing(left_zarr, monkeypatch):
     import pickle
 
-    from fuji.s1_policy.data import hl_dataset as dataset_module
+    from flore.s1_policy.data import hl_dataset as dataset_module
 
     ds = pickle.loads(pickle.dumps(_ds(left_zarr)))
 
@@ -1299,7 +1299,7 @@ def test_gripper_width_reference_is_asserted_not_assumed(tmp_path):
     width_open_m (0.085 vs 0.095 — the recorder's own mock default) silently rescales
     every gripper label by 12% and moves UMI's 0.08 m grasp threshold from 0.94 to 0.84
     in normalized space, with nothing to show it."""
-    from fuji.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
+    from flore.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
 
     # A file converted against the SAME width loads.
     ok = _write_hl_zarr(tmp_path / "gw_ok.zarr.zip", attrs_override={"gripper_width_open_m": GRIPPER_WIDTH_REF_M})

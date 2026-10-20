@@ -957,33 +957,33 @@ class WbtVrLiveStore {
   private mcExtrasWritten = false;
   private mcGhostAbsentWarned = false;
 
-  // ── FUJI OFFLINE DRIVER telemetry (scripts/hl_offline_drive.py) ───────────────────
+  // ── FLoRe OFFLINE DRIVER telemetry (scripts/hl_offline_drive.py) ───────────────────
   // That planner replays a DATASET anchor through the policy and publishes the chunk on this
   // same socket, so the page is its whole control surface: pick a sample, Predict, Run, Reset.
   //
-  // `fujiNSamples > 0` is the ONE signal that says so, and it gates the panel exactly the way
+  // `floreNSamples > 0` is the ONE signal that says so, and it gates the panel exactly the way
   // `nEpisodes` gates the episode picker: no live tracker bridge, no MC replay bridge and none
   // of the three deploy planners ever send it, so every other page is untouched by construction
   // rather than by a build flag someone has to remember.
   //
-  // `fujiAck` is a PROTOCOL, not a readout: it counts the control verbs the planner has finished
+  // `floreAck` is a PROTOCOL, not a readout: it counts the control verbs the planner has finished
   // acting on, so a click can be shown as pending until it has actually been handled. Without it
   // the panel reads the PREVIOUS state as the answer to the click it just sent.
-  fujiNSamples = 0;
-  fujiNEpisodes = 0;
-  fujiSample = 0;
-  fujiEpisode = -1;
-  fujiEpisodeIndex = -1;
-  fujiEpisodeFrame = -1;
-  fujiEpisodeAnchors = 0;
-  fujiSplit = '';
-  fujiState = '';
-  fujiMsg = '';
-  fujiLayout = '';
-  fujiChunkSteps = 0;
-  fujiExecSteps = 0;
-  fujiStep = -1;
-  fujiAck = 0;
+  floreNSamples = 0;
+  floreNEpisodes = 0;
+  floreSample = 0;
+  floreEpisode = -1;
+  floreEpisodeIndex = -1;
+  floreEpisodeFrame = -1;
+  floreEpisodeAnchors = 0;
+  floreSplit = '';
+  floreState = '';
+  floreMsg = '';
+  floreLayout = '';
+  floreChunkSteps = 0;
+  floreExecSteps = 0;
+  floreStep = -1;
+  floreAck = 0;
 
   private publishGhostExtras(
     qpos: ArrayLike<number>,
@@ -1136,11 +1136,11 @@ class WbtVrLiveStore {
       mc_root_pos?: unknown; mc_root_quat?: unknown;
       episode?: unknown; n_episodes?: unknown;
       episode_frames?: unknown; episode_frame?: unknown;
-      fuji_n_samples?: unknown; fuji_n_episodes?: unknown; fuji_sample?: unknown;
-      fuji_episode?: unknown; fuji_episode_index?: unknown; fuji_episode_frame?: unknown;
-      fuji_episode_anchors?: unknown; fuji_split?: unknown; fuji_state?: unknown;
-      fuji_msg?: unknown; fuji_layout?: unknown; fuji_chunk_steps?: unknown;
-      fuji_exec_steps?: unknown; fuji_step?: unknown; fuji_ack?: unknown;
+      flore_n_samples?: unknown; flore_n_episodes?: unknown; flore_sample?: unknown;
+      flore_episode?: unknown; flore_episode_index?: unknown; flore_episode_frame?: unknown;
+      flore_episode_anchors?: unknown; flore_split?: unknown; flore_state?: unknown;
+      flore_msg?: unknown; flore_layout?: unknown; flore_chunk_steps?: unknown;
+      flore_exec_steps?: unknown; flore_step?: unknown; flore_ack?: unknown;
     };
     try {
       msg = JSON.parse(data);
@@ -1217,27 +1217,27 @@ class WbtVrLiveStore {
       if (typeof msg.episode_frames === 'number') this.episodeFrames = msg.episode_frames;
       if (typeof msg.episode_frame === 'number') this.episodeFrame = msg.episode_frame;
     }
-    // FUJI offline-driver telemetry. Read UNCONDITIONALLY of the mode tag, like the episode
+    // FLoRe offline-driver telemetry. Read UNCONDITIONALLY of the mode tag, like the episode
     // keys above and for the same reason: the panel must work on the dense wire AND the 3pt one,
-    // and the gate is `fuji_n_samples` rather than any mode.
-    if (typeof msg.fuji_n_samples === 'number' && msg.fuji_n_samples > 0) {
-      this.fujiNSamples = msg.fuji_n_samples;
-      if (typeof msg.fuji_n_episodes === 'number') this.fujiNEpisodes = msg.fuji_n_episodes;
-      if (typeof msg.fuji_sample === 'number') this.fujiSample = msg.fuji_sample;
-      if (typeof msg.fuji_episode === 'number') this.fujiEpisode = msg.fuji_episode;
-      if (typeof msg.fuji_episode_index === 'number') this.fujiEpisodeIndex = msg.fuji_episode_index;
-      if (typeof msg.fuji_episode_frame === 'number') this.fujiEpisodeFrame = msg.fuji_episode_frame;
-      if (typeof msg.fuji_episode_anchors === 'number') {
-        this.fujiEpisodeAnchors = msg.fuji_episode_anchors;
+    // and the gate is `flore_n_samples` rather than any mode.
+    if (typeof msg.flore_n_samples === 'number' && msg.flore_n_samples > 0) {
+      this.floreNSamples = msg.flore_n_samples;
+      if (typeof msg.flore_n_episodes === 'number') this.floreNEpisodes = msg.flore_n_episodes;
+      if (typeof msg.flore_sample === 'number') this.floreSample = msg.flore_sample;
+      if (typeof msg.flore_episode === 'number') this.floreEpisode = msg.flore_episode;
+      if (typeof msg.flore_episode_index === 'number') this.floreEpisodeIndex = msg.flore_episode_index;
+      if (typeof msg.flore_episode_frame === 'number') this.floreEpisodeFrame = msg.flore_episode_frame;
+      if (typeof msg.flore_episode_anchors === 'number') {
+        this.floreEpisodeAnchors = msg.flore_episode_anchors;
       }
-      if (typeof msg.fuji_split === 'string') this.fujiSplit = msg.fuji_split;
-      if (typeof msg.fuji_state === 'string') this.fujiState = msg.fuji_state;
-      if (typeof msg.fuji_msg === 'string') this.fujiMsg = msg.fuji_msg;
-      if (typeof msg.fuji_layout === 'string') this.fujiLayout = msg.fuji_layout;
-      if (typeof msg.fuji_chunk_steps === 'number') this.fujiChunkSteps = msg.fuji_chunk_steps;
-      if (typeof msg.fuji_exec_steps === 'number') this.fujiExecSteps = msg.fuji_exec_steps;
-      if (typeof msg.fuji_step === 'number') this.fujiStep = msg.fuji_step;
-      if (typeof msg.fuji_ack === 'number') this.fujiAck = msg.fuji_ack;
+      if (typeof msg.flore_split === 'string') this.floreSplit = msg.flore_split;
+      if (typeof msg.flore_state === 'string') this.floreState = msg.flore_state;
+      if (typeof msg.flore_msg === 'string') this.floreMsg = msg.flore_msg;
+      if (typeof msg.flore_layout === 'string') this.floreLayout = msg.flore_layout;
+      if (typeof msg.flore_chunk_steps === 'number') this.floreChunkSteps = msg.flore_chunk_steps;
+      if (typeof msg.flore_exec_steps === 'number') this.floreExecSteps = msg.flore_exec_steps;
+      if (typeof msg.flore_step === 'number') this.floreStep = msg.flore_step;
+      if (typeof msg.flore_ack === 'number') this.floreAck = msg.flore_ack;
     }
     // Reference ghost — mode-independent ON PURPOSE. The four keys mean the same thing in
     // 5pt and dense (the completed body, in the readout frame), so the ghost has ONE code
@@ -1519,32 +1519,32 @@ function buildEpisodePanel(nEpisodes: number): void {
   );
 }
 
-// ── FUJI offline-driver panel (scripts/hl_offline_drive.py only) ─────────────────────
-// The whole control surface for a FUJI offline drive: pick a dataset anchor, Predict, watch the
+// ── FLoRe offline-driver panel (scripts/hl_offline_drive.py only) ─────────────────────
+// The whole control surface for a FLoRe offline drive: pick a dataset anchor, Predict, watch the
 // LIGHT-PURPLE ghost play the chunk, Run it into this controller, Reset. It lives HERE rather
 // than in a second viser window because everything the operator has to watch — the robot, the
 // ghost, the tracking-error panel — is already on this page, and a second window means reading
 // two clocks.
 //
-// Gated on `fujiNSamples`, which only that planner sends (see the store's field comment): the
+// Gated on `floreNSamples`, which only that planner sends (see the store's field comment): the
 // rig's page and every other preset's page never grow it, and there is no build flag to get
-// wrong. Every verb is `{cmd:'fuji', action:...}` over the SAME socket the commands arrive on,
+// wrong. Every verb is `{cmd:'flore', action:...}` over the SAME socket the commands arrive on,
 // which is namespaced so the MC replay bridge's `{cmd:'episode'}` keeps meaning what it means
 // there.
 //
-// PENDING IS SHOWN, NOT ASSUMED. Each click records the `fujiAck` it was sent at and the button
+// PENDING IS SHOWN, NOT ASSUMED. Each click records the `floreAck` it was sent at and the button
 // stays dimmed until the planner's own counter passes it. That is what makes a verb the planner
 // REFUSED (nothing staged, low level not connected, a sample out of range) visible as a message
 // instead of as a click that seemed to work.
-const WBT_FUJI_PANEL_ID = 'wbt-fuji-panel';
-let _wbtFujiPanelArmed = false;
+const WBT_FLORE_PANEL_ID = 'wbt-flore-panel';
+let _wbtFlorePanelArmed = false;
 
-function mountFujiPanel(): void {
+function mountFlorePanel(): void {
   if (typeof document === 'undefined') return;
-  if (_wbtFujiPanelArmed) return; // arm once; the poller below builds at most one panel
-  _wbtFujiPanelArmed = true;
+  if (_wbtFlorePanelArmed) return; // arm once; the poller below builds at most one panel
+  _wbtFlorePanelArmed = true;
   const poll = setInterval(() => {
-    if (_wbtVrLiveStore.fujiNSamples <= 0) return; // any other producer -> never mounts
+    if (_wbtVrLiveStore.floreNSamples <= 0) return; // any other producer -> never mounts
     clearInterval(poll);
     // CAUGHT AND NAMED. A throw inside a setInterval callback is swallowed into an "Uncaught
     // TypeError" with a minified stack and no clue which panel died, and since the interval has
@@ -1552,17 +1552,17 @@ function mountFujiPanel(): void {
     // there while the wire is demonstrably fine. That cost a whole browser build to diagnose
     // once (Object.assign onto a CSSStyleDeclaration); this makes the next one say so.
     try {
-      buildFujiPanel();
+      buildFlorePanel();
     } catch (e) {
       console.error(
-        '[WbtFuji] the offline-driver panel FAILED to build — the wire is fine, the DOM code is '
+        '[WbtFlore] the offline-driver panel FAILED to build — the wire is fine, the DOM code is '
         + 'not. Nothing else on this page is affected.', e,
       );
     }
   }, 400);
 }
 
-function wbtFujiButton(label: string, bg: string): HTMLButtonElement {
+function wbtFloreButton(label: string, bg: string): HTMLButtonElement {
   const b = document.createElement('button');
   b.textContent = label;
   Object.assign(b.style, {
@@ -1580,15 +1580,15 @@ function wbtFujiButton(label: string, bg: string): HTMLButtonElement {
   return b;
 }
 
-function buildFujiPanel(): void {
-  if (document.getElementById(WBT_FUJI_PANEL_ID)) return;
+function buildFlorePanel(): void {
+  if (document.getElementById(WBT_FLORE_PANEL_ID)) return;
   const s = _wbtVrLiveStore;
   const box = document.createElement('div');
-  box.id = WBT_FUJI_PANEL_ID;
+  box.id = WBT_FLORE_PANEL_ID;
   Object.assign(box.style, {
     position: 'fixed',
     // BELOW the page's own title bar and the Recalibrate button (12-48 px), not at 58 px where
-    // the episode picker sits: that one never coexists with this panel (a FUJI driver sends no
+    // the episode picker sits: that one never coexists with this panel (a FLoRe driver sends no
     // `n_episodes`), but the TITLE BAR does, and at 58 px this box covered it.
     top: '96px',
     right: '12px',
@@ -1610,7 +1610,7 @@ function buildFujiPanel(): void {
   } as Partial<CSSStyleDeclaration>);
 
   const title = document.createElement('div');
-  title.textContent = 'FUJI offline driver';
+  title.textContent = 'FLoRe offline driver';
   Object.assign(title.style, {
     fontWeight: 'bold', color: '#c3b0ff',
   } as Partial<CSSStyleDeclaration>);
@@ -1623,10 +1623,10 @@ function buildFujiPanel(): void {
   // holes), so the planner owns the mapping and this only sends a request.
   let pending = -1;                                   // the ack a click is waiting for
   const request = (action: string, extra: Record<string, unknown> = {}): void => {
-    pending = s.fujiAck;
-    if (!s.sendCmd({ cmd: 'fuji', action, ...extra })) {
+    pending = s.floreAck;
+    if (!s.sendCmd({ cmd: 'flore', action, ...extra })) {
       pending = -1;
-      console.warn(`[WbtFuji] ${action} not sent — the driver socket is not open`);
+      console.warn(`[WbtFlore] ${action} not sent — the driver socket is not open`);
     }
   };
 
@@ -1649,7 +1649,7 @@ function buildFujiPanel(): void {
   // this whole builder from inside its setInterval — so the panel silently never mounts. Both
   // `tsc --noEmit` and `eslint` accept it (a cast satisfies the type), so nothing but running
   // the page catches it.
-  const wbtFujiInputStyle = {
+  const wbtFloreInputStyle = {
     flex: '1',
     minWidth: '0',
     background: 'rgba(0,0,0,0.5)',
@@ -1663,10 +1663,10 @@ function buildFujiPanel(): void {
   const anchorInput = document.createElement('input');
   anchorInput.type = 'number';
   anchorInput.min = '0';
-  anchorInput.max = String(s.fujiNSamples - 1);
-  anchorInput.value = String(s.fujiSample);
-  Object.assign(anchorInput.style, wbtFujiInputStyle);
-  const clampAnchor = (v: number): number => Math.min(s.fujiNSamples - 1, Math.max(0, v));
+  anchorInput.max = String(s.floreNSamples - 1);
+  anchorInput.value = String(s.floreSample);
+  Object.assign(anchorInput.style, wbtFloreInputStyle);
+  const clampAnchor = (v: number): number => Math.min(s.floreNSamples - 1, Math.max(0, v));
   const sendAnchor = (v: number): void => {
     const idx = clampAnchor(v);
     anchorInput.value = String(idx);
@@ -1674,7 +1674,7 @@ function buildFujiPanel(): void {
   };
   anchorInput.addEventListener('change', () => sendAnchor(Number(anchorInput.value)));
   const mkStep = (text: string, fn: () => void): HTMLButtonElement => {
-    const b = wbtFujiButton(text, 'rgba(98, 51, 235, 0.85)');
+    const b = wbtFloreButton(text, 'rgba(98, 51, 235, 0.85)');
     Object.assign(b.style, { flex: '0 0 auto', padding: '3px 7px' } as Partial<CSSStyleDeclaration>);
     b.addEventListener('click', fn);
     return b;
@@ -1693,11 +1693,11 @@ function buildFujiPanel(): void {
   const epInput = document.createElement('input');
   epInput.type = 'number';
   epInput.min = '0';
-  epInput.max = String(Math.max(0, s.fujiNEpisodes - 1));
-  epInput.value = String(Math.max(0, s.fujiEpisodeIndex));
-  Object.assign(epInput.style, wbtFujiInputStyle);
+  epInput.max = String(Math.max(0, s.floreNEpisodes - 1));
+  epInput.value = String(Math.max(0, s.floreEpisodeIndex));
+  Object.assign(epInput.style, wbtFloreInputStyle);
   const sendEpisode = (v: number): void => {
-    const idx = Math.min(Math.max(0, s.fujiNEpisodes - 1), Math.max(0, v));
+    const idx = Math.min(Math.max(0, s.floreNEpisodes - 1), Math.max(0, v));
     epInput.value = String(idx);
     request('episode', { index: idx });
   };
@@ -1716,21 +1716,21 @@ function buildFujiPanel(): void {
   // publishes NOTHING (the violet ghost is a different wire channel), so the operator sees what
   // is about to happen before any of it reaches the controller.
   const runRow = mkRow();
-  const bPredict = wbtFujiButton('Predict', 'rgba(98, 51, 235, 0.92)');
-  const bRun = wbtFujiButton('Run', 'rgba(40, 140, 90, 0.92)');
+  const bPredict = wbtFloreButton('Predict', 'rgba(98, 51, 235, 0.92)');
+  const bRun = wbtFloreButton('Run', 'rgba(40, 140, 90, 0.92)');
   bPredict.addEventListener('click', () => request('predict'));
   bRun.addEventListener('click', () => request('run'));
   runRow.appendChild(bPredict);
   runRow.appendChild(bRun);
 
   const ctlRow = mkRow();
-  const bAuto = wbtFujiButton('▶▶ auto', 'rgba(40, 110, 160, 0.92)');
-  const bStop = wbtFujiButton('■ Stop', 'rgba(180, 50, 50, 0.95)');
-  const bReset = wbtFujiButton('Reset', 'rgba(90, 90, 105, 0.92)');
+  const bAuto = wbtFloreButton('▶▶ auto', 'rgba(40, 110, 160, 0.92)');
+  const bStop = wbtFloreButton('■ Stop', 'rgba(180, 50, 50, 0.95)');
+  const bReset = wbtFloreButton('Reset', 'rgba(90, 90, 105, 0.92)');
   bAuto.addEventListener('click', () => request('auto'));
   // Stop does NOT go through `request`: it must not be dimmed waiting for an ack, because it is
   // the one button an operator may need to press twice in a second.
-  bStop.addEventListener('click', () => { _wbtVrLiveStore.sendCmd({ cmd: 'fuji', action: 'stop' }); });
+  bStop.addEventListener('click', () => { _wbtVrLiveStore.sendCmd({ cmd: 'flore', action: 'stop' }); });
   bReset.addEventListener('click', () => request('reset'));
   ctlRow.appendChild(bAuto);
   ctlRow.appendChild(bStop);
@@ -1747,31 +1747,31 @@ function buildFujiPanel(): void {
     // Sync the two inputs to the planner's own cursor exactly ONCE (its --sample / --episode),
     // then never again: after the operator has typed, the value is theirs and the planner's
     // number belongs in the readout below.
-    if (!synced && st.fujiEpisodeIndex >= 0) {
+    if (!synced && st.floreEpisodeIndex >= 0) {
       synced = true;
-      anchorInput.value = String(st.fujiSample);
-      epInput.value = String(st.fujiEpisodeIndex);
+      anchorInput.value = String(st.floreSample);
+      epInput.value = String(st.floreEpisodeIndex);
     }
-    if (pending >= 0 && st.fujiAck > pending) pending = -1;
-    const busy = pending >= 0 || st.fujiState === 'running' || st.fujiState === 'predicting';
+    if (pending >= 0 && st.floreAck > pending) pending = -1;
+    const busy = pending >= 0 || st.floreState === 'running' || st.floreState === 'predicting';
     for (const b of [bPredict, bRun, bAuto, bReset]) {
       b.disabled = busy;
       b.style.opacity = busy ? '0.45' : '1';
       b.style.cursor = busy ? 'default' : 'pointer';
     }
-    layout.textContent = st.fujiLayout;
+    layout.textContent = st.floreLayout;
     // The two `episode` numbers are DIFFERENT things and both are shown: the input is the
     // episode's POSITION in the dataset's list (what a picker can walk), the `id` is its global
     // episode id (what a QC sheet and a log line name). They diverge whenever a take lost all
     // its anchors to the glitch filter, which on this session is 9 of 167.
-    where.textContent = `anchor ${st.fujiSample} / ${st.fujiNSamples}\n`
-      + `episode ${st.fujiEpisodeIndex} / ${st.fujiNEpisodes}  (id ${Math.max(st.fujiEpisode, 0)})`
-      + `  frame ${st.fujiEpisodeFrame} of ${st.fujiEpisodeAnchors} anchors  ${st.fujiSplit}`;
-    const step = st.fujiStep >= 0 && st.fujiExecSteps > 0
-      ? `  step ${st.fujiStep + 1}/${st.fujiExecSteps}` : '';
-    const chunk = st.fujiChunkSteps > 0 ? `  chunk ${st.fujiChunkSteps}` : '';
-    status.textContent = `${st.fujiState}${chunk}${step}${pending >= 0 ? '  (sending…)' : ''}\n`
-      + st.fujiMsg;
+    where.textContent = `anchor ${st.floreSample} / ${st.floreNSamples}\n`
+      + `episode ${st.floreEpisodeIndex} / ${st.floreNEpisodes}  (id ${Math.max(st.floreEpisode, 0)})`
+      + `  frame ${st.floreEpisodeFrame} of ${st.floreEpisodeAnchors} anchors  ${st.floreSplit}`;
+    const step = st.floreStep >= 0 && st.floreExecSteps > 0
+      ? `  step ${st.floreStep + 1}/${st.floreExecSteps}` : '';
+    const chunk = st.floreChunkSteps > 0 ? `  chunk ${st.floreChunkSteps}` : '';
+    status.textContent = `${st.floreState}${chunk}${step}${pending >= 0 ? '  (sending…)' : ''}\n`
+      + st.floreMsg;
   }, 200);
 
   box.appendChild(title);
@@ -1784,8 +1784,8 @@ function buildFujiPanel(): void {
   box.appendChild(status);
   document.body.appendChild(box);
   console.log(
-    `[WbtFuji] offline-driver panel mounted: ${s.fujiNSamples} dataset anchors in `
-    + `${s.fujiNEpisodes} episode(s). Predict STAGES (nothing is published; the light-purple `
+    `[WbtFlore] offline-driver panel mounted: ${s.floreNSamples} dataset anchors in `
+    + `${s.floreNEpisodes} episode(s). Predict STAGES (nothing is published; the light-purple `
     + 'ghost plays the chunk), Run publishes it one step per 30 Hz tick.',
   );
 }
@@ -1798,8 +1798,8 @@ export class WbtVr2PointPosLive extends WbtHistoryBase {
     this.home = wbtVrLiveHome(config, 6);
     _wbtVrLiveStore.ensureOpen(wbtVrLiveUrl(config));
     mountRecalibButton();
-    // Self-gating: it only appears if the producer is a FUJI offline driver.
-    mountFujiPanel();
+    // Self-gating: it only appears if the producer is a FLoRe offline driver.
+    mountFlorePanel();
   }
   protected computeCurrent(): Float32Array {
     return new Float32Array(_wbtVrLiveStore.pos ?? this.home);
@@ -1876,8 +1876,8 @@ export class WbtVr3PointPosTcpLive extends WbtHistoryBase {
     this.home = wbtVrLiveHome(config, 9);
     _wbtVrLiveStore.ensureOpen(wbtVrLiveUrl(config));
     mountRecalibButton();
-    // Self-gating: it only appears if the producer is a FUJI offline driver.
-    mountFujiPanel();
+    // Self-gating: it only appears if the producer is a FLoRe offline driver.
+    mountFlorePanel();
   }
   protected computeCurrent(): Float32Array {
     const live = _wbtVrLiveStore.pos3;
@@ -1952,8 +1952,8 @@ export class WbtVr5PointPosTcpLive extends WbtHistoryBase {
     this.home = wbtVrLiveHome(config, 15);
     _wbtVrLiveStore.ensureOpen(wbtVrLiveUrl(config));
     mountRecalibButton();
-    // Self-gating: it only appears if the producer is a FUJI offline driver.
-    mountFujiPanel();
+    // Self-gating: it only appears if the producer is a FLoRe offline driver.
+    mountFlorePanel();
     // Self-gating: it only appears if the bridge turns out to be a recorded replay.
     mountEpisodePanel();
   }
@@ -2005,8 +2005,8 @@ export class WbtCommandLive extends WbtHistoryBase {
     }
     _wbtVrLiveStore.ensureOpen(wbtVrLiveUrl(config));
     mountRecalibButton();
-    // Self-gating: it only appears if the producer is a FUJI offline driver.
-    mountFujiPanel();
+    // Self-gating: it only appears if the producer is a FLoRe offline driver.
+    mountFlorePanel();
     // Self-gating: it only appears if the bridge turns out to be a recorded replay.
     mountEpisodePanel();
   }

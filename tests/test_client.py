@@ -1,4 +1,4 @@
-"""Tests for the FUJI client layer: action_to_3pt conversion + s0_driver.
+"""Tests for the FLoRe client layer: action_to_3pt conversion + s0_driver.
 
 These tests verify the load-bearing math of the S1→S0 translation and the
 WebSocket server broadcast. No GPU, no network (except localhost WS).
@@ -12,8 +12,8 @@ import time
 import numpy as np
 import pytest
 
-from fuji.client.action_to_3pt import ActionTo3pt, ACTION_DIM
-from fuji.utils.rot6d import rotmat_to_rot6d
+from flore.client.action_to_3pt import ActionTo3pt, ACTION_DIM
+from flore.utils.rot6d import rotmat_to_rot6d
 
 
 # ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ from fuji.utils.rot6d import rotmat_to_rot6d
 def test_dry_run_exits_before_opening_connections():
     from argparse import Namespace
 
-    from fuji.client.main import run_client
+    from flore.client.main import run_client
 
     with pytest.raises(SystemExit, match="dry-run is disabled"):
         run_client(Namespace(dry_run=True))
@@ -135,7 +135,7 @@ def test_s0_driver_broadcasts():
     """S0Driver starts a WS server; a client connects and receives 3pt JSON."""
     import websockets.sync.client
 
-    from fuji.client.s0_driver import S0Driver
+    from flore.client.s0_driver import S0Driver
 
     driver = S0Driver(host="127.0.0.1", port=18770)  # non-default port for test isolation
     driver.FRESHNESS_TIMEOUT_S = 10.0  # keep broadcasting throughout the test (no stale-stop race)
@@ -168,7 +168,7 @@ def test_s0_driver_freshness_timeout_stops_rebroadcast():
     not freeze S0 on the last target while looking alive)."""
     import websockets.sync.client
 
-    from fuji.client.s0_driver import S0Driver
+    from flore.client.s0_driver import S0Driver
 
     driver = S0Driver(host="127.0.0.1", port=18771)
     driver.FRESHNESS_TIMEOUT_S = 0.3  # shortened for the test (default 0.5)
@@ -211,7 +211,7 @@ def test_s0_driver_freshness_timeout_stops_rebroadcast():
 
 def test_is_safe_to_send_rejects_non_finite():
     """Safety gate: NaN/Inf in any array must be rejected (robot never gets it)."""
-    from fuji.client.main import is_safe_to_send
+    from flore.client.main import is_safe_to_send
 
     good = np.zeros(32, dtype=np.float32)
     assert is_safe_to_send(good)
@@ -234,8 +234,8 @@ def test_s1_client_connect_and_predict_against_real_server():
     """
     import numpy as np
 
-    from fuji.client.s1_client import S1Client
-    from fuji.s1_policy.serving.server import build_server, encode_image_jpeg, make_servicer
+    from flore.client.s1_client import S1Client
+    from flore.s1_policy.serving.server import build_server, encode_image_jpeg, make_servicer
 
     # Reuse the deterministic fake from the server test suite.
     from tests.test_server_grpc import ACTION_DIM as SRV_AD

@@ -18,7 +18,7 @@
 # It does NOT touch the left-only preset: `both_hands_head_dual` is a NEW layout mode and
 # `both_head_dual` a NEW --hands value, so every shipped checkpoint keeps its column
 # meaning and every existing dataset converts byte-identically. See
-# fuji/s1_policy/data/layout.py for why the action COLUMNS did not have to move (they were
+# flore/s1_policy/data/layout.py for why the action COLUMNS did not have to move (they were
 # reserved all along) and why `state` is the one thing that is NOT cross-loadable.
 #
 # Usage: [SESSION=0830_1411] [RECIPE=umi] [BATCH=24] [CKPT_ROOT=...] \
@@ -74,7 +74,7 @@ GPUS=$(IFS=,; echo "${ALL_GPUS[*]:0:$N_GPUS}")
 # HLDataset refuses it by name.
 #
 # FH / H are EXPORTED, not taken from the caller: torchrun passes the environment to every
-# rank and both are resolved at IMPORT by fuji.s1_policy.data.layout, so the ranks must
+# rank and both are resolved at IMPORT by flore.s1_policy.data.layout, so the ranks must
 # agree before the first collective.
 #
 # ⚠ EVERY entry is an --exclude'd conversion, and that is NOT optional here. The 0830 sessions
@@ -123,8 +123,8 @@ case "$SESSION" in
        echo "             --hands both_head_dual --exclude take_000 take_001 ..." >&2
        exit 1 ;;
 esac
-export FUJI_FORCE_HIST_LEN="$FH"
-export FUJI_ACTION_HORIZON="$H"
+export FLORE_FORCE_HIST_LEN="$FH"
+export FLORE_ACTION_HORIZON="$H"
 
 MODE=both_hands_head_dual
 CAMS=(camera0_rgb camera1_rgb)
@@ -160,7 +160,7 @@ if (( N_GPUS > 1 )); then
     RUN="${RUN}_ddp${N_GPUS}"; WB_NAME="${WB_NAME}-ddp${N_GPUS}"
 fi
 
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 OUT="$CKPT_ROOT/$RUN"
 [[ -d "$CKPT_ROOT" ]] || mkdir -p "$CKPT_ROOT" 2>/dev/null || {
     echo "FATAL: checkpoint root '$CKPT_ROOT' is missing and not creatable." >&2

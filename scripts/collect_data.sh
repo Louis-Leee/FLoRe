@@ -49,10 +49,10 @@
 #
 # 5pt is 3pt PLUS TWO PUCKS and nothing else: the feet ride the chest's code paths (same
 # wire, same tracker_*.npy layout, same rotation-only puck->body relabel, bare axis triad,
-# no camera/F-T/gripper). Role names are `left_foot` / `right_foot` (FUJI's own
-# `fuji/s1_policy/data/layout.py::KEYPOINT_ORDER`). 5pt is gripper-only display
+# no camera/F-T/gripper). Role names are `left_foot` / `right_foot` (FLoRe's own
+# `flore/s1_policy/data/layout.py::KEYPOINT_ORDER`). 5pt is gripper-only display
 # (DISPLAY_MODE=humanoid is refused: the collection IK has no foot task), and the converter
-# does not emit a foot keypoint yet (FUJI derives `wb_*_foot_*` by FK; a recorded foot
+# does not emit a foot keypoint yet (FLoRe derives `wb_*_foot_*` by FK; a recorded foot
 # replacing that is a separate schema decision).
 #
 # EVERY RIGHT-HAND DEVICE IS OPTIONAL AND ITS ABSENCE IS A FACT, NOT AN ERROR: a 3pt take

@@ -1647,7 +1647,7 @@ def test_estop_latches_so_one_impact_stops_once():
 
 def test_estop_trip_runs_the_joystick_b_handler():
     """The whole point: the resulting machine state is the operator's own B press, so
-    there is ONE stopped state to reason about (and the FUJI planner's low-level-lost
+    there is ONE stopped state to reason about (and the FLoRe planner's low-level-lost
     watchdog, which detects B by the RecordTap stream stopping, sees this identically)."""
     p = _stub_estop_policy(left=(0.0, 0.0, 25.0))
     calls = []

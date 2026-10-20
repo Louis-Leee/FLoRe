@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data.layout import ACTION_HORIZON, FORCE_DIM, get_layout
-from fuji.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M, absolute_to_delta_ee, rot6d_relative
-from fuji.s1_policy.serving.hl_online import (
+from flore.s1_policy.data.layout import ACTION_HORIZON, FORCE_DIM, get_layout
+from flore.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M, absolute_to_delta_ee, rot6d_relative
+from flore.s1_policy.serving.hl_online import (
     LivePlanner,
     decode_chunk,
     exec_step_choices,
@@ -149,10 +149,10 @@ def test_serving_builds_the_force_window_the_CHECKPOINT_wants(tmp_path, monkeypa
     which is exactly why the config field, not the tensor shapes, is the only thing that knows."""
     import json
 
-    from fuji.s1_policy.data.layout import ACTION_DT, FORCE_HIST_LEN
+    from flore.s1_policy.data.layout import ACTION_DT, FORCE_HIST_LEN
 
     bundle = _make_bundle(tmp_path, monkeypatch, "flow")
-    import fuji.s1_policy.serving.hl_online as hl_online
+    import flore.s1_policy.serving.hl_online as hl_online
     from tests.test_inference import _StubEncoder
 
     monkeypatch.setattr(hl_online, "_build_model", lambda algo, block: _flow_pair(block, _StubEncoder))
@@ -182,14 +182,14 @@ def test_a_dataset_backed_load_still_pins_the_force_window_to_this_build(tmp_pat
     """The exemption is SERVING-only. An offline session feeds the model from a zarr whose
     attrs are pinned to FORCE_HIST_LEN, so a checkpoint that disagrees would be handed windows
     of the wrong length — that one must still be refused."""
-    from fuji.s1_policy.data.layout import ACTION_HORIZON, FORCE_HIST_LEN, get_layout
-    from fuji.s1_policy.inference.common import validate_model_layout
-    from fuji.s1_policy.model.dp_flow import DPFlowConfig
+    from flore.s1_policy.data.layout import ACTION_HORIZON, FORCE_HIST_LEN, get_layout
+    from flore.s1_policy.inference.common import validate_model_layout
+    from flore.s1_policy.model.dp_flow import DPFlowConfig
 
     layout = get_layout("left_only")
     # action_horizon is passed explicitly rather than left at DPFlowConfig's literal default
     # (50, which also serves the frozen legacy pipeline): validate_model_layout pins it
-    # UNCONDITIONALLY, so under FUJI_ACTION_HORIZON=30 the default would trip the horizon
+    # UNCONDITIONALLY, so under FLORE_ACTION_HORIZON=30 the default would trip the horizon
     # check first and this test would stop exercising the force_hist_len exemption at all.
     common = dict(action_dim=layout.action_dim, state_dim=layout.state_dim, obs_history_len=1,
                   num_cameras=1, force_hist_channels=layout.force_hist_channels,
@@ -221,10 +221,10 @@ def test_a_force_LESS_checkpoint_is_not_pinned_to_this_build_s_bin_count():
     The regression this replaces was silent about its cause: `force_hist_len=0 disagrees with
     1` carries no hint, unlike the channel mismatch beside it.
     """
-    from fuji.s1_policy.data import layout as layout_mod
-    from fuji.s1_policy.data.layout import ACTION_HORIZON, FORCE_HIST_LEN, get_layout
-    from fuji.s1_policy.inference.common import validate_model_layout
-    from fuji.s1_policy.model.dp_flow import DPFlowConfig
+    from flore.s1_policy.data import layout as layout_mod
+    from flore.s1_policy.data.layout import ACTION_HORIZON, FORCE_HIST_LEN, get_layout
+    from flore.s1_policy.inference.common import validate_model_layout
+    from flore.s1_policy.model.dp_flow import DPFlowConfig
 
     # A patch CONTEXT, not the plain fixture: `get_layout` reads the module flag at CALL time,
     # so the force-ful layout below has to be built with the ablation out of scope again. Same
@@ -355,7 +355,7 @@ def test_no_planner_page_hardcodes_its_exec_options(script):
 def test_load_hl_model_standalone_no_zarr_and_infers(tmp_path, monkeypatch, algorithm):
     bundle = _make_bundle(tmp_path, monkeypatch, algorithm)
     # The stub encoder patched onto the inference module also backs hl_online's builder.
-    import fuji.s1_policy.serving.hl_online as hl_online
+    import flore.s1_policy.serving.hl_online as hl_online
     from tests.test_inference import _StubEncoder
 
     if algorithm == "flow":
@@ -395,7 +395,7 @@ def test_live_state_channel_matches_wrt_start_contract(tmp_path, monkeypatch):
     """build_batch's state must be wrt_start_rot6d = R_start^T R_now per keypoint, with
     NO absolute position — the exact channel HLDataset produces."""
     bundle = _make_bundle(tmp_path, monkeypatch, "flow")
-    import fuji.s1_policy.serving.hl_online as hl_online
+    import flore.s1_policy.serving.hl_online as hl_online
     from tests.test_inference import _StubEncoder
 
     monkeypatch.setattr(hl_online, "_build_model", lambda algo, block: _flow_pair(block, _StubEncoder))
@@ -408,7 +408,7 @@ def test_live_state_channel_matches_wrt_start_contract(tmp_path, monkeypatch):
     start_rot6d = _IDENTITY_ROT6D.copy()
     lp.seed_anchor(np.array([[0.3, 0.0, 0.0]]), np.array([start_rot6d]))
     # A 30-degree yaw as the new "now" orientation.
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     c, s = np.cos(0.5236), np.sin(0.5236)
     now_R = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]], dtype=np.float64)
@@ -429,8 +429,8 @@ def test_live_state_channel_matches_wrt_start_contract(tmp_path, monkeypatch):
 
 def test_force_history_valid_flag_tracks_whole_window(tmp_path, monkeypatch):
     bundle = _make_bundle(tmp_path, monkeypatch, "flow")
-    import fuji.s1_policy.serving.hl_online as hl_online
-    from fuji.s1_policy.data.layout import FORCE_HIST_LEN, FORCE_HIST_SPAN_S
+    import flore.s1_policy.serving.hl_online as hl_online
+    from flore.s1_policy.data.layout import FORCE_HIST_LEN, FORCE_HIST_SPAN_S
     from tests.test_inference import _StubEncoder
 
     monkeypatch.setattr(hl_online, "_build_model", lambda algo, block: _flow_pair(block, _StubEncoder))
@@ -467,8 +467,8 @@ def test_force_window_is_span_wide_regardless_of_push_rate(tmp_path, monkeypatch
     33.3 ms bin the model trained on. Age-keying makes the width independent of the rate, so
     a bridge that pushes at 200 Hz and one that pushes at 30 Hz agree on the mean."""
     bundle = _make_bundle(tmp_path, monkeypatch, "flow")
-    import fuji.s1_policy.serving.hl_online as hl_online
-    from fuji.s1_policy.data.layout import FORCE_HIST_SPAN_S
+    import flore.s1_policy.serving.hl_online as hl_online
+    from flore.s1_policy.data.layout import FORCE_HIST_SPAN_S
     from tests.test_inference import _StubEncoder
 
     monkeypatch.setattr(hl_online, "_build_model", lambda algo, block: _flow_pair(block, _StubEncoder))
@@ -505,8 +505,8 @@ def test_edge_aligned_pushes_fill_every_bin(tmp_path, monkeypatch):
     bin it should have filled read EMPTY, and the window reported INVALID even though every
     sample was a real measurement. The encoder would then get its learned no-data embedding on
     fully measured force. Pinned at several L so the tolerance cannot be tuned away."""
-    from fuji.s1_policy.data.layout import ACTION_DT, get_layout
-    from fuji.s1_policy.serving.hl_online import replay_only_model
+    from flore.s1_policy.data.layout import ACTION_DT, get_layout
+    from flore.s1_policy.serving.hl_online import replay_only_model
 
     loaded = replay_only_model("left_only", obs_history_len=1)
     ch = get_layout("left_only").force_hist_channels
@@ -528,8 +528,8 @@ def test_force_history_binning_is_causal_mean(tmp_path, monkeypatch):
     """Each bin is the MEAN of the raw samples whose timestamps land in it (anti-aliasing),
     with the last bin ending AT t0 — the converter's ``(lo, hi]`` causal tiling."""
     bundle = _make_bundle(tmp_path, monkeypatch, "flow")
-    import fuji.s1_policy.serving.hl_online as hl_online
-    from fuji.s1_policy.data.layout import FORCE_HIST_LEN, FORCE_HIST_SPAN_S
+    import flore.s1_policy.serving.hl_online as hl_online
+    from flore.s1_policy.data.layout import FORCE_HIST_LEN, FORCE_HIST_SPAN_S
     from tests.test_inference import _StubEncoder
 
     monkeypatch.setattr(hl_online, "_build_model", lambda algo, block: _flow_pair(block, _StubEncoder))
@@ -556,7 +556,7 @@ def test_snapshot_display_images_roundtrips_pushed_frame(tmp_path, monkeypatch):
     snapshot_display_images denormalizes the stored [-1,1] tensors back to the uint8 RGB
     that was pushed, and returns To frames oldest-first (last == t0)."""
     bundle = _make_bundle(tmp_path, monkeypatch, "flow")
-    import fuji.s1_policy.serving.hl_online as hl_online
+    import flore.s1_policy.serving.hl_online as hl_online
     from tests.test_inference import _StubEncoder
 
     monkeypatch.setattr(hl_online, "_build_model", lambda algo, block: _flow_pair(block, _StubEncoder))
@@ -608,7 +608,7 @@ def test_reanchor_to_measured_ee_is_clutch_base(tmp_path, monkeypatch):
 
     # And LivePlanner.commit_role is the seam the server uses to set that measured anchor.
     bundle = _make_bundle(tmp_path, monkeypatch, "flow")
-    import fuji.s1_policy.serving.hl_online as hl_online
+    import flore.s1_policy.serving.hl_online as hl_online
     from tests.test_inference import _StubEncoder
 
     monkeypatch.setattr(hl_online, "_build_model", lambda algo, block: _flow_pair(block, _StubEncoder))
@@ -710,7 +710,7 @@ def test_frame_seam_boundaries_round_trip_and_preserve_the_reach_axis():
     directions. With a general seam, reusing ``S`` instead of ``S.T`` DOUBLES the rotation instead
     of undoing it, and the round-trip below is what catches that."""
     import scripts.hl_serving as hs
-    from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
+    from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
 
     rng = np.random.default_rng(7)
     R_urdf = np.linalg.qr(rng.standard_normal((3, 3)))[0]
@@ -746,7 +746,7 @@ def test_identity_seam_makes_the_decode_a_pure_passthrough():
     through ONE extrinsic and nothing else -- so it gets its own assertion rather than being
     implied by the round-trip above."""
     import scripts.hl_serving as hs
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     rng = np.random.default_rng(11)
     R = np.linalg.qr(rng.standard_normal((3, 3)))[0]
@@ -784,8 +784,8 @@ def test_frame_flip_applied_at_seed_and_decode_wire_boundaries(seam_name):
     from scripts.hl_serving import (
         WireMapper, _model_rot6d_to_urdf, _seed_planner_anchor, _urdf_rot6d_to_model,
     )
-    from fuji.s1_policy.data.transforms import delta_ee_to_absolute
-    from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d, quat_xyzw_to_rotmat
+    from flore.s1_policy.data.transforms import delta_ee_to_absolute
+    from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d, quat_xyzw_to_rotmat
 
     seam = np.eye(3) if seam_name == "identity" else hs._PUCK_TO_WRIST_RELABEL
     _prev_seam = hs._MODEL_SEAM.copy()
@@ -873,8 +873,8 @@ def test_the_rendered_mesh_pose_matches_the_triad_and_anchor_pose():
     import os
 
     import scripts.hl_serving as hs
-    from fuji.s1_policy.serving.live_robot import N_SDK_DOF, build_sdk_to_urdf_index, remap_dof_to_urdf
-    from fuji.utils.rot6d import quat_xyzw_to_rotmat
+    from flore.s1_policy.serving.live_robot import N_SDK_DOF, build_sdk_to_urdf_index, remap_dof_to_urdf
+    from flore.utils.rot6d import quat_xyzw_to_rotmat
 
     urdf_path = os.path.join(
         hs._UMI, "robot_assets", "g1_yam", "g1_29dof_yam.urdf")
@@ -940,7 +940,7 @@ def test_zero_arms_seed_pose_matches_the_low_levels_ready_pose():
     import os
 
     import scripts.hl_serving as hs
-    from fuji.s1_policy.serving.live_robot import build_sdk_to_urdf_index, remap_dof_to_urdf
+    from flore.s1_policy.serving.live_robot import build_sdk_to_urdf_index, remap_dof_to_urdf
 
     urdf_path = os.path.join(hs._UMI, "robot_assets", "g1_yam", "g1_29dof_yam.urdf")
     if not os.path.exists(urdf_path) or not os.path.exists(hs._HOME_ANCHOR_PATH):
@@ -957,7 +957,7 @@ def test_zero_arms_seed_pose_matches_the_low_levels_ready_pose():
     assert changed <= set(hs._ARM_SDK_IDX), "a NON-arm joint was modified"
     np.testing.assert_allclose(flat[list(hs._ARM_SDK_IDX)], 0.0, atol=0)
     assert len(hs._ARM_SDK_IDX) == 14, hs._ARM_SDK_IDX
-    from fuji.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES as _NAMES
+    from flore.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES as _NAMES
 
     _seeded = {_NAMES[i] for i in hs._ARM_SDK_IDX}
     assert sum("left" in n for n in _seeded) == 7 and sum("right" in n for n in _seeded) == 7, _seeded
@@ -1028,7 +1028,7 @@ def mapper_offsets():
 
 def test_seed_anchor_rejects_wrong_shape(tmp_path, monkeypatch):
     bundle = _make_bundle(tmp_path, monkeypatch, "flow")
-    import fuji.s1_policy.serving.hl_online as hl_online
+    import flore.s1_policy.serving.hl_online as hl_online
     from tests.test_inference import _StubEncoder
 
     monkeypatch.setattr(hl_online, "_build_model", lambda algo, block: _flow_pair(block, _StubEncoder))
@@ -1040,16 +1040,16 @@ def test_seed_anchor_rejects_wrong_shape(tmp_path, monkeypatch):
 
 # --- helpers: build the stub-encoder-backed models for the tiny fixtures ------
 def _flow_pair(config_block, stub_encoder_cls):
-    from fuji.s1_policy.inference.common import dataclass_config
-    from fuji.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
+    from flore.s1_policy.inference.common import dataclass_config
+    from flore.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
 
     config = dataclass_config(DPFlowConfig, config_block)
     return config, DPFlowModel(config, encoder=stub_encoder_cls())
 
 
 def _diffusion_pair(config_block, stub_encoder_cls):
-    from fuji.s1_policy.inference.common import dataclass_config
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
+    from flore.s1_policy.inference.common import dataclass_config
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
 
     config = dataclass_config(DPDiffusionConfig, config_block)
     return config, DPDiffusionModel(config, encoder=stub_encoder_cls())

@@ -67,14 +67,14 @@ def main(argv: list[str] | None = None) -> int:
 
     import viser
 
-    from fuji.s1_policy.inference.diffusion import DiffusionInferenceSession
-    from fuji.s1_policy.inference.display import (
+    from flore.s1_policy.inference.diffusion import DiffusionInferenceSession
+    from flore.s1_policy.inference.display import (
         DISPLAY_HOME_POS, read_stored_extrinsic, wrist_pose_from_stored,
     )
-    from fuji.s1_policy.inference.mc_humanoid import MCHumanoid
-    from fuji.s1_policy.inference.viewer import _build_display_poses, _heading_alignment
-    from fuji.s1_policy.inference.display import resolve_role_geometry
-    from fuji.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.inference.mc_humanoid import MCHumanoid
+    from flore.s1_policy.inference.viewer import _build_display_poses, _heading_alignment
+    from flore.s1_policy.inference.display import resolve_role_geometry
+    from flore.s1_policy.inference import ready_pose as RP
 
     session = DiffusionInferenceSession(args.checkpoint, device=args.device)
     try:
@@ -129,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
             # Importable only now: the overlay's construction is what put motion_completion/ on
             # the path (mc_humanoid appends it), so this cannot move above the line before it.
             import mc_frames as F  # noqa: PLC0415
-            from fuji.utils.rot6d import rot6d_to_rotmat  # noqa: PLC0415
+            from flore.utils.rot6d import rot6d_to_rotmat  # noqa: PLC0415
 
             cond = mc.overlay.cond
             check("conditioning covers the whole action chunk",

@@ -15,13 +15,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.s1_policy.serving.hl_anchor import (
+from flore.s1_policy.serving.hl_anchor import (
     MAX_EPS_M,
     MAX_EPS_RAD,
     AnchorConfig,
     ChunkAnchor,
 )
-from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d, rotmat_to_rotvec, rotvec_to_rotmat
+from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d, rotmat_to_rotvec, rotvec_to_rotmat
 
 IDENT = np.array([1.0, 0, 0, 0, 1, 0])
 
@@ -194,6 +194,6 @@ def test_bad_config_is_refused_loudly(kwargs):
 def test_eps_ceiling_is_the_same_as_the_reach_clamp_ceiling():
     """Both bound an un-asked-for addition to a physical arm's target, so they must not drift
     apart: an operator who learned one ceiling should not be surprised by the other."""
-    from fuji.s1_policy.serving import hl_reach
+    from flore.s1_policy.serving import hl_reach
 
     assert MAX_EPS_M == hl_reach.MAX_CLAMP_M

@@ -80,10 +80,10 @@ def main(argv: list[str] | None = None) -> int:
 
     import hl_serving as HL
 
-    from fuji.s1_policy.data.layout import ACTION_DT, WB_JOINT_NAMES
-    from fuji.s1_policy.inference import ready_pose as RP
-    from fuji.s1_policy.serving import hl_dense, hl_wholebody
-    from fuji.s1_policy.serving.hl_online import load_hl_model
+    from flore.s1_policy.data.layout import ACTION_DT, WB_JOINT_NAMES
+    from flore.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.serving import hl_dense, hl_wholebody
+    from flore.s1_policy.serving.hl_online import load_hl_model
 
     # The SDK names come via hl_wholebody, which re-exports them for exactly this reason: that
     # module asserts at IMPORT that they equal WB_JOINT_NAMES, so reading them from there is

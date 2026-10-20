@@ -15,7 +15,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
+from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
 
 # HL-v2 left_only shape.
 ACTION_DIM = 16
@@ -330,7 +330,7 @@ def test_per_group_metric_matches_manual_masked_mse():
 
     metrics = model._extra_train_metrics(pred, target, is_pad, None, mask)
 
-    from fuji.s1_policy.data.layout import get_layout
+    from flore.s1_policy.data.layout import get_layout
     groups = get_layout("left_only").metric_group_dims()
 
     sq = (pred - target) ** 2
@@ -421,8 +421,8 @@ def test_unsupported_prediction_type_raises():
 def test_config_diffusion_clip_sample_requires_norm_stats():
     """algo='diffusion' with clip_sample=True but no norm_stats must raise (the sampler
     would crush out-of-[-1,1] pose/force at deploy)."""
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     with pytest.raises(ValueError, match="clip_sample"):
         TrainConfig(algo="diffusion", pipeline="hl",
@@ -432,8 +432,8 @@ def test_config_diffusion_clip_sample_requires_norm_stats():
 
 def test_config_diffusion_clip_sample_ok_with_norm_stats():
     """The same combination is fine once a norm_stats path is provided."""
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     cfg = TrainConfig(algo="diffusion", pipeline="hl",
                       diffusion=DPDiffusionConfig(clip_sample=True),
@@ -444,8 +444,8 @@ def test_config_diffusion_clip_sample_ok_with_norm_stats():
 def test_config_diffusion_no_clip_needs_no_norm_stats():
     """clip_sample=False (train unnormalized) needs no norm_stats and pushes layout dims
     onto the diffusion config (not the flow one)."""
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig
-    from fuji.s1_policy.training.config import TrainConfig
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig
+    from flore.s1_policy.training.config import TrainConfig
 
     cfg = TrainConfig(algo="diffusion", pipeline="hl",
                       diffusion=DPDiffusionConfig(clip_sample=False))
@@ -456,7 +456,7 @@ def test_config_diffusion_no_clip_needs_no_norm_stats():
 
 
 # ---------------------------------------------------------------------------
-# The force-OUTPUT-ONLY ablation (FUJI_DROP_FORCE_INPUT)
+# The force-OUTPUT-ONLY ablation (FLORE_DROP_FORCE_INPUT)
 # ---------------------------------------------------------------------------
 def test_drop_force_input_builds_no_force_encoder_but_still_predicts_force(monkeypatch):
     """No wrench in, force still out — end to end, on a real model and a real batch.
@@ -473,8 +473,8 @@ def test_drop_force_input_builds_no_force_encoder_but_still_predicts_force(monke
     3. The force action columns are still SUPERVISED, so ``metric_sums`` reports a ``force``
        group and the loss depends on the force predictions.
     """
-    from fuji.s1_policy.data import layout as layout_mod
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.data import layout as layout_mod
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     monkeypatch.setattr(layout_mod, "DROP_FORCE_INPUT", True)
     cfg = TrainConfig(algo="diffusion", pipeline="hl",
@@ -525,9 +525,9 @@ def test_save_checkpoint_saves_ema_and_restores_live_weights(tmp_path):
     from the smoothed weights. This is the deploy-critical EMA mechanism."""
     import safetensors.torch
 
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig
-    from fuji.s1_policy.training.config import TrainConfig
-    from fuji.s1_policy.training.trainer import save_checkpoint
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig
+    from flore.s1_policy.training.config import TrainConfig
+    from flore.s1_policy.training.trainer import save_checkpoint
 
     torch.manual_seed(0)
     model = _tiny_model()
@@ -577,9 +577,9 @@ def test_save_checkpoint_saves_ema_and_restores_live_weights(tmp_path):
 
 
 def test_save_checkpoint_rejects_ema_config_mismatch(tmp_path):
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig
-    from fuji.s1_policy.training.config import TrainConfig
-    from fuji.s1_policy.training.trainer import save_checkpoint
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig
+    from flore.s1_policy.training.config import TrainConfig
+    from flore.s1_policy.training.trainer import save_checkpoint
 
     model = _tiny_model()
     configured = TrainConfig(

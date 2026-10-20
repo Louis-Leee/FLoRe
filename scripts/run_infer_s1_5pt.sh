@@ -8,7 +8,7 @@
 #   THIS SCRIPT                 5 predicted keypoints -> two G1 bodies AND five trajectory pairs
 #
 # It is the SAME page every keypoint checkpoint gets (scripts/infer_s1_diffusion.py +
-# fuji/s1_policy/inference/viewer.py) — the blue/orange predicted-vs-target polylines, the gripper
+# flore/s1_policy/inference/viewer.py) — the blue/orange predicted-vs-target polylines, the gripper
 # clusters, the TCP/tracker/wrist triads, the F^cmd arrows, the charts, RGB playback — plus one
 # opt-in overlay: --keypoint-ik draws the whole body, violet for the PREDICTION and pale blue for
 # the dataset TARGET. Five points leave nothing to infer, so the body is a kinematic consequence
@@ -54,19 +54,19 @@
 #   NO_IK=1 ./scripts/run_infer_s1_5pt.sh <ckpt>              # trajectories only
 #
 # Env knobs:
-#   FUJI_PY  python (default: <repo>/.venv/bin/python)
+#   FLORE_PY  python (default: <repo>/.venv/bin/python)
 #   PORT     viser port (default: 8087, the offline viewer's own)
 #   DEVICE   torch device (default: cuda)
 #   NO_IK    set to 1 to skip --keypoint-ik (and therefore the implied ready-pose frame)
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
 PORT="${PORT:-8087}"
 DEVICE="${DEVICE:-cuda}"
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
   exit 2
 fi
 if [ "$#" -lt 1 ]; then
@@ -82,7 +82,7 @@ fi
 # LAYOUT CHECK BEFORE A GPU IS TOUCHED. The viewer itself handles every layout, so it would open a
 # perfectly good page for a 3-tracker checkpoint and merely disable the body — with the reason a
 # few lines into stderr. Say it here instead, and point at the right launcher.
-CKPT_MODE="$("$FUJI_PY" -c \
+CKPT_MODE="$("$FLORE_PY" -c \
   "import json,sys; print(json.load(open(sys.argv[1])).get('hl_data',{}).get('mode',''))" \
   "$CKPT/config.json")"
 HELD_NOTE=""
@@ -90,7 +90,7 @@ case "$CKPT_MODE" in
   fivepoint_geom_*) ;;
   left_only|right_only|both_hands|both_hands_head|both_hands_head_dual)
     # A KEYPOINT SUBSET: the roles this checkpoint does not predict are HELD at the ready pose for
-    # both bodies (fuji/s1_policy/inference/keypoint_humanoid.py, `held_poses`) — the offline twin
+    # both bodies (flore/s1_policy/inference/keypoint_humanoid.py, `held_poses`) — the offline twin
     # of what scripts/hl_serving_5pt.py publishes for the same checkpoint. The trajectory pairs
     # draw for the predicted roles only; the body is whole.
     HELD_NOTE="the roles '$CKPT_MODE' does not predict are HELD at the ready pose (both bodies)"
@@ -110,12 +110,12 @@ case "$CKPT_MODE" in
 esac
 
 # ACTION-CHUNK PIN, DERIVED FROM THE CHECKPOINT. layout.py resolves ACTION_HORIZON from
-# FUJI_ACTION_HORIZON at IMPORT time, so a shell launcher is the only place that can still set it —
+# FLORE_ACTION_HORIZON at IMPORT time, so a shell launcher is the only place that can still set it —
 # and an H=100/200 five-point checkpoint is one of the three this preset ships. Same helper shape as
 # every other launcher; the ACTIVE algorithm's block is what carries the real value.
-if ! CKPT_H="$("$FUJI_PY" - "$CKPT/config.json" <<'PY'
+if ! CKPT_H="$("$FLORE_PY" - "$CKPT/config.json" <<'PY'
 import json, sys
-from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
 raw = json.load(open(sys.argv[1]))
 algo = raw.get("algo")
@@ -134,14 +134,14 @@ PY
   echo "[run] FATAL: could not read the action horizon from $CKPT/config.json (above)" >&2
   exit 2
 fi
-if [ -n "${FUJI_ACTION_HORIZON:-}" ] && [ "$FUJI_ACTION_HORIZON" != "$CKPT_H" ]; then
-  echo "[run] FATAL: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON in the environment, but" >&2
+if [ -n "${FLORE_ACTION_HORIZON:-}" ] && [ "$FLORE_ACTION_HORIZON" != "$CKPT_H" ]; then
+  echo "[run] FATAL: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON in the environment, but" >&2
   echo "[run]        $CKPT declares action_horizon=$CKPT_H. Refusing to guess which is meant." >&2
   exit 2
 fi
-export FUJI_ACTION_HORIZON="$CKPT_H"
+export FLORE_ACTION_HORIZON="$CKPT_H"
 
-CKPT_ALGO="$("$FUJI_PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('algo','diffusion'))" \
+CKPT_ALGO="$("$FLORE_PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('algo','diffusion'))" \
   "$CKPT/config.json")"
 case "$CKPT_ALGO" in
   diffusion) ENTRY=infer_s1_diffusion.py ;;
@@ -158,13 +158,13 @@ case " $* " in
 esac
 
 echo "[run] OFFLINE FIVE-POINT VIEWER on http://localhost:$PORT"
-echo "[run]   python: $FUJI_PY (device=$DEVICE)"
+echo "[run]   python: $FLORE_PY (device=$DEVICE)"
 echo "[run]   checkpoint: $CKPT  algo=$CKPT_ALGO  layout=$CKPT_MODE  entry=$ENTRY"
 if [ -n "$HELD_NOTE" ]; then
-  echo "[run]              chunk=$FUJI_ACTION_HORIZON steps @ 30 Hz -> the predicted role(s) only;"
+  echo "[run]              chunk=$FLORE_ACTION_HORIZON steps @ 30 Hz -> the predicted role(s) only;"
   echo "[run]              $HELD_NOTE"
 else
-  echo "[run]              chunk=$FUJI_ACTION_HORIZON steps @ 30 Hz -> 5 poses + 2 grips + 2 wrenches"
+  echo "[run]              chunk=$FLORE_ACTION_HORIZON steps @ 30 Hz -> 5 poses + 2 grips + 2 wrenches"
 fi
 if [ "${NO_IK:-0}" = "1" ]; then
   echo "[run]   NO_IK=1: trajectories only. The five blue/orange pairs still draw; there is no body."
@@ -186,7 +186,7 @@ echo "[run]     no root), its per-chunk motion is 1.9-4.4 mm against 2.3-3.2 mm 
 echo "[run]     noise, and its real content is the operator's YAW. See"
 echo "[run]     docs/RUNBOOK_diffusion_umi_5pt.md."
 
-exec "$FUJI_PY" "$FUJI_ROOT/scripts/$ENTRY" "$CKPT" \
+exec "$FLORE_PY" "$FLORE_ROOT/scripts/$ENTRY" "$CKPT" \
   --device "$DEVICE" \
   --port "$PORT" \
   "${EXTRA[@]}" \

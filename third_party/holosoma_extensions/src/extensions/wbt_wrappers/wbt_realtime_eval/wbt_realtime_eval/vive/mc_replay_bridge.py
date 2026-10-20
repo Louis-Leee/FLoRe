@@ -78,7 +78,7 @@ import time
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_UMI_DEFAULT = os.path.expanduser("~/FUJI/third_party/UMI_collection")
+_UMI_DEFAULT = os.path.expanduser("~/FLoRe/third_party/UMI_collection")
 
 # Import the source off THIS directory rather than through the package, for the reason in the
 # docstring: `wbt_realtime_eval/__init__.py` reaches for onnx/mujoco/mjswan.

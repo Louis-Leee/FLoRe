@@ -43,14 +43,14 @@ EVERY CONTROL IS IN THE BROWSER PAGE
 ``S0Driver`` binds ``:8770`` as the server and the page is its client, so the page's existing
 ``sendCmd`` channel is the control path — the same one the MC replay bridge's episode picker
 uses. This script therefore has NO viser window and needs no display; its stdout is a log, not a
-UI. The panel appears in the page automatically (it is gated on the ``fuji_n_samples`` wire key,
+UI. The panel appears in the page automatically (it is gated on the ``flore_n_samples`` wire key,
 which nothing else sends), and offers: the sample / episode picker, Predict, Run, ▶▶ auto, Stop,
 Reset. See ``docs/RUNBOOK_hl_offline_drive.md``.
 
-  {"cmd":"fuji","action":"predict"}                {"cmd":"fuji","action":"run"}
-  {"cmd":"fuji","action":"reset"}                  {"cmd":"fuji","action":"stop"}
-  {"cmd":"fuji","action":"sample","index":N}       {"cmd":"fuji","action":"episode","index":N}
-  {"cmd":"fuji","action":"auto"}
+  {"cmd":"flore","action":"predict"}                {"cmd":"flore","action":"run"}
+  {"cmd":"flore","action":"reset"}                  {"cmd":"flore","action":"stop"}
+  {"cmd":"flore","action":"sample","index":N}       {"cmd":"flore","action":"episode","index":N}
+  {"cmd":"flore","action":"auto"}
 
 That vocabulary is also all a 20-line ``websockets`` client needs, which is what
 ``scripts/smoke_test_hl_offline.py`` is: the whole path is verifiable with no browser.
@@ -93,9 +93,9 @@ from pathlib import Path
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
@@ -106,17 +106,17 @@ if _HERE not in sys.path:
 # side-effect-free: it binds nothing and parses no args until its own main().
 import hl_serving as HL  # noqa: E402
 
-from fuji.client.s0_driver import S0Driver  # noqa: E402
-from fuji.s1_policy.data.layout import (  # noqa: E402
+from flore.client.s0_driver import S0Driver  # noqa: E402
+from flore.s1_policy.data.layout import (  # noqa: E402
     ACTION_DT,
     ACTION_HZ,
     WB_JOINT_NAMES,
 )
-from fuji.s1_policy.inference import ready_pose as RP  # noqa: E402
-from fuji.s1_policy.serving import hl_dense, hl_offline, hl_wholebody  # noqa: E402
-from fuji.s1_policy.serving.hl_online import decode_chunk  # noqa: E402
-from fuji.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES  # noqa: E402
-from fuji.utils.rot6d import rotmat_to_quat_xyzw, rot6d_to_rotmat, rotmat_to_rot6d  # noqa: E402
+from flore.s1_policy.inference import ready_pose as RP  # noqa: E402
+from flore.s1_policy.serving import hl_dense, hl_offline, hl_wholebody  # noqa: E402
+from flore.s1_policy.serving.hl_online import decode_chunk  # noqa: E402
+from flore.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES  # noqa: E402
+from flore.utils.rot6d import rotmat_to_quat_xyzw, rot6d_to_rotmat, rotmat_to_rot6d  # noqa: E402
 
 #: The two low-level families this script can drive, and the browser build that serves each.
 FAMILIES = {
@@ -284,16 +284,16 @@ def _open_session(checkpoint: str, algo: str, layout_mode: str, *, device: str,
     """
     paths = tuple(zarr_paths) if zarr_paths else None
     if layout_mode == "wholebody":
-        from fuji.s1_policy.inference.wholebody import WholeBodyInferenceSession
+        from flore.s1_policy.inference.wholebody import WholeBodyInferenceSession
 
         return WholeBodyInferenceSession(checkpoint, algorithm=algo, zarr_paths=paths,
                                          device=device, num_steps=num_steps)
     if algo == "diffusion":
-        from fuji.s1_policy.inference.diffusion import DiffusionInferenceSession as S
+        from flore.s1_policy.inference.diffusion import DiffusionInferenceSession as S
     elif algo == "flow":
-        from fuji.s1_policy.inference.flow import FlowInferenceSession as S
+        from flore.s1_policy.inference.flow import FlowInferenceSession as S
     elif algo == "act":
-        from fuji.s1_policy.inference.act import ACTInferenceSession as S
+        from flore.s1_policy.inference.act import ACTInferenceSession as S
     else:
         raise SystemExit(f"unknown algo {algo!r}")
     return S(checkpoint, zarr_paths=paths, device=device, num_steps=num_steps)
@@ -619,7 +619,7 @@ def _run(args, session, algo: str, layout_mode: str, family: str) -> int:
     _log("")
     _log("READY. Everything is driven from the browser page — this process has no window.")
     _log(f"  1. start the low level:  bash third_party/holosoma_extensions/{browser}")
-    _log(f"  2. it connects to :{args.s0_ws_port} and the FUJI panel appears in the page")
+    _log(f"  2. it connects to :{args.s0_ws_port} and the FLoRe panel appears in the page")
     _log("  3. pick a sample → Predict → Run  (or ▶▶ auto)")
     _log("")
     auto = {"until": 0.0}
@@ -680,7 +680,7 @@ def _run(args, session, algo: str, layout_mode: str, family: str) -> int:
                                   f"{args.auto_max_seconds:g} s")
                     _log(f"auto run: START (ceiling {args.auto_max_seconds:g} s)")
             # ACKNOWLEDGE, after the verb has been ACTED on and never before. A sender polling
-            # `fuji_ack` can then distinguish "not handled yet" from "handled, and this is the
+            # `flore_ack` can then distinguish "not handled yet" from "handled, and this is the
             # answer"; without it every reader races this loop and reads the previous state.
             if req is not None:
                 with page_lock:
@@ -1114,7 +1114,7 @@ def _horizon_of(session) -> int:
     is), so reading the field off it is what keeps this from re-deriving the algo->block map that
     ``hl_online._algo_config_key`` has a documented collapse bug about.
     """
-    from fuji.s1_policy.data.layout import ACTION_HORIZON
+    from flore.s1_policy.data.layout import ACTION_HORIZON
 
     h = getattr(session.config, "action_horizon", None)
     return int(h) if isinstance(h, int) and not isinstance(h, bool) and h > 0 else int(ACTION_HORIZON)
@@ -1128,7 +1128,7 @@ def _gate_rows(rows, gate_n: float):
     the command reproducing the demonstrated press is ``-F_meas``. Gated on MAGNITUDE, which the
     flip preserves. BOTH hands or NEITHER, because a (6,) f_cmd is read as ``[L, R]``.
     """
-    from fuji.utils.force_frame import cmd_from_meas_force
+    from flore.utils.force_frame import cmd_from_meas_force
 
     out, any_live = [], False
     for row in rows:

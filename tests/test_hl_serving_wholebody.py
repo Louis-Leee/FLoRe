@@ -1,9 +1,9 @@
 """Contract tests for the ``diffusion_umi_wholebody`` DEPLOY + OFFLINE-INFERENCE paths.
 
 The training-side contract is ``tests/test_diffusion_umi_wholebody.py``. This is what happens to
-a 43-D chunk AFTER it is sampled: the wire it becomes (``fuji/s1_policy/serving/hl_wholebody.py``,
+a 43-D chunk AFTER it is sampled: the wire it becomes (``flore/s1_policy/serving/hl_wholebody.py``,
 ``scripts/hl_serving_wholebody.py``) and the page it is drawn on
-(``fuji/s1_policy/inference/wholebody.py`` + ``wholebody_viewer.py``,
+(``flore/s1_policy/inference/wholebody.py`` + ``wholebody_viewer.py``,
 ``scripts/infer_s1_wholebody.py``).
 
 Everything pinned here fails SILENTLY otherwise — again the selection criterion:
@@ -32,15 +32,15 @@ import numpy as np
 import pytest
 import torch
 
-from fuji.s1_policy.data.layout import (
+from flore.s1_policy.data.layout import (
     JOINT_DIM,
     WB_JOINT_NAMES,
     get_layout,
 )
-from fuji.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
-from fuji.s1_policy.serving import hl_dense, hl_wholebody
-from fuji.s1_policy.serving.hl_online import replay_only_model
-from fuji.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES
+from flore.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
+from flore.s1_policy.serving import hl_dense, hl_wholebody
+from flore.s1_policy.serving.hl_online import replay_only_model
+from flore.s1_policy.serving.live_robot import G1_29DOF_SDK_DOF_NAMES
 
 # Reuse the sibling's exporter-backed BUILDERS rather than a second synthetic writer: a drifting
 # second schema writer is how a serving test starts passing against data no converter produces.
@@ -126,7 +126,7 @@ def test_the_violet_is_the_same_violet_as_the_other_two_planners():
     import re
     from pathlib import Path
 
-    from fuji.s1_policy.inference.wholebody_viewer import PREDICTION_RGBA
+    from flore.s1_policy.inference.wholebody_viewer import PREDICTION_RGBA
 
     src = (Path(__file__).resolve().parents[1] / "scripts" / "hl_serving.py").read_text()
     match = re.search(r"^_GHOST_RGBA = \(([^)]*)\)", src, re.M)
@@ -519,8 +519,8 @@ class _FakeSource:
 
 
 def _rollout(h: int = 12, *, mask=None):
-    from fuji.s1_policy.inference.common import SampleRef
-    from fuji.s1_policy.inference.wholebody import build_wholebody_result
+    from flore.s1_policy.inference.common import SampleRef
+    from flore.s1_policy.inference.wholebody import build_wholebody_result
 
     sample = _fake_sample(h, mask=mask)
     pred = sample["action_chunk"].numpy() + 0.05
@@ -575,7 +575,7 @@ def test_masked_steps_are_nan_in_the_error_series_not_zero():
 
 
 def test_the_summary_names_the_worst_joint():
-    from fuji.s1_policy.inference.wholebody import wholebody_summary
+    from flore.s1_policy.inference.wholebody import wholebody_summary
 
     result, _s, _p = _rollout()
     summary = wholebody_summary(result)
@@ -588,8 +588,8 @@ def test_the_summary_names_the_worst_joint():
 
 @pytest.mark.parametrize("mode", ["left_only", "both_hands_head_dual"])
 def test_a_keypoint_layout_is_refused_by_the_offline_builder(mode):
-    from fuji.s1_policy.inference.common import SampleRef
-    from fuji.s1_policy.inference.wholebody import build_wholebody_result
+    from flore.s1_policy.inference.common import SampleRef
+    from flore.s1_policy.inference.wholebody import build_wholebody_result
 
     lay = get_layout(mode)
 
@@ -619,7 +619,7 @@ def test_the_keypoint_builder_refuses_a_wholebody_layout_by_name():
     """The other direction, and it is the one that used to CRASH: ``build_rollout_result`` would
     reshape a ``(H, 0)`` rot6d slice to ``(-1, 2, 3)`` and name a rotation array on a layout that
     has no rotations, which points at the wrong thing entirely."""
-    from fuji.s1_policy.inference.common import SampleRef, build_rollout_result
+    from flore.s1_policy.inference.common import SampleRef, build_rollout_result
 
     ref = SampleRef(dataset_index=0, file_index=0, source_path="x", global_episode_id=0,
                     file_episode_id=0, file_frame=0, episode_frame=0, split="train")
@@ -637,7 +637,7 @@ def test_an_unsupervised_target_step_holds_instead_of_snapping_to_zeros():
     """An unsupervised step's stored value is the zero-fill — 29 zeros, i.e. the G1 standing bolt
     upright. Drawn, the pale body SNAPS straight at the first masked step and reads as a
     demonstration that did something violent rather than one that ended."""
-    from fuji.s1_policy.inference.wholebody_viewer import _hold_last_valid
+    from flore.s1_policy.inference.wholebody_viewer import _hold_last_valid
 
     joints = np.zeros((6, JOINT_DIM))
     joints[:3] = 0.3
@@ -777,8 +777,8 @@ def test_the_offline_page_draws_postures_for_a_delta_checkpoint():
     METRICS must not move, because a shared offset cancels in every difference -- if they did, the
     two targets could not be compared and the A/B would be meaningless.
     """
-    from fuji.s1_policy.inference.common import SampleRef
-    from fuji.s1_policy.inference.wholebody import build_wholebody_result
+    from flore.s1_policy.inference.common import SampleRef
+    from flore.s1_policy.inference.wholebody import build_wholebody_result
 
     class _DeltaSource(_FakeSource):
         wb_joint_target = "delta"

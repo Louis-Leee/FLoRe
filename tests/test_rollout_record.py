@@ -1,4 +1,4 @@
-"""The ⏺ RUN RECORDER (``fuji/s1_policy/serving/rollout_record.py``): the button's state machine, the
+"""The ⏺ RUN RECORDER (``flore/s1_policy/serving/rollout_record.py``): the button's state machine, the
 six-stream writer, the camera stream (one JPEG folder per view + an index, for one or two cameras), the
 taps' cost when idle, the wiring into ``scripts/hl_serving_5pt.py`` (source level, like the walk /
 leg-override wiring tests) and ``scripts/plot_rollout_record.py`` on a run the recorder itself wrote."""
@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.s1_policy.serving import rollout_record as R
+from flore.s1_policy.serving import rollout_record as R
 
 _ROOT = Path(__file__).resolve().parents[1]
 _PAGE = _ROOT / "scripts" / "hl_serving_5pt.py"
@@ -1016,7 +1016,7 @@ def test_the_three_point_launcher_carries_task_and_the_record_knobs():
     sh = _LAUNCHER3.read_text()
     assert subprocess.run(["bash", "-n", str(_LAUNCHER3)], capture_output=True).returncode == 0
     task_block = sh[sh.index('if [ -z "$CKPT" ] && [ -n "${TASK:-}" ]; then'):sh.index('if [ "$ALGO" = "muse" ]; then')]
-    assert 'CKPT="$FUJI_ROOT/checkpoints/umi_5pt_${TASK}/h${H:-50}"' in task_block
+    assert 'CKPT="$FLORE_ROOT/checkpoints/umi_5pt_${TASK}/h${H:-50}"' in task_block
     assert 'TASK_EXTRA+=(--rollout-task "$TASK")' in task_block
     assert task_block.count('--rollout-task "$TASK"') == 2                 # also when an explicit --checkpoint won
     assert 'scripts/fetch_checkpoint.sh ${TASK}_5pt_h${H:-50}' in task_block

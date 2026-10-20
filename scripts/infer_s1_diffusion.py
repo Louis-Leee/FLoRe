@@ -11,9 +11,9 @@ from __future__ import annotations
 import argparse
 import json
 
-from fuji.s1_policy.inference import keypoint_humanoid, mc_humanoid, ready_pose
-from fuji.s1_policy.inference.common import result_summary
-from fuji.s1_policy.inference.diffusion import DiffusionInferenceSession
+from flore.s1_policy.inference import keypoint_humanoid, mc_humanoid, ready_pose
+from flore.s1_policy.inference.common import result_summary
+from flore.s1_policy.inference.diffusion import DiffusionInferenceSession
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         help="run one headless rollout, print JSON, and exit without importing viser",
     )
     # Opt-in whole-body motion completion. Defined in ONE place for all three
-    # entry points (fuji.s1_policy.inference.mc_humanoid) because these flags decide
+    # entry points (flore.s1_policy.inference.mc_humanoid) because these flags decide
     # what a MODEL is fed, and three drifting copies would make two runs of "the same"
     # completion incomparable. Absent the flag nothing about the page changes.
     mc_humanoid.add_cli_args(parser)
@@ -62,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
             result = session.infer(args.sample_index, seed=args.seed)
             print(json.dumps(result_summary(result), indent=2))
             return 0
-        from fuji.s1_policy.inference.viewer import run_viewer
+        from flore.s1_policy.inference.viewer import run_viewer
 
         run_viewer(
             session,

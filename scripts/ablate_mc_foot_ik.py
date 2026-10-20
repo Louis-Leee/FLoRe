@@ -103,11 +103,11 @@ def main(argv: list[str] | None = None) -> int:
 
     import hl_serving_mc as M
 
-    from fuji.s1_policy.data.layout import ACTION_DT
-    from fuji.s1_policy.inference import ready_pose as RP
-    from fuji.s1_policy.serving import hl_dense
-    from fuji.s1_policy.serving.hl_online import LivePlanner, load_hl_model
-    from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
+    from flore.s1_policy.data.layout import ACTION_DT
+    from flore.s1_policy.inference import ready_pose as RP
+    from flore.s1_policy.serving import hl_dense
+    from flore.s1_policy.serving.hl_online import LivePlanner, load_hl_model
+    from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
 
     loaded = load_hl_model(args.checkpoint, args.algo, device=args.device, max_cameras=2)
     if tuple(loaded.layout.roles) != M.REQUIRED_ROLES:

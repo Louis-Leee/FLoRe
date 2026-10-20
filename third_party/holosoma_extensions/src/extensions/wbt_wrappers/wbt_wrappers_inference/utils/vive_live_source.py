@@ -28,7 +28,7 @@ The bridge emits the command in the EXACT representation the policy consumes
   (see :meth:`latest_joints`). Also from the same completion pass.
 
 * OPTIONAL on a 5pt frame — ``ref_joints``: ``{"names": [29], "pos": [29], "vel": [29]}``,
-  the REFERENCE MOTION's joint targets + velocities for this tick, BY NAME. FUJI's walk
+  the REFERENCE MOTION's joint targets + velocities for this tick, BY NAME. FLoRe's walk
   skill sends it while a gait clip plays so the policy's ``command_lower_body`` term (12
   reference leg joints + velocities, otherwise read from the FROZEN idle clip) describes
   the SAME gait the two foot keypoints do — the input a baked clip gives the policy in

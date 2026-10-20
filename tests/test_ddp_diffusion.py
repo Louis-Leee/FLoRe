@@ -31,9 +31,9 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fuji.s1_policy.model.diffusion_base import DiffusionVLABase
-from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
-from fuji.s1_policy.training.distributed import DistInfo, wrap_model
+from flore.s1_policy.model.diffusion_base import DiffusionVLABase
+from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
+from flore.s1_policy.training.distributed import DistInfo, wrap_model
 
 # Own rendezvous port so this file can never collide with tests/test_ddp_training.py.
 _PORT = "29621"
@@ -703,7 +703,7 @@ class _DeterministicModel(nn.Module):
 
 
 def _trainer_config(zarr_path, output_dir, batch_size: int):
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     return TrainConfig(
         algo="diffusion",
@@ -743,7 +743,7 @@ def _trainer_worker(rank: int, world_size: int, zarr_path: str, output_dir: str,
     """
     from pathlib import Path
 
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     torch.set_num_threads(1)
     trainer_module.DPDiffusionModel = _DeterministicModel
@@ -804,7 +804,7 @@ def trainer_ddp(tmp_path_factory):
     assert len(results) == 2, results
 
     # Single process, same dataset and batch size: the val objective must come out identical.
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     saved = trainer_module.DPDiffusionModel
     trainer_module.DPDiffusionModel = _DeterministicModel
@@ -955,8 +955,8 @@ def test_flow_is_still_refused_under_torchrun(monkeypatch):
     the reduced gradient, so it stays refused. The refusal happens before any process group is
     created, which is why this test can run in-process.
     """
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
-    from fuji.s1_policy.training.trainer import _DDP_ALGOS, Trainer
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.trainer import _DDP_ALGOS, Trainer
 
     assert "diffusion" in _DDP_ALGOS and "act" in _DDP_ALGOS
     assert "flow" not in _DDP_ALGOS

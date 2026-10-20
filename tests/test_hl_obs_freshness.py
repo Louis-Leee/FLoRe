@@ -30,8 +30,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data.layout import FORCE_DIM, get_layout
-from fuji.s1_policy.serving.hl_online import (
+from flore.s1_policy.data.layout import FORCE_DIM, get_layout
+from flore.s1_policy.serving.hl_online import (
     GRIP_MAX_AGE_S,
     OBS_MAX_AGE_S,
     LivePlanner,
@@ -224,7 +224,7 @@ def test_a_channel_that_never_arrived_blocks_too(hlsrv):
 
 
 # ---------------------------------------------------------------------------
-# PURE-POSITION (FUJI_DROP_FORCE): the F/T must leave the BLOCKING set
+# PURE-POSITION (FLORE_DROP_FORCE): the F/T must leave the BLOCKING set
 # ---------------------------------------------------------------------------
 def test_a_pure_position_checkpoint_is_not_blocked_by_an_unwritten_force_ring(hlsrv):
     """A force-free checkpoint never writes the force ring AT ALL, so gating on its age

@@ -74,7 +74,7 @@ class _FakeEMA:
 
 
 def _config(path, tmp_path, **kwargs):
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     data = HLDataConfig(
         zarr_paths=(path,),
@@ -98,7 +98,7 @@ def _config(path, tmp_path, **kwargs):
 
 
 def test_clean99_episode_split_has_no_frame_leakage(tmp_path):
-    from fuji.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.hl_dataset import HLDataset
 
     path = _write_hl_zarr(tmp_path / "clean99.zarr.zip", n_frames=99, n_episodes=99)
     dataset = HLDataset(path, drop_glitch_windows=False, require_episode_ends=True)
@@ -119,7 +119,7 @@ def test_clean99_episode_split_has_no_frame_leakage(tmp_path):
 
 
 def test_multi_file_episode_ids_are_global_and_unambiguous(tmp_path):
-    from fuji.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.hl_dataset import HLDataset
 
     a = _write_hl_zarr(tmp_path / "a.zarr.zip", n_frames=6, n_episodes=2)
     b = _write_hl_zarr(tmp_path / "b.zarr.zip", n_frames=9, n_episodes=3)
@@ -134,7 +134,7 @@ def test_multi_file_episode_ids_are_global_and_unambiguous(tmp_path):
 
 @pytest.mark.parametrize("invalid", ["missing", "non_monotonic"])
 def test_validation_refuses_missing_or_invalid_episode_ends(tmp_path, invalid):
-    from fuji.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.hl_dataset import HLDataset
 
     path = _write_hl_zarr(tmp_path / f"{invalid}.zarr.zip", n_frames=12, n_episodes=3)
     if invalid == "missing":
@@ -189,7 +189,7 @@ def test_norm_fit_uses_only_train_episodes_and_records_provenance(tmp_path, monk
 
 
 def test_split_provenance_mismatch_is_rejected():
-    from fuji.s1_policy.training.trainer import validate_split_provenance
+    from flore.s1_policy.training.trainer import validate_split_provenance
 
     actual = {
         "transform_contract_version": 1,
@@ -215,8 +215,8 @@ def test_split_provenance_mismatch_is_rejected():
 
 @pytest.mark.parametrize("mutation", ["q99_shape", "nonfinite", "reversed"])
 def test_training_rejects_malformed_normalization_before_use(mutation):
-    from fuji.s1_policy.data.norm_stats import NormStats
-    from fuji.s1_policy.training.trainer import Trainer
+    from flore.s1_policy.data.norm_stats import NormStats
+    from flore.s1_policy.training.trainer import Trainer
 
     q01 = np.zeros(3, dtype=np.float64)
     q99 = np.ones(3, dtype=np.float64)
@@ -236,11 +236,11 @@ def test_training_rejects_malformed_normalization_before_use(mutation):
 
 
 def test_deploy_sampler_step_config_is_validated():
-    from fuji.s1_policy.model.base import FlowMatchingVLABase
-    from fuji.s1_policy.model.diffusion_base import DiffusionVLABase
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig
-    from fuji.s1_policy.model.dp_flow import DPFlowConfig
-    from fuji.s1_policy.training.config import TrainConfig
+    from flore.s1_policy.model.base import FlowMatchingVLABase
+    from flore.s1_policy.model.diffusion_base import DiffusionVLABase
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig
+    from flore.s1_policy.model.dp_flow import DPFlowConfig
+    from flore.s1_policy.training.config import TrainConfig
 
     with pytest.raises(ValueError, match="inference_steps must be a positive integer"):
         TrainConfig(model=DPFlowConfig(inference_steps=0))
@@ -272,7 +272,7 @@ def test_deploy_sampler_step_config_is_validated():
 
 
 def test_train_and_val_loader_semantics_include_validation_tail(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "loader.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -286,7 +286,7 @@ def test_train_and_val_loader_semantics_include_validation_tail(tmp_path, monkey
 
 
 def test_deterministic_eval_is_rng_isolated_and_uses_then_restores_ema(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "eval.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -305,7 +305,7 @@ def test_deterministic_eval_is_rng_isolated_and_uses_then_restores_ema(tmp_path,
 
 
 def test_metric_accumulator_uses_sum_and_count_not_batch_means():
-    from fuji.s1_policy.training.metrics import MetricAccumulator
+    from flore.s1_policy.training.metrics import MetricAccumulator
 
     aggregate = MetricAccumulator()
     aggregate.add({"overall": (torch.tensor(10.0), torch.tensor(10.0))})
@@ -316,9 +316,9 @@ def test_metric_accumulator_uses_sum_and_count_not_batch_means():
 
 
 def test_physical_metrics_are_mask_aware_and_use_physical_units():
-    from fuji.s1_policy.data.layout import get_layout
-    from fuji.s1_policy.training.metrics import physical_trajectory_sums
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.s1_policy.data.layout import get_layout
+    from flore.s1_policy.training.metrics import physical_trajectory_sums
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     layout = get_layout("left_only")
     target = np.zeros((1, 1, layout.action_dim), dtype=np.float64)
@@ -344,7 +344,7 @@ def test_physical_metrics_are_mask_aware_and_use_physical_units():
 
 
 def test_best_selection_and_metric_names():
-    from fuji.s1_policy.training.trainer import is_improvement, metric_log
+    from flore.s1_policy.training.trainer import is_improvement, metric_log
 
     assert is_improvement(1.0, math.inf)
     assert not is_improvement(math.nan, 1.0)
@@ -356,7 +356,7 @@ def test_best_selection_and_metric_names():
 
 
 def test_epoch_sampler_mid_epoch_resume_preserves_remaining_order():
-    from fuji.s1_policy.training.trainer import EpochShuffleSampler
+    from flore.s1_policy.training.trainer import EpochShuffleSampler
 
     full = EpochShuffleSampler(11, seed=7)
     full.set_epoch(3)
@@ -367,7 +367,7 @@ def test_epoch_sampler_mid_epoch_resume_preserves_remaining_order():
 
 
 def test_resume_restores_completed_step_optimizer_scheduler_and_sampler(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "resume.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -412,7 +412,7 @@ def test_resume_restores_completed_step_optimizer_scheduler_and_sampler(tmp_path
 def test_version_three_resume_requires_split_provenance(tmp_path, monkeypatch):
     from dataclasses import replace
 
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "missing_provenance.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -431,7 +431,7 @@ def test_version_three_resume_requires_split_provenance(tmp_path, monkeypatch):
 
 
 def test_epoch_training_writes_resume_and_local_bests(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "train.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -475,7 +475,7 @@ def test_epoch_training_writes_resume_and_local_bests(tmp_path, monkeypatch):
 
 
 def test_resume_restores_ema_shadow_and_live_weights(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "ema_resume.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -495,9 +495,9 @@ def test_resume_restores_ema_shadow_and_live_weights(tmp_path, monkeypatch):
 
 
 def test_resume_rejects_changed_norm_stats_and_uses_bundled_copy(tmp_path, monkeypatch):
-    from fuji.s1_policy.data.hl_dataset import HLDataset
-    from fuji.s1_policy.data.norm_stats import NormStats, save_norm_stats
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.norm_stats import NormStats, save_norm_stats
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "norm_resume.zarr.zip", n_frames=10, n_episodes=3)
     probe = HLDataset(path, drop_glitch_windows=False, obs_history_len=1)
@@ -557,8 +557,8 @@ def test_resume_rejects_changed_norm_stats_and_uses_bundled_copy(tmp_path, monke
 
 
 def test_save_checkpoint_removes_stale_bundled_norm_stats(tmp_path):
-    from fuji.s1_policy.training.config import TrainConfig
-    from fuji.s1_policy.training.trainer import save_checkpoint
+    from flore.s1_policy.training.config import TrainConfig
+    from flore.s1_policy.training.trainer import save_checkpoint
 
     model = _DummyModel()
     config = TrainConfig(ema=False)
@@ -577,7 +577,7 @@ def test_save_checkpoint_removes_stale_bundled_norm_stats(tmp_path):
 
 
 def test_incomplete_norm_stats_are_rejected(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "incomplete_norm.zarr.zip", n_frames=10, n_episodes=3)
     stats_path = tmp_path / "incomplete.json"
@@ -601,7 +601,7 @@ def test_incomplete_norm_stats_are_rejected(tmp_path, monkeypatch):
 
 
 def test_terminal_resumed_partial_epoch_keeps_absolute_batch_index(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "partial_epoch.zarr.zip", n_frames=16, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -687,7 +687,7 @@ def _attach_fake_wandb(trainer, run_id="fakerun"):
 
 def test_epoch_artifact_uploads_on_cadence_with_addressable_name(tmp_path, monkeypatch):
     """Every Nth epoch must publish its own named artifact, not just a rolling version."""
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "epoch_artifact.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -734,7 +734,7 @@ def test_epoch_artifact_uploads_on_cadence_with_addressable_name(tmp_path, monke
 
 def test_coinciding_cadences_save_the_checkpoint_once(tmp_path, monkeypatch):
     """A shared save: writing the same multi-GB dir twice per epoch is pure waste."""
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "both_cadences.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -778,7 +778,7 @@ def test_coinciding_cadences_save_the_checkpoint_once(tmp_path, monkeypatch):
 
 def test_epoch_artifact_failure_does_not_stop_training(tmp_path, monkeypatch):
     """W&B is best-effort: a broken upload must never lose the local run."""
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "artifact_failure.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -810,7 +810,7 @@ def test_epoch_artifact_failure_does_not_stop_training(tmp_path, monkeypatch):
 
 def test_epoch_artifact_cadence_writes_nothing_extra_without_wandb(tmp_path, monkeypatch):
     """With W&B off the cadence has no consumer, so it must not multiply local saves."""
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "no_wandb.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -866,7 +866,7 @@ def test_flow_sampler_generator_is_reproducible():
 
 def _deploy_checkpoint(tmp_path, monkeypatch, weight: float, **cfg_kwargs):
     """Train-and-save one step so a real deploy dir (weights + config + _provenance) exists."""
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "base.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -881,7 +881,7 @@ def _deploy_checkpoint(tmp_path, monkeypatch, weight: float, **cfg_kwargs):
 
 
 def test_init_from_loads_weights_only_and_restarts_the_run(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     _, checkpoint = _deploy_checkpoint(tmp_path, monkeypatch, weight=3.5)
     # A DIFFERENT dataset: the entire point of a finetune, and what --resume-from refuses.
@@ -901,7 +901,7 @@ def test_init_from_loads_weights_only_and_restarts_the_run(tmp_path, monkeypatch
 
 def test_init_from_seeds_the_ema_shadow_from_the_loaded_weights(tmp_path, monkeypatch):
     """EMAModel CLONES at construction, so a load placed after it would shadow random init."""
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     # The BASE runs with EMA off deliberately: save_checkpoint writes model.safetensors from the
     # EMA whenever it is enabled, so an EMA base that never stepped would ship its random-init
@@ -917,14 +917,14 @@ def test_init_from_seeds_the_ema_shadow_from_the_loaded_weights(tmp_path, monkey
 
 
 def test_init_from_and_resume_from_together_are_refused():
-    from fuji.s1_policy.training.config import TrainConfig
+    from flore.s1_policy.training.config import TrainConfig
 
     with pytest.raises(ValueError, match="mutually exclusive"):
         TrainConfig(resume_from="a", init_from="b")
 
 
 def test_init_from_refuses_a_checkpoint_that_is_not_a_deploy_dir(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     path = _write_hl_zarr(tmp_path / "x.zarr.zip", n_frames=10, n_episodes=3)
     monkeypatch.setattr(trainer_module, "DPFlowModel", _DummyModel)
@@ -933,7 +933,7 @@ def test_init_from_refuses_a_checkpoint_that_is_not_a_deploy_dir(tmp_path, monke
 
 
 def test_init_from_refuses_a_different_layout_mode(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     _, checkpoint = _deploy_checkpoint(tmp_path, monkeypatch, weight=1.0)
     # Rewrite the SAVED config's layout: same widths on this dummy model, different meaning.
@@ -947,7 +947,7 @@ def test_init_from_refuses_a_different_layout_mode(tmp_path, monkeypatch):
 
 
 def test_init_from_refuses_a_different_active_algo_block(tmp_path, monkeypatch):
-    from fuji.s1_policy.training import trainer as trainer_module
+    from flore.s1_policy.training import trainer as trainer_module
 
     _, checkpoint = _deploy_checkpoint(tmp_path, monkeypatch, weight=1.0)
     config_path = Path(checkpoint) / "config.json"
@@ -960,7 +960,7 @@ def test_init_from_refuses_a_different_active_algo_block(tmp_path, monkeypatch):
 
 
 def test_validate_init_norm_stats_ignores_the_split_but_not_the_transform():
-    from fuji.s1_policy.training.trainer import validate_init_norm_stats
+    from flore.s1_policy.training.trainer import validate_init_norm_stats
 
     base = {
         "total_episodes": 232,
@@ -994,7 +994,7 @@ def test_validate_init_norm_stats_ignores_the_split_but_not_the_transform():
 
 
 def test_norm_stats_shift_reports_the_relative_range_change():
-    from fuji.s1_policy.training.trainer import norm_stats_shift
+    from flore.s1_policy.training.trainer import norm_stats_shift
 
     def stats(q99):
         return json.dumps({

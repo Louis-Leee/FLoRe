@@ -3,7 +3,7 @@
 The HL-v2 window geometry is declared twice, in two separate git repositories:
 
     UMI_collection/processing/umi_convert_core.py   (writes the zarr arrays)
-    fuji/s1_policy/data/layout.py                   (sizes the model, slices the columns)
+    flore/s1_policy/data/layout.py                   (sizes the model, slices the columns)
 
 They MUST agree. A silent divergence mis-times every label — an 8-bin history over 1 s
 read as an 8-bin history over 2 s is numerically indistinguishable in the arrays, and the
@@ -29,7 +29,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from fuji.s1_policy.data import layout as L
+from flore.s1_policy.data import layout as L
 
 _CONVERTER_DIR = Path(__file__).resolve().parents[1] / "third_party" / "UMI_collection" / "processing"
 
@@ -85,12 +85,12 @@ def test_window_geometry_constants_agree(core):
 
     Contract v3 (2026-08-07): NO history (1 bin at t0), 50 steps at 30 Hz. This is THE
     cross-repo guard — the converter writes these into the zarr attrs and
-    hl_dataset._check_file gates the loader on the FUJI copies, so a silent divergence
+    hl_dataset._check_file gates the loader on the FLoRe copies, so a silent divergence
     mis-times every training label while every shape still matches."""
     # The force-bin count and the action-step count are compared on the DEFAULTS of both
     # sides, because both sides are deliberately re-pinnable per run (converter:
-    # --hl-force-hist-len / --hl-action-horizon; FUJI: FUJI_FORCE_HIST_LEN /
-    # FUJI_ACTION_HORIZON) for an L=1 vs L=6 or an H=50 vs H=30 A/B. What must never drift
+    # --hl-force-hist-len / --hl-action-horizon; FLoRe: FLORE_FORCE_HIST_LEN /
+    # FLORE_ACTION_HORIZON) for an L=1 vs L=6 or an H=50 vs H=30 A/B. What must never drift
     # is the default contract they agree on -- and per run, the zarr attr vs the resolved
     # value, which hl_dataset._check_file gates.
     assert core.HLGrid().force_hist_len == L.FORCE_HIST_LEN_DEFAULT == 1
@@ -102,7 +102,7 @@ def test_window_geometry_constants_agree(core):
     # The RATE is what both sides pin exactly; the horizon pin may only shorten the COUNT,
     # so L.ACTION_SPAN_S is asserted below as a derivation, not against a literal.
     # NOT cross-checked here: the two RESOLVED counts. The converter's GRID is re-pinned
-    # only by its own CLI and the FUJI copy only by the env, so a FUJI-side pin cannot
+    # only by its own CLI and the FLoRe copy only by the env, so a FLoRe-side pin cannot
     # reach `core` and comparing them would merely forbid running pytest under a pin. The
     # per-run guard that matters is zarr-attr vs resolved value, in
     # test_hl_dataset.py::_check_file's tests -- a file's own recorded grid, not a global.
@@ -176,7 +176,7 @@ def test_hands_flag_helper_covers_every_mode():
 
 def test_tracker_roles_match_the_converters_hands_modes(conv):
     """The tracker roles a layout mode needs must be exactly the roles the converter's
-    matching --hands value requires — else a mode passes the FUJI-side check and then
+    matching --hands value requires — else a mode passes the FLoRe-side check and then
     fails (or silently under-reads) in the converter."""
     for mode, flag in L.HANDS_FLAG_BY_MODE.items():
         assert L.tracker_roles_required(mode) == conv.HANDS_MODES[flag], mode
@@ -212,7 +212,7 @@ def test_sensor_roles_match_the_converters(conv):
 def test_zarr_key_names_match_on_both_sides(conv):
     """The dataset's key construction must be exactly the converter's emission, name for
     name, for every quantity. Enumerated programmatically rather than trusted."""
-    from fuji.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.hl_dataset import HLDataset
 
     for mode, flag in L.HANDS_FLAG_BY_MODE.items():
         if mode == "right_only":
@@ -275,7 +275,7 @@ def test_gripper_normalization_reference_matches_the_rig_calibration(conv):
     match the physical full-open width the converter calibrates against and now records
     in attrs (gripper_width_open_m) — otherwise every gripper label is scaled wrong, and
     UMI's 0.08 m grasp threshold lands at the wrong normalized value."""
-    from fuji.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
+    from flore.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
 
     calib_dir = _CONVERTER_DIR.parent / "robot_assets" / "calibration"
     if not (calib_dir / "gripper_range.json").exists():
@@ -312,7 +312,7 @@ def test_one_sided_columns_are_widened_to_min_max():
     unless inspected per column. After: worst |normalized| 15.08 -> 1.89."""
     import numpy as np
 
-    from fuji.s1_policy.data.norm_stats import normalize_quantile
+    from flore.s1_policy.data.norm_stats import normalize_quantile
     from scripts.fit_hl_norm_stats import _quantiles_masked
 
     rng = np.random.default_rng(0)

@@ -10,7 +10,7 @@
 #      anchor than a 50-step one, so its per-column q01/q99 are wider at an IDENTICAL width.
 #      Crossed, the file loads, `_check_norm_stats` passes, and diffusion's `clip_sample=True`
 #      then clamps every genuinely out-of-range column on every DDIM step. This fits any missing
-#      one FIRST, with FUJI_ACTION_HORIZON exported before the fit (the pin is resolved at
+#      one FIRST, with FLORE_ACTION_HORIZON exported before the fit (the pin is resolved at
 #      IMPORT, so exporting it afterwards silently fits the wrong horizon).
 #   2. A CELL THAT ALREADY HAS AN OUTPUT DIR IS SKIPPED, not overwritten and not fatal, so
 #      re-running after an interruption resumes the QUEUE instead of dying on cell 1.
@@ -76,7 +76,7 @@ MAX_STEPS=${MAX_STEPS:-100000}
 BATCH=${BATCH:-24}
 NOISE_XY_M=${NOISE_XY_M:-0.010}
 NOISE_RPY_DEG=${NOISE_RPY_DEG:-2.0}
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 DSDIR=${DSDIR:-third_party/UMI_collection/data/datasets}
 GRID_LOG=${GRID_LOG:-logs/5pt_grid.log}
 VAL_EPS=4
@@ -137,7 +137,7 @@ else
     echo "    post-processes over a --hands both_head_dual conversion, in this order:"
     echo "      (UMI)  ./run_mc_to_hl_wholebody.sh <dual>.zarr.zip -o <dual>_wbabs.zarr.zip \\"
     echo "                 --cond-mode absolute --dz-anchor hand"
-    echo "      (FUJI) uv run scripts/add_foot_targets.py <dual>_wbabs.zarr.zip \\"
+    echo "      (FLoRe) uv run scripts/add_foot_targets.py <dual>_wbabs.zarr.zip \\"
     echo "                 -o <dual>_wbabs_5pt.zarr.zip"
     echo "    See docs/RUNBOOK_diffusion_umi_5pt.md step 1."
 fi
@@ -180,7 +180,7 @@ for i in "${!PLAN_STATE[@]}"; do
         continue
     fi
     # Norm stats FIRST, with the horizon pin exported INTO the fit: the quantiles depend on H and
-    # fuji.s1_policy.data.layout resolves FUJI_ACTION_HORIZON at IMPORT, so a pin set after the
+    # flore.s1_policy.data.layout resolves FLORE_ACTION_HORIZON at IMPORT, so a pin set after the
     # process starts cannot reach the fitter's def-time defaults.
     #
     # No --wb-joint-target here (unlike the wholebody grid): that knob parameterizes the 29 JOINT
@@ -188,7 +188,7 @@ for i in "${!PLAN_STATE[@]}"; do
     # whose action is not a joint configuration.
     if [[ ! -f "${PLAN_NS[$i]}" ]]; then
         echo "[grid] fitting norm stats for $cell -> ${PLAN_NS[$i]}"
-        if ! FUJI_ACTION_HORIZON="$horizon" FUJI_FORCE_HIST_LEN=1 \
+        if ! FLORE_ACTION_HORIZON="$horizon" FLORE_FORCE_HIST_LEN=1 \
                 .venv/bin/python scripts/fit_hl_norm_stats.py \
                     --zarr-paths "${PLAN_DS[$i]}" \
                     --mode "${PLAN_MODE[$i]}" \

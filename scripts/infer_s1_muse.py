@@ -6,14 +6,14 @@ index is an exact HLDataset sample, and the page compares the native-layout pred
 that sample's masked target on the fixed t0-inclusive 30 Hz action grid, force included.
 
 Three things differ, all forced by the model living in another environment
-(``fuji/s1_policy/inference/muse.py`` has the full reasoning):
+(``flore/s1_policy/inference/muse.py`` has the full reasoning):
 
   * ``--zarr-path`` is REQUIRED. The siblings read their zarr list out of the checkpoint's
     ``hl_data`` block; a UVA checkpoint records a co-training MIX (five sessions for
     ``uva_hl_force``), so which one to compare against has to be said.
   * ``--backend-python`` must point at the uvaforce interpreter (or ``$BACKEND_PY``). Use
     ``./scripts/run_infer_s1_muse.sh``, which resolves it and — load-bearing — derives
-    ``FUJI_ACTION_HORIZON`` from the checkpoint before this process starts.
+    ``FLORE_ACTION_HORIZON`` from the checkpoint before this process starts.
   * there is no ``--num-steps``. The UVA action head decodes in one pass; its own diffusion-head
     step counts are fixed by the checkpoint. Same call as the ACT CLI: a flag that silently did
     nothing would be worse than its absence.
@@ -29,9 +29,9 @@ import argparse
 import json
 import sys
 
-from fuji.s1_policy.inference.common import result_summary
-from fuji.s1_policy.inference.muse import MuseInferenceSession
-from fuji.s1_policy.serving.hl_muse import resolve_backend_python
+from flore.s1_policy.inference.common import result_summary
+from flore.s1_policy.inference.muse import MuseInferenceSession
+from flore.s1_policy.serving.hl_muse import resolve_backend_python
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
                              "whose UVA window is fully in-episode)")
     parser.add_argument("--seed", type=int, default=0, help="sampling noise seed")
     parser.add_argument("--val-last-episodes", type=int, default=0,
-                        help="label the last N episodes 'validation' in the page. FUJI's split "
+                        help="label the last N episodes 'validation' in the page. FLoRe's split "
                              "convention, not UVA's — that run holds out by ratio, so this is "
                              "advisory unless you know they line up.")
     parser.add_argument("--force-fusion", default=None, choices=["early", "late", "both"],
@@ -87,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
                 "no dataset anchor has a fully in-episode UVA window. Either the episodes are "
                 f"shorter than {session.meta.num_actions * 2} frames or --zarr-path is not the "
                 "session this checkpoint was trained on.")
-        # Default to a usable anchor rather than index 0: FUJI's anchor set includes frames
+        # Default to a usable anchor rather than index 0: FLoRe's anchor set includes frames
         # near an episode start/end that UVA's longer window cannot cover, and landing the
         # viewer on one would greet the operator with an error in the status bar.
         index = args.sample_index if args.sample_index is not None else session.legal_indices[0]
@@ -95,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
             result = session.infer(index, seed=args.seed)
             print(json.dumps(result_summary(result), indent=2))
             return 0
-        from fuji.s1_policy.inference.viewer import run_viewer
+        from flore.s1_policy.inference.viewer import run_viewer
 
         run_viewer(
             session,

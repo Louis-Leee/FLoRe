@@ -66,16 +66,16 @@
 #   PORT=8091 ./scripts/run_hl_serving_wholebody.sh --checkpoint <ckpt> --post-anchor command
 #
 # Env knobs:
-#   FUJI_PY   python (default: <repo>/.venv/bin/python)
+#   FLORE_PY   python (default: <repo>/.venv/bin/python)
 #   PORT      viser port (default: 8091 — distinct from 8088/8090 so all three planners coexist)
 #   DEVICE    torch device (default: cuda)
 #   LEGS      predict|hold — a shorthand for --legs, so a first-run setting can be exported once
-#   FUJI_ACTION_HORIZON  DO NOT SET IT — derived from the checkpoint, exactly as
+#   FLORE_ACTION_HORIZON  DO NOT SET IT — derived from the checkpoint, exactly as
 #             run_hl_serving{,_mc}.sh do, because layout.py resolves it at IMPORT time.
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
 PORT="${PORT:-8091}"
 DEVICE="${DEVICE:-cuda}"
 
@@ -99,8 +99,8 @@ for _v in MOTION_COMPLETION_DIR MOTION_COMPLETION_PY MOTION_COMPLETION_CKPT; do
   fi
 done
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
   exit 2
 fi
 
@@ -135,7 +135,7 @@ fi
 # (by name, in main()), but that costs a model load and several GB of VRAM first — and the most
 # likely mistake is reaching for this launcher with a 3-tracker checkpoint, which has its own
 # working launcher two files over. Say so in one line instead.
-CKPT_MODE="$("$FUJI_PY" -c \
+CKPT_MODE="$("$FLORE_PY" -c \
   "import json,sys; print(json.load(open(sys.argv[1])).get('hl_data',{}).get('mode',''))" \
   "$CKPT/config.json")"
 if [ "$CKPT_MODE" != "wholebody" ]; then
@@ -148,14 +148,14 @@ if [ "$CKPT_MODE" != "wholebody" ]; then
 fi
 
 # ACTION-CHUNK PIN, DERIVED FROM THE CHECKPOINT — same contract, same reasoning and the same
-# helper shape as run_hl_serving{,_mc}.sh: fuji/s1_policy/data/layout.py resolves ACTION_HORIZON
-# from FUJI_ACTION_HORIZON at IMPORT time, so a shell launcher is the only place that can still
+# helper shape as run_hl_serving{,_mc}.sh: flore/s1_policy/data/layout.py resolves ACTION_HORIZON
+# from FLORE_ACTION_HORIZON at IMPORT time, so a shell launcher is the only place that can still
 # set it. It must come from the ACTIVE algorithm's block (the trainer leaves the other two at
 # their dataclass defaults), which is why config.json's own `algo` picks the block.
-if ! CKPT_H="$("$FUJI_PY" - "$CKPT/config.json" <<'PY'
+if ! CKPT_H="$("$FLORE_PY" - "$CKPT/config.json" <<'PY'
 import json, sys
 # Imported, not duplicated: a second copy of the algo->block map here would drift silently.
-from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
 raw = json.load(open(sys.argv[1]))
 algo = raw.get("algo")
@@ -174,16 +174,16 @@ PY
   echo "[run] FATAL: could not read the action horizon from $CKPT/config.json (above)" >&2
   exit 2
 fi
-if [ -n "${FUJI_ACTION_HORIZON:-}" ] && [ "$FUJI_ACTION_HORIZON" != "$CKPT_H" ]; then
-  echo "[run] FATAL: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON in the environment, but" >&2
+if [ -n "${FLORE_ACTION_HORIZON:-}" ] && [ "$FLORE_ACTION_HORIZON" != "$CKPT_H" ]; then
+  echo "[run] FATAL: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON in the environment, but" >&2
   echo "[run]        $CKPT declares action_horizon=$CKPT_H. Refusing to guess which is meant." >&2
   exit 2
 fi
-export FUJI_ACTION_HORIZON="$CKPT_H"
+export FLORE_ACTION_HORIZON="$CKPT_H"
 
 # The ALGO defaults to diffusion in the planner, but the checkpoint states its own — pass it
 # through so a flow/act wholebody checkpoint does not need the flag spelled twice.
-CKPT_ALGO="$("$FUJI_PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('algo',''))" \
+CKPT_ALGO="$("$FLORE_PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('algo',''))" \
   "$CKPT/config.json")"
 EXTRA=()
 case " $* " in *" --algo "*) ;; *) [ -n "$CKPT_ALGO" ] && EXTRA=(--algo "$CKPT_ALGO") ;; esac
@@ -194,12 +194,12 @@ case " $* " in
 esac
 
 echo "[run] WHOLE-BODY PLANNER (29 joints -> dense, NO completion) on http://localhost:$PORT"
-echo "[run]   python: $FUJI_PY (device=$DEVICE)"
+echo "[run]   python: $FLORE_PY (device=$DEVICE)"
 echo "[run]   checkpoint: $CKPT  algo=${CKPT_ALGO:-?}  layout=$CKPT_MODE"
-echo "[run]              chunk=$FUJI_ACTION_HORIZON steps @ 30 Hz  ->  29 joints + 2 grips + 2 wrenches"
+echo "[run]              chunk=$FLORE_ACTION_HORIZON steps @ 30 Hz  ->  29 joints + 2 grips + 2 wrenches"
 echo "[run]   legs: ${LEGS:-predict}   (LEGS=hold pins the 12 leg joints to the clutch base)"
 echo "[run]   COMPANION LOW LEVEL — dense, ABSOLUTE, RecordTap on (W&B run 7vxmnwo6):"
-echo "[run]     cd $FUJI_ROOT/third_party/holosoma_extensions/force_deploy && \\"
+echo "[run]     cd $FLORE_ROOT/third_party/holosoma_extensions/force_deploy && \\"
 echo "[run]       MODE=dense-unified-anneal HOLOSOMA_VIVE_RELATIVE=0 RECORD=1 ${LL_FORCE_ENV}\\"
 echo "[run]       bash 3_run_policy_vive_force.sh"
 if [ -z "$LL_FORCE_ENV" ]; then
@@ -228,7 +228,7 @@ echo "[run]   Arm ONCE, then '▶▶ Run to completion' keeps predicting and exe
 echo "[run]     STOP / the --auto-max-seconds ceiling (20 s) / the low level leaving :8770."
 echo "[run]   ⚠️  Gantry-suspended for first runs: the LEGS are on this wire."
 
-exec "$FUJI_PY" "$FUJI_ROOT/scripts/hl_serving_wholebody.py" \
+exec "$FLORE_PY" "$FLORE_ROOT/scripts/hl_serving_wholebody.py" \
   --device "$DEVICE" \
   --port "$PORT" \
   "${EXTRA[@]}" \

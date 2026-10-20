@@ -10,7 +10,7 @@ drives the arm and the low-level RL controller executes it.
 
 It runs INSIDE the ``uvaforce`` conda env (torch 2.7.1+cu128, hydra, diffusers — and NO
 viser/mink). The viser control/visualization page (``scripts/muse_force_serving_viz.py``)
-runs in FUJI's ``.venv`` and SPAWNS this process, talking to it over the same base64-npz
+runs in FLoRe's ``.venv`` and SPAWNS this process, talking to it over the same base64-npz
 line protocol the rollout viz uses. That two-process split (mutually exclusive envs) is the
 same one ``run_muse_force_rollout_viz.sh`` wires up.
 
@@ -45,7 +45,7 @@ Therefore we keep the whole running anchor in the low-level's PELVIS frame (seed
 ready-pose home in ``home_anchor.json``), advance it by the model's relative delta IN THAT
 FRAME (no axis-convention rotation needed — exactly why the DP-Flow deploy path needs none),
 and only apply the fixed TCP→contact-point lever when converting to the ``vr_3point`` wire.
-This is the same un-relativize math as ``fuji/s1_policy/serving/server.py::_chunk_to_absolute``
+This is the same un-relativize math as ``flore/s1_policy/serving/server.py::_chunk_to_absolute``
 and ``umi.../real_inference_util.get_real_umi_action``.
 
 This process reads NOTHING from ``UMI_collection``/``holosoma_extensions`` at import time; it
@@ -71,16 +71,16 @@ _REAL_STDOUT = sys.stdout
 sys.stdout = sys.stderr
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_UVA = os.path.join(_FUJI_ROOT, "third_party", "unified_video_action")
-_UMI = os.path.join(_FUJI_ROOT, "third_party", "UMI_collection")
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_UVA = os.path.join(_FLORE_ROOT, "third_party", "unified_video_action")
+_UMI = os.path.join(_FLORE_ROOT, "third_party", "UMI_collection")
 
-# FUJI root on sys.path up front: LivePlanner uses `fuji.utils.rot6d` and main() uses
-# `fuji.client.s0_driver`. Backend.__init__ does os.chdir(_UVA), so a bare 'fuji' import
-# after that chdir would fail unless the ABSOLUTE FUJI root is already importable — add
-# it here (absolute) so it survives the chdir. (uvaforce env: verified `fuji` imports.)
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+# FLoRe root on sys.path up front: LivePlanner uses `flore.utils.rot6d` and main() uses
+# `flore.client.s0_driver`. Backend.__init__ does os.chdir(_UVA), so a bare 'flore' import
+# after that chdir would fail unless the ABSOLUTE FLoRe root is already importable — add
+# it here (absolute) so it survives the chdir. (uvaforce env: verified `flore` imports.)
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 
 _MSG_PREFIX = "MUSEVIZ"
 
@@ -341,7 +341,7 @@ class LivePlanner:
     # --- frame helpers ---------------------------------------------------
     def _wire_home_to_tcp_anchor(self):
         """LEFT ready-pose CONTACT-POINT (wire) → UMI-TCP anchor (pos, rot6d), pelvis."""
-        from fuji.utils.rot6d import quat_xyzw_to_rotmat, rotmat_to_rot6d  # type: ignore
+        from flore.utils.rot6d import quat_xyzw_to_rotmat, rotmat_to_rot6d  # type: ignore
         R = quat_xyzw_to_rotmat(self._home_quat_xyzw[0])           # (3,3) wrist orientation
         # contact = wrist + R@WIRE_OFFSET ; tcp = wrist + R@TCP_OFFSET
         wrist = self._home_pos_wire[0] - R @ self._WIRE_OFFSET
@@ -353,7 +353,7 @@ class LivePlanner:
 
         Same shared wrist orientation for both points (pure-translation extrinsic):
         wrist = tcp − R@TCP_OFFSET ; contact = wrist + R@WIRE_OFFSET."""
-        from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw  # type: ignore
+        from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw  # type: ignore
         R = rot6d_to_rotmat(np.asarray(rot6d, dtype=np.float64))
         wrist = np.asarray(tcp_pos, dtype=np.float64) - R @ self._TCP_OFFSET
         contact = wrist + R @ self._WIRE_OFFSET
@@ -443,7 +443,7 @@ class LivePlanner:
 
         # rot6d(6) -> pos6 (pos3 + rotvec3) so pose_to_mat can build SE3. Our buffers
         # store rot6d; convert to axis-angle for the absolute-pose matrices.
-        from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rotvec  # type: ignore
+        from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rotvec  # type: ignore
         rotvec_hist = np.stack([rotmat_to_rotvec(rot6d_to_rotmat(r)) for r in rot6d_hist])  # (H,3)
         abs_pose6 = np.concatenate([pos_hist, rotvec_hist], axis=1)  # (H,6) pos+rotvec
         pose_mat = pose_to_mat(abs_pose6)                            # (H,4,4)
@@ -580,7 +580,7 @@ class LivePlanner:
         import torch
         (pose_to_mat, mat_to_pose, _mat_to_pose10d, pose10d_to_mat,
          convert_pose_mat_rep) = _pose_helpers()
-        from fuji.utils.rot6d import (  # type: ignore
+        from flore.utils.rot6d import (  # type: ignore
             rot6d_to_rotmat, rotmat_to_rotvec, rotvec_to_rotmat, rotmat_to_rot6d)
         from unified_video_action.utils.data_utils import resize_image, unnormalize_future_action
         from unified_video_action.eval.eval import prepare_data_predict_action
@@ -938,7 +938,7 @@ def main(argv=None) -> int:
     p.add_argument("--s0-ws-port", type=int, default=8770)
     p.add_argument("--obs-hz", type=float, default=10.0,
                    help="ring-buffer ingest rate (Hz) for proprio/force — should match the "
-                        "training camera master-grid rate (the FUJI zarr median is ~10.3 Hz; "
+                        "training camera master-grid rate (the FLoRe zarr median is ~10.3 Hz; "
                         "see umi_force.yaml). Proprio/force are stride-1 on this grid.")
     p.add_argument("--step-hz", type=float, default=10.0,
                    help="rate at which the executed chunk ADVANCES through its poses (Hz). MUST "
@@ -976,7 +976,7 @@ def main(argv=None) -> int:
 
     # home_anchor.json from the deploy tree (LEFT-canonical 3pt ready pose).
     ha_path = os.path.join(
-        _FUJI_ROOT, "third_party", "holosoma_extensions", "src", "extensions", "wbt_wrappers",
+        _FLORE_ROOT, "third_party", "holosoma_extensions", "src", "extensions", "wbt_wrappers",
         "wbt_realtime_eval", "wbt_realtime_eval", "vive", "home_anchor.json")
     home_anchor = json.load(open(ha_path))
     planner = LivePlanner(be, home_anchor, args.obs_hz)
@@ -992,9 +992,9 @@ def main(argv=None) -> int:
 
     calib = GripperCalib(width_open_m=0.095, width_closed_m=0.0)
 
-    # S0 driver (impersonate the VIVE bridge on :8770) — reuse fuji's exact class.
-    sys.path.insert(0, _FUJI_ROOT)
-    from fuji.client.s0_driver import S0Driver
+    # S0 driver (impersonate the VIVE bridge on :8770) — reuse flore's exact class.
+    sys.path.insert(0, _FLORE_ROOT)
+    from flore.client.s0_driver import S0Driver
     s0 = S0Driver(host=args.s0_ws_host, port=args.s0_ws_port)
     s0.start()
 

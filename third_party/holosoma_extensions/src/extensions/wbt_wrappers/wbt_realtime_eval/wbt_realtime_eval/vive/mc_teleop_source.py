@@ -144,7 +144,7 @@ MC_MIN_SMOOTH_LAG_FRAMES = MC_STRIDE - 1  # 19
 #: accident without a loud message.
 MC_DEFAULT_EPISODE_FRAMES = int(30 * 60 * 20)
 
-_DEFAULT_UMI_DIR = os.path.expanduser("~/FUJI/third_party/UMI_collection")
+_DEFAULT_UMI_DIR = os.path.expanduser("~/FLoRe/third_party/UMI_collection")
 
 #: Which pelvis frame the 5pt keypoints are read out in. `frozen` (the default) is the fixed
 #: reference pelvis captured at cond frame 0; `live` is the completion's own per-frame root,
@@ -195,7 +195,7 @@ MC_DEFAULT_HEAD_FRAME = "puck"
 #: that script's default, and no dz to copy because the lift is exactly 0). `absolute` is what
 #: the HANDHELD-rig datasets (`0902_merged3`) were prepared in, so a teleop session collected
 #: in `home` is a different posture space and cannot be merged with them — `attrs.wb_cond_mode`
-#: is in FUJI's exact-equality `dataset_knobs`, so the two refuse to share norm stats.
+#: is in FLoRe's exact-equality `dataset_knobs`, so the two refuse to share norm stats.
 #:
 #: ⚠️ Either placement is safe on the wire only because DENSE publishes JOINT ANGLES, which are
 #: pelvis-relative: the completion's root follows the operator's chest, so where the operator
@@ -415,7 +415,7 @@ class MotionCompletionSource:
             raise ValueError(f"keypoint_mode must be 5pt or dense, got {keypoint_mode!r}")
         self._kp_mode = keypoint_mode
         # Precedence: explicit argument > env > default. The env pin exists so ONE process can
-        # be flipped without a launcher edit (the same reason FUJI_FORCE_HIST_LEN does), which
+        # be flipped without a launcher edit (the same reason FLORE_FORCE_HIST_LEN does), which
         # is what an A/B on the rig or in the browser sim needs; an unknown value RAISES rather
         # than falling back, because silently reading out in the other frame is invisible until
         # the operator notices the robot ignoring them.

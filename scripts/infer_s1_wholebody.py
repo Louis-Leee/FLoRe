@@ -30,7 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from fuji.s1_policy.inference.wholebody import (
+from flore.s1_policy.inference.wholebody import (
     ALGORITHMS,
     WholeBodyInferenceSession,
     wholebody_summary,
@@ -81,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(wholebody_summary(session.infer(args.sample_index, seed=args.seed)),
                              indent=2))
             return 0
-        from fuji.s1_policy.inference.wholebody_viewer import run_wholebody_viewer
+        from flore.s1_policy.inference.wholebody_viewer import run_wholebody_viewer
 
         run_wholebody_viewer(session, host=args.host, port=args.port,
                              sample_index=args.sample_index, seed=args.seed,

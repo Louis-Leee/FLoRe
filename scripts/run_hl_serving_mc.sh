@@ -61,10 +61,10 @@
 #   PORT=8090 ./scripts/run_hl_serving_mc.sh --checkpoint ckpt_0831_final --dense-clutch none
 #
 # Env knobs:
-#   FUJI_PY   python (default: <repo>/.venv/bin/python)
+#   FLORE_PY   python (default: <repo>/.venv/bin/python)
 #   PORT      viser port (default: 8090 — NOT 8088, so this and the 3pt planner can coexist)
 #   DEVICE    torch device (default: cuda)
-#   FUJI_ACTION_HORIZON  DO NOT SET IT — derived from the checkpoint, exactly as
+#   FLORE_ACTION_HORIZON  DO NOT SET IT — derived from the checkpoint, exactly as
 #             run_hl_serving.sh does, because layout.py resolves it at IMPORT time.
 #   MOTION_COMPLETION_{DIR,PY,CKPT,STEP}  override the completion's checkout / conda
 #             interpreter / checkpoint (see motion_completion/mc_backend_client.py). All four
@@ -73,9 +73,9 @@
 #             that looks exactly like a hung robot.
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
-UMI="$FUJI_ROOT/third_party/UMI_collection"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
+UMI="$FLORE_ROOT/third_party/UMI_collection"
 PORT="${PORT:-8090}"
 DEVICE="${DEVICE:-cuda}"
 
@@ -102,14 +102,14 @@ for _v in ANCHOR ANCHOR_EPS; do
   fi
 done
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
   exit 2
 fi
 
 # ACTION-CHUNK PIN, DERIVED FROM THE CHECKPOINT — same contract, same reasoning and the same
-# shared helper as run_hl_serving.sh: fuji/s1_policy/data/layout.py resolves ACTION_HORIZON from
-# FUJI_ACTION_HORIZON at IMPORT time, so a shell launcher is the only place that can still set
+# shared helper as run_hl_serving.sh: flore/s1_policy/data/layout.py resolves ACTION_HORIZON from
+# FLORE_ACTION_HORIZON at IMPORT time, so a shell launcher is the only place that can still set
 # it. It must come from the ACTIVE algorithm's block (the trainer leaves the other two at their
 # dataclass defaults), which is why config.json's own `algo` picks the block.
 CKPT=""
@@ -151,10 +151,10 @@ if [ ! -f "$CKPT/config.json" ]; then
   echo "[run] FATAL: --checkpoint '$CKPT' has no config.json" >&2
   exit 2
 fi
-if ! CKPT_H="$("$FUJI_PY" - "$CKPT/config.json" <<'PY'
+if ! CKPT_H="$("$FLORE_PY" - "$CKPT/config.json" <<'PY'
 import json, sys
 # Imported, not duplicated: a second copy of the algo->block map here would drift silently.
-from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
 raw = json.load(open(sys.argv[1]))
 algo = raw.get("algo")
@@ -173,28 +173,28 @@ PY
   echo "[run] FATAL: could not read the action horizon from $CKPT/config.json (above)" >&2
   exit 2
 fi
-if [ -n "${FUJI_ACTION_HORIZON:-}" ] && [ "$FUJI_ACTION_HORIZON" != "$CKPT_H" ]; then
-  echo "[run] FATAL: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON in the environment, but" >&2
+if [ -n "${FLORE_ACTION_HORIZON:-}" ] && [ "$FLORE_ACTION_HORIZON" != "$CKPT_H" ]; then
+  echo "[run] FATAL: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON in the environment, but" >&2
   echo "[run]        $CKPT declares action_horizon=$CKPT_H. Refusing to guess which is meant." >&2
   exit 2
 fi
-export FUJI_ACTION_HORIZON="$CKPT_H"
+export FLORE_ACTION_HORIZON="$CKPT_H"
 
 # The ALGO defaults to diffusion in the planner, but the checkpoint states its own — pass it
 # through so a flow/act 3-tracker checkpoint does not need the flag spelled twice.
-CKPT_ALGO="$("$FUJI_PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('algo',''))" \
+CKPT_ALGO="$("$FLORE_PY" -c "import json,sys; print(json.load(open(sys.argv[1])).get('algo',''))" \
   "$CKPT/config.json")"
 EXTRA=()
 case " $* " in *" --algo "*) ;; *) [ -n "$CKPT_ALGO" ] && EXTRA=(--algo "$CKPT_ALGO") ;; esac
 
 echo "[run] 3-TRACKER PLANNER (motion completion -> ${LOW_LEVEL^^}) on http://localhost:$PORT"
-echo "[run]   python: $FUJI_PY (device=$DEVICE)"
-echo "[run]   checkpoint: $CKPT  algo=${CKPT_ALGO:-?}  chunk=$FUJI_ACTION_HORIZON steps @ 30 Hz"
+echo "[run]   python: $FLORE_PY (device=$DEVICE)"
+echo "[run]   checkpoint: $CKPT  algo=${CKPT_ALGO:-?}  chunk=$FLORE_ACTION_HORIZON steps @ 30 Hz"
 echo "[run]   wire: $LL_WIRE   (--low-level $LOW_LEVEL)"
 echo "[run]   the completion backend runs in its OWN conda interpreter (g1_mosyn) as a child"
 echo "[run]     process and takes ~30-60 s to become ready (the ckpt + the JAX wrist-IK JIT)."
 echo "[run]   COMPANION LOW LEVEL — $LOW_LEVEL, ABSOLUTE, RecordTap on (W&B run $LL_RUN):"
-echo "[run]     cd $FUJI_ROOT/third_party/holosoma_extensions/force_deploy && \\"
+echo "[run]     cd $FLORE_ROOT/third_party/holosoma_extensions/force_deploy && \\"
 echo "[run]       MODE=$LL_MODE HOLOSOMA_VIVE_RELATIVE=0 RECORD=1 ${LL_FORCE_ENV}\\"
 echo "[run]       bash 3_run_policy_vive_force.sh"
 if [ -z "$LL_FORCE_ENV" ]; then
@@ -216,8 +216,8 @@ echo "[run]     STOP / the --auto-max-seconds ceiling (20 s) / the low level lea
 echo "[run]     'Run staged chunk' is still there for one chunk at a time."
 echo "[run]   ⚠️  Gantry-suspended for first runs: the LEGS are on this wire too."
 
-PYTHONPATH="$UMI/third_party/humi_ik:$UMI/viz:$UMI/replay:${PYTHONPATH:-}" "$FUJI_PY" \
-  "$FUJI_ROOT/scripts/hl_serving_mc.py" \
+PYTHONPATH="$UMI/third_party/humi_ik:$UMI/viz:$UMI/replay:${PYTHONPATH:-}" "$FLORE_PY" \
+  "$FLORE_ROOT/scripts/hl_serving_mc.py" \
   --device "$DEVICE" \
   --port "$PORT" \
   "${EXTRA[@]}" \

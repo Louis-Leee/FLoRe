@@ -1,7 +1,7 @@
 """Pure tests for the ``--algo muse`` shim: the wire codec, the native-layout mapping, the
 relative-pose convention shared with UMI, and the planner's extra observation ring.
 
-No uvaforce env, no UVA model, no subprocess: everything here is the FUJI half, which is
+No uvaforce env, no UVA model, no subprocess: everything here is the FLoRe half, which is
 exactly the half that can silently disagree with the backend. The one thing that cannot be
 tested without the other env — that ``sample_tokens`` returns what we think — is guarded at
 runtime instead (shape checks in the backend, ``native_chunk_from_uva``'s width check here).
@@ -13,13 +13,13 @@ import numpy as np
 import pytest
 import torch
 
-from fuji.s1_policy.data.layout import ACTION_DT, FORCE_DIM, get_layout
-from fuji.s1_policy.data.transforms import (
+from flore.s1_policy.data.layout import ACTION_DT, FORCE_DIM, get_layout
+from flore.s1_policy.data.transforms import (
     GRIPPER_WIDTH_REF_M,
     absolute_to_delta_ee,
     delta_ee_to_absolute,
 )
-from fuji.s1_policy.serving.hl_muse import (
+from flore.s1_policy.serving.hl_muse import (
     MUSE_ALGO,
     MUSE_EEF_POS_REL_KEY,
     MUSE_EEF_ROT6D_REL_KEY,
@@ -32,9 +32,9 @@ from fuji.s1_policy.serving.hl_muse import (
     MuseRemoteModel,
     native_chunk_from_uva,
 )
-from fuji.s1_policy.serving.hl_online import LoadedHLModel, decode_chunk
-from fuji.utils import muse_wire as wire
-from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
+from flore.s1_policy.serving.hl_online import LoadedHLModel, decode_chunk
+from flore.utils import muse_wire as wire
+from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
 
 LAYOUT = get_layout("left_only")
 
@@ -76,7 +76,7 @@ def test_wire_rejects_malformed_lines_rather_than_half_decoding():
 
 
 # ---------------------------------------------------------------------------
-# The relative-pose convention. hl_muse's whole design rests on FUJI's
+# The relative-pose convention. hl_muse's whole design rests on FLoRe's
 # absolute_to_delta_ee being the SAME operation as UMI's convert_pose_mat_rep('relative'),
 # and on both spelling rot6d as the first two ROWS. Pin it numerically.
 # ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ def _load_by_path(name: str, relative: str):
     """Import one UPSTREAM module by file path, bypassing its package.
 
     By path, not ``import unified_video_action...``: those packages' ``__init__`` chains pull in
-    torch 2.7 / hydra / pytorch3d, none of which exist in FUJI's ``.venv``. The two modules we
+    torch 2.7 / hydra / pytorch3d, none of which exist in FLoRe's ``.venv``. The two modules we
     want are numpy(+scipy)-only, and testing against the REAL upstream functions rather than an
     inlined transcription is the whole point — a transcription cannot catch upstream changing.
     """
@@ -112,11 +112,11 @@ def _mat(pos: np.ndarray, rot6d: np.ndarray) -> np.ndarray:
     return out
 
 
-def test_fuji_relative_equals_umi_convert_pose_mat_rep():
-    """FUJI's ``absolute_to_delta_ee`` == UMI's ``convert_pose_mat_rep(..., 'relative')``.
+def test_flore_relative_equals_umi_convert_pose_mat_rep():
+    """FLoRe's ``absolute_to_delta_ee`` == UMI's ``convert_pose_mat_rep(..., 'relative')``.
 
     This is the load-bearing assumption of the whole shim: the backend returns UVA's relative
-    chunk untouched and FUJI's ``decode_chunk`` un-relativizes it. If the two conventions
+    chunk untouched and FLoRe's ``decode_chunk`` un-relativizes it. If the two conventions
     differed, every shape check would still pass and the arm would go somewhere else.
     """
     pose_util = _load_by_path("umi_pose_util", "umi/common/pose_util.py")
@@ -130,7 +130,7 @@ def test_fuji_relative_equals_umi_convert_pose_mat_rep():
         pos = rng.normal(size=(5, 3))
         rot = np.stack([rotmat_to_rot6d(_random_rotation(rng)) for _ in range(5)])
 
-        fuji_pos, fuji_rot = absolute_to_delta_ee(pos, rot, ref_pos, ref_rot)
+        flore_pos, flore_rot = absolute_to_delta_ee(pos, rot, ref_pos, ref_rot)
 
         base = _mat(ref_pos, ref_rot)
         poses = np.stack([_mat(pos[i], rot[i]) for i in range(5)])
@@ -138,19 +138,19 @@ def test_fuji_relative_equals_umi_convert_pose_mat_rep():
             repr_util.convert_pose_mat_rep(
                 poses, base_pose_mat=base, pose_rep="relative", backward=False))
 
-        np.testing.assert_allclose(fuji_pos, umi10d[:, :3], atol=1e-12)
-        np.testing.assert_allclose(fuji_rot, umi10d[:, 3:9], atol=1e-12)
+        np.testing.assert_allclose(flore_pos, umi10d[:, :3], atol=1e-12)
+        np.testing.assert_allclose(flore_rot, umi10d[:, 3:9], atol=1e-12)
 
-        # ...and the inverse: UMI's backward pass == FUJI's delta_ee_to_absolute.
+        # ...and the inverse: UMI's backward pass == FLoRe's delta_ee_to_absolute.
         back = pose_util.mat_to_pose10d(
             repr_util.convert_pose_mat_rep(
                 pose_util.pose10d_to_mat(umi10d), base_pose_mat=base,
                 pose_rep="relative", backward=True))
-        fuji_back_pos, fuji_back_rot = delta_ee_to_absolute(
-            fuji_pos, fuji_rot, ref_pos, ref_rot)
-        np.testing.assert_allclose(fuji_back_pos, back[:, :3], atol=1e-10)
-        np.testing.assert_allclose(fuji_back_rot, back[:, 3:9], atol=1e-10)
-        np.testing.assert_allclose(fuji_back_pos, pos, atol=1e-10)
+        flore_back_pos, flore_back_rot = delta_ee_to_absolute(
+            flore_pos, flore_rot, ref_pos, ref_rot)
+        np.testing.assert_allclose(flore_back_pos, back[:, :3], atol=1e-10)
+        np.testing.assert_allclose(flore_back_rot, back[:, 3:9], atol=1e-10)
+        np.testing.assert_allclose(flore_back_pos, pos, atol=1e-10)
 
 
 def test_rot6d_is_the_first_two_rows_not_columns():
@@ -170,7 +170,7 @@ def _random_rotation(rng) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# UVA (H,10) + (H,6) -> FUJI native (H,16)
+# UVA (H,10) + (H,6) -> FLoRe native (H,16)
 # ---------------------------------------------------------------------------
 def test_native_chunk_maps_every_uva_column_to_its_slot():
     rng = np.random.default_rng(2)
@@ -205,7 +205,7 @@ def test_native_chunk_gripper_round_trips_through_decode_chunk():
 
 
 def test_native_chunk_position_round_trips_through_decode_chunk():
-    """UVA's relative action decoded by FUJI's decode_chunk must land where UMI's own
+    """UVA's relative action decoded by FLoRe's decode_chunk must land where UMI's own
     ``backward=True`` un-relativization would put it."""
     rng = np.random.default_rng(3)
     horizon = 6
@@ -231,7 +231,7 @@ def test_native_chunk_zeroes_force_when_the_checkpoint_has_no_force_head():
     action = np.zeros((4, UVA_ACTION_DIM))
     native = native_chunk_from_uva(action, None, LAYOUT, predict_force=False)
     assert np.count_nonzero(native[:, LAYOUT.slots("left").force]) == 0
-    from fuji.s1_policy.serving.hl_online import gate_force_command
+    from flore.s1_policy.serving.hl_online import gate_force_command
 
     gated = gate_force_command(native[:, LAYOUT.slots("left").force],
                                force_enabled=True, gate_n=0.0)
@@ -468,7 +468,7 @@ def test_snapshot_muse_obs_is_anchor_relative_and_recovers_the_rotation_history(
 
 
 def test_infer_chunk_decodes_against_the_snapshotted_anchor():
-    """End to end on the FUJI half: a canned identity-relative chunk must decode to the anchor
+    """End to end on the FLoRe half: a canned identity-relative chunk must decode to the anchor
     pose held for every step, and the capture dict must carry what the recorder reads."""
     planner, backend = _planner(horizon=32)
     anchor = np.array([[0.42, 0.11, -0.07]])

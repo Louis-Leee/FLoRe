@@ -12,8 +12,8 @@ WHAT IT PROVES, in order, and each is a real failure mode that has a shape here:
 
 1. the wire's ``mode`` and widths are what the family claims  — a mismatch makes the low level
    drop every frame, which reads as a hung robot;
-2. :data:`~fuji.s1_policy.serving.hl_offline.PAGE_GATE_KEY` is present  — without it the page
-   never grows the FUJI panel and there is no way to drive anything;
+2. :data:`~flore.s1_policy.serving.hl_offline.PAGE_GATE_KEY` is present  — without it the page
+   never grows the FLoRe panel and there is no way to drive anything;
 3. Predict STAGES without publishing  — the command frame must not move on a Predict;
 4. the violet ghost ANIMATES while staged  — the preview is a separate channel from the command,
    so this is what says "previewing is not publishing";
@@ -38,9 +38,9 @@ import sys
 import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 
 
 def _p(msg: str) -> None:
@@ -62,19 +62,19 @@ class Client:
                 continue
 
     async def send(self, action: str, **kw) -> None:
-        await self.ws.send(json.dumps({"cmd": "fuji", "action": action, **kw}))
+        await self.ws.send(json.dumps({"cmd": "flore", "action": action, **kw}))
 
     async def do(self, action: str, timeout: float = 120.0, **kw) -> dict:
-        """Send a verb and wait until the planner has ACTED on it (``fuji_ack`` advanced).
+        """Send a verb and wait until the planner has ACTED on it (``flore_ack`` advanced).
 
         ⚠️ Every step of this test needs this rather than ``wait_for(state == ...)``. The planner
         answers a verb on its own loop, so a state predicate matches the frame that is ALREADY on
         the wire and reads the previous state as the answer: the first version of this file
         "failed" a working Predict that way, in under a millisecond.
         """
-        base = int((self.latest or {}).get("fuji_ack", 0))
+        base = int((self.latest or {}).get("flore_ack", 0))
         await self.send(action, **kw)
-        return await self.wait_for(lambda m: int(m.get("fuji_ack", 0)) > base,
+        return await self.wait_for(lambda m: int(m.get("flore_ack", 0)) > base,
                                    f"the planner to act on {action!r}", timeout=timeout)
 
     async def wait_for(self, pred, what: str, timeout: float = 30.0) -> dict:
@@ -85,8 +85,8 @@ class Client:
                 return f
             await asyncio.sleep(0.02)
         raise AssertionError(f"timed out after {timeout:g}s waiting for {what} "
-                             f"(last state={None if self.latest is None else self.latest.get('fuji_state')!r}"
-                             f", msg={None if self.latest is None else self.latest.get('fuji_msg')!r})")
+                             f"(last state={None if self.latest is None else self.latest.get('flore_state')!r}"
+                             f", msg={None if self.latest is None else self.latest.get('flore_msg')!r})")
 
 
 async def _settle(cli: Client, timeout: float) -> None:
@@ -96,7 +96,7 @@ async def _settle(cli: Client, timeout: float) -> None:
     "Predict published nothing" can only be asserted once it has arrived — otherwise the ramp's
     own progress reads as the Predict having moved the command.
     """
-    await cli.wait_for(lambda m: "ramping" not in str(m.get("fuji_msg", "")),
+    await cli.wait_for(lambda m: "ramping" not in str(m.get("flore_msg", "")),
                        "the hold ramp to finish", timeout=timeout)
     await asyncio.sleep(0.4)
 
@@ -105,7 +105,7 @@ async def _run(args) -> int:
     import numpy as np
     import websockets
 
-    from fuji.s1_policy.serving.hl_offline import PAGE_GATE_KEY
+    from flore.s1_policy.serving.hl_offline import PAGE_GATE_KEY
 
     url = f"ws://{args.host}:{args.port}"
     _p(f"[smoke] connecting to {url} as the low level + the page …")
@@ -127,8 +127,8 @@ async def _run(args) -> int:
         f = await cli.wait_for(lambda m: PAGE_GATE_KEY in m, f"the first frame carrying {PAGE_GATE_KEY}")
         mode = f.get("mode")
         n_samples = int(f[PAGE_GATE_KEY])
-        _p(f"[smoke] mode={mode!r} · {n_samples} anchors · {f.get('fuji_n_episodes')} episode(s) "
-           f"· layout {f.get('fuji_layout')!r}")
+        _p(f"[smoke] mode={mode!r} · {n_samples} anchors · {f.get('flore_n_episodes')} episode(s) "
+           f"· layout {f.get('flore_layout')!r}")
         assert n_samples > 0, "the driver reports no anchors"
         if mode == "dense":
             assert len(f["joint_pos"]) == 29 and len(f["joint_names"]) == 29, "dense width"
@@ -155,9 +155,9 @@ async def _run(args) -> int:
 
         # 3. Predict STAGES; the command must not move.
         f = await cli.do("predict", timeout=args.predict_timeout)
-        assert f.get("fuji_state") == "staged", f"Predict did not stage: {f.get('fuji_msg')!r}"
-        n_chunk = int(f["fuji_chunk_steps"])
-        _p(f"[smoke] staged {n_chunk} step(s): {f.get('fuji_msg')}")
+        assert f.get("flore_state") == "staged", f"Predict did not stage: {f.get('flore_msg')!r}"
+        n_chunk = int(f["flore_chunk_steps"])
+        _p(f"[smoke] staged {n_chunk} step(s): {f.get('flore_msg')}")
         moved = float(np.abs(cmd(cli.latest) - before).max())
         assert moved < 1e-9, f"Predict MOVED the command by {moved:g} {unit} — it must only stage"
         _p(f"[smoke] ok: Predict published nothing (command moved {moved:g} {unit})")
@@ -167,11 +167,11 @@ async def _run(args) -> int:
             g0 = cli.latest.get("mc_qpos")
             assert g0 is not None, "no mc_qpos on the wire — the page would draw no violet body"
             assert len(cli.latest.get("mc_joint_names", [])) == len(g0), "ghost name/value width"
-            steps = {int(cli.latest["fuji_ghost_step"])}
+            steps = {int(cli.latest["flore_ghost_step"])}
             g_seen = [np.asarray(g0, dtype=float)]
             for _ in range(40):
                 await asyncio.sleep(0.05)
-                steps.add(int(cli.latest["fuji_ghost_step"]))
+                steps.add(int(cli.latest["flore_ghost_step"]))
                 g_seen.append(np.asarray(cli.latest["mc_qpos"], dtype=float))
             span = float(np.abs(np.stack(g_seen) - g_seen[0]).max())
             assert len(steps) > 3, f"the ghost did not advance (steps seen: {sorted(steps)})"
@@ -188,9 +188,9 @@ async def _run(args) -> int:
         t0 = time.time()
         while time.time() - t0 < args.run_timeout:
             m = cli.latest
-            if m is not None and int(m.get("fuji_step", -1)) >= 0:
-                seen.append((int(m["fuji_step"]), cmd(m)))
-            if m is not None and m.get("fuji_state") in ("hold", "stopped") and seen:
+            if m is not None and int(m.get("flore_step", -1)) >= 0:
+                seen.append((int(m["flore_step"]), cmd(m)))
+            if m is not None and m.get("flore_state") in ("hold", "stopped") and seen:
                 break
             await asyncio.sleep(0.005)
         assert seen, "Run never reported a step"
@@ -210,13 +210,13 @@ async def _run(args) -> int:
                f"{unit} slew budget — it will lag, not jump, but the chunk is fast for this wire")
 
         # 6. a sample switch resets.
-        want = min(n_samples - 1, int(cli.latest["fuji_sample"]) + 500)
+        want = min(n_samples - 1, int(cli.latest["flore_sample"]) + 500)
         f = await cli.do("sample", index=want)
-        assert int(f["fuji_sample"]) == want, \
-            f"cursor is at {f['fuji_sample']}, asked for {want}: {f.get('fuji_msg')!r}"
-        assert int(f["fuji_chunk_steps"]) == 0, "a sample switch left a chunk staged"
-        _p(f"[smoke] ok: cursor -> anchor {want} (episode {f.get('fuji_episode')} frame "
-           f"{f.get('fuji_episode_frame')}, {f.get('fuji_split')}) and the staging was dropped")
+        assert int(f["flore_sample"]) == want, \
+            f"cursor is at {f['flore_sample']}, asked for {want}: {f.get('flore_msg')!r}"
+        assert int(f["flore_chunk_steps"]) == 0, "a sample switch left a chunk staged"
+        _p(f"[smoke] ok: cursor -> anchor {want} (episode {f.get('flore_episode')} frame "
+           f"{f.get('flore_episode_frame')}, {f.get('flore_split')}) and the staging was dropped")
 
         # 7. STOP interrupts a RUNNING chunk. Asserted on the state and the step it reached,
         # not through `do`: an ack can only land once the drip returns, so waiting for one here
@@ -224,19 +224,19 @@ async def _run(args) -> int:
         # step passed a driver whose STOP could not interrupt anything).
         await _settle(cli, args.hold_timeout)
         await cli.do("predict", timeout=args.predict_timeout)
-        n_exec = int(cli.latest["fuji_exec_steps"])
+        n_exec = int(cli.latest["flore_exec_steps"])
         await cli.send("run")
-        await cli.wait_for(lambda m: m.get("fuji_state") == "running", "the drip to start")
+        await cli.wait_for(lambda m: m.get("flore_state") == "running", "the drip to start")
         await asyncio.sleep(0.08)
         await cli.send("stop")
-        f = await cli.wait_for(lambda m: m.get("fuji_state") == "stopped", "STOP to land",
+        f = await cli.wait_for(lambda m: m.get("flore_state") == "stopped", "STOP to land",
                               timeout=args.run_timeout)
-        at = int(f["fuji_step"])
+        at = int(f["flore_step"])
         assert at < n_exec - 1, (
             f"STOP landed at step {at} of {n_exec} executing — the chunk ran to completion, so "
             "the stop did not interrupt anything")
         _p(f"[smoke] ok: STOP interrupted at step {at} of {n_exec} executing "
-           f"(chunk is {n_chunk}) — {f.get('fuji_msg')}")
+           f"(chunk is {n_chunk}) — {f.get('flore_msg')}")
 
         _p("[smoke] PASS")
         return 0

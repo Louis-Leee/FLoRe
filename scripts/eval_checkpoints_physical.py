@@ -22,7 +22,7 @@ Options:
 One invocation scores every checkpoint against ONE dataloader and ONE norm_stats (both
 taken from the FIRST target), so all targets in a single run must share a horizon and a
 norm-stats file. Compare across horizons by running each horizon separately (with
-``FUJI_ACTION_HORIZON`` pinned to match) and passing the SAME ``--first-n-steps`` to both.
+``FLORE_ACTION_HORIZON`` pinned to match) and passing the SAME ``--first-n-steps`` to both.
 
 Selecting a checkpoint is only ever valid on ``--split val``. ``--split train``
 exists to measure how far val error sits above train error on the SAME sampler and
@@ -42,25 +42,25 @@ import torch
 from safetensors.torch import load_file
 from torch.utils.data import DataLoader, Subset
 
-from fuji.s1_policy.data.hl_dataset import HLDataset
-from fuji.s1_policy.data.layout import ACTION_SPAN_S, FORCE_HIST_SPAN_S, get_layout
-from fuji.s1_policy.data.norm_stats import (
+from flore.s1_policy.data.hl_dataset import HLDataset
+from flore.s1_policy.data.layout import ACTION_SPAN_S, FORCE_HIST_SPAN_S, get_layout
+from flore.s1_policy.data.norm_stats import (
     load_norm_stats,
     normalize_quantile,
     unnormalize_quantile,
 )
-from fuji.s1_policy.inference.common import dataclass_config
-from fuji.s1_policy.training.metrics import physical_trajectory_sums
-from fuji.s1_policy.training.trainer import _move_batch, collate_hl_batch, isolated_rng
-from fuji.utils.dataset_paths import resolve_dataset_paths
+from flore.s1_policy.inference.common import dataclass_config
+from flore.s1_policy.training.metrics import physical_trajectory_sums
+from flore.s1_policy.training.trainer import _move_batch, collate_hl_batch, isolated_rng
+from flore.utils.dataset_paths import resolve_dataset_paths
 
 METRICS = ("position_cm", "rotation_geodesic_deg", "gripper_mm", "force_n", "torque_nm")
 
 
 def build_model(cfg: dict):
-    from fuji.s1_policy.model.dp_act import DPACTConfig, DPACTModel
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionModel
-    from fuji.s1_policy.model.dp_flow import DPFlowModel
+    from flore.s1_policy.model.dp_act import DPACTConfig, DPACTModel
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionModel
+    from flore.s1_policy.model.dp_flow import DPFlowModel
 
     algo = cfg["algo"]
     if algo == "act":
@@ -161,7 +161,7 @@ def main() -> int:
     layout = get_layout(hl["mode"])
     norm_stats = load_norm_stats(str(targets[0] / "norm_stats.json"))
     # The recorded paths are the TRAINING machine's; relocate them here (see
-    # fuji/utils/dataset_paths.py). File ORDER is preserved because it decides episode order.
+    # flore/utils/dataset_paths.py). File ORDER is preserved because it decides episode order.
     zarr_paths = list(resolve_dataset_paths(hl["zarr_paths"], log=print))
     ds = HLDataset(zarr_paths, mode=hl["mode"], drop_glitch_windows=True,
                    glitch_pre_s=FORCE_HIST_SPAN_S, glitch_post_s=ACTION_SPAN_S,

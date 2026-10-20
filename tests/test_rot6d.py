@@ -4,7 +4,7 @@ S1 action -> S0 vr_3point translation."""
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from fuji.utils.rot6d import (
+from flore.utils.rot6d import (
     quat_wxyz_to_xyzw,
     quat_xyzw_to_rotmat,
     quat_xyzw_to_wxyz,

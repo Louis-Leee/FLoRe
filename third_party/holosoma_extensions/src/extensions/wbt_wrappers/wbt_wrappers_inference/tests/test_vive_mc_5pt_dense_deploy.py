@@ -613,7 +613,7 @@ def test_slew_feet_off_is_a_5pt_only_knob() -> None:
 
 
 def test_record_tap_publishes_the_per_point_slew_mask_next_to_vr_cmd_pos() -> None:
-    """The consumer that MEASURES the cap off ``vr_cmd_pos`` (FUJI's SlewMonitor) has to know which
+    """The consumer that MEASURES the cap off ``vr_cmd_pos`` (FLoRe's SlewMonitor) has to know which
     rows the cap covered; the mask rides in the same frame, None when there is no keypoint target."""
     from wbt_wrappers_inference.utils.record_tap import RecordTap
 
@@ -1220,8 +1220,8 @@ def test_load_mc_names_works_on_this_interpreter() -> None:
     in hssim, so THIS test is the reproduction — it fails without
     ``mc_frames._allow_numpy2_pickles`` and passes with it. Do not "simplify" that shim away.
     """
-    umi = Path(os.path.expanduser(os.environ.get("MC_UMI_DIR", "~/FUJI/third_party/UMI_collection")))
-    mc = Path(os.path.expanduser("~/FUJI/third_party/Motion_Completion"))
+    umi = Path(os.path.expanduser(os.environ.get("MC_UMI_DIR", "~/FLoRe/third_party/UMI_collection")))
+    mc = Path(os.path.expanduser("~/FLoRe/third_party/Motion_Completion"))
     if not (umi / "motion_completion").is_dir():
         pytest.skip(f"no motion_completion/ under {umi}")
     if not (mc / "manip/data/util/g1_fk_params.npz").is_file():
@@ -1399,7 +1399,7 @@ def test_the_joint_space_family_is_exactly_these_two_presets() -> None:
 #
 # The 5pt obs carries `command_lower_body` = the REFERENCE motion's 12 leg joints + velocities.
 # On the live path that is read from the FROZEN idle clip — the ready stance, zero velocity —
-# so while FUJI's walk skill put a gait on the two foot keypoints the legs were still told
+# so while FLoRe's walk skill put a gait on the two foot keypoints the legs were still told
 # "stand" by a 24-D channel, and the robot stepped in place. A 5pt frame may now carry the
 # clip's own joints BY NAME (`ref_joints`), which this section pins to: 5pt only, ARMED only,
 # fresh-frame only (stale freezes the last one, like the keypoints), never slewed, a frame

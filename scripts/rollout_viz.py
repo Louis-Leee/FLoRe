@@ -47,7 +47,7 @@ exists (the rollout is then meaningless — a wiring check only).
 
 ISOLATION: reads only already-committed files. It NEVER writes zarr/checkpoints, never
 touches ``~/UMI_collection`` code (the mink IK + yam URDF are referenced read-only via
-PYTHONPATH / path), and runs in FUJI's own ``.venv`` (viz deps are the optional ``viz``
+PYTHONPATH / path), and runs in FLoRe's own ``.venv`` (viz deps are the optional ``viz``
 extra) — the training env is unaffected.
 
 Run (run_rollout_viz.sh sets PYTHONPATH for the IK import):
@@ -67,8 +67,8 @@ from pathlib import Path
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_UMI = os.path.join(_FUJI_ROOT, "third_party", "UMI_collection")
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_UMI = os.path.join(_FLORE_ROOT, "third_party", "UMI_collection")
 # The mink IK stack + the reusable viser Timeline/wrench/chart helpers are vendored in
 # UMI_collection (read-only). Add them to the path here as a fallback so the script also
 # runs when launched directly (run_rollout_viz.sh sets these too).
@@ -79,8 +79,8 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 
 import viser  # noqa: E402
 from viser import transforms as vtf  # noqa: E402
@@ -88,20 +88,20 @@ from viser.extras import ViserUrdf  # noqa: E402
 
 import replay_common as rc  # noqa: E402  (UMI_collection/replay: Timeline + helpers)
 
-from fuji.s1_policy.data.transforms import (  # noqa: E402
+from flore.s1_policy.data.transforms import (  # noqa: E402
     delta_ee_to_absolute,
     gripper_norm_to_width,
     gripper_width_to_norm,
     resolve_base,
     rotvec_to_rot6d,
 )
-from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d  # noqa: E402
+from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d  # noqa: E402
 
 _DEFAULT_YAM = os.path.join(_UMI, "robot_assets", "g1_yam", "g1_29dof_yam.urdf")
 _JAW_OPEN_M = 0.0475  # URDF jaw prismatic upper limit (matches collection_viz / replay)
 _GRASP_THRESH_M = 0.08  # UMI's hard-coded grasp threshold, for the readout label
 
-# 32-dim keypoint slots, kept in sync with fuji.s1_policy.data.umi_dataset:
+# 32-dim keypoint slots, kept in sync with flore.s1_policy.data.umi_dataset:
 #   name: (pos_slice, rot6d_slice, gripper_index_or_None)
 _LEFT = (slice(0, 3), slice(3, 9), 9)
 _RIGHT = (slice(10, 13), slice(13, 19), 19)
@@ -170,7 +170,7 @@ class Episode:
 
         # LEFT-canonical zarr-key -> 32-slot routing (reuse the dataset's own logic so
         # this tool can never drift from training).
-        from fuji.s1_policy.data.umi_dataset import UMIDataset
+        from flore.s1_policy.data.umi_dataset import UMIDataset
 
         self.specs = UMIDataset._build_specs(
             self.primary_role, self.has_left, self.has_head, self.data_keys)
@@ -227,7 +227,7 @@ class LoadedModel:
     def __init__(self, checkpoint: str, device: str, num_denoising_steps: int | None):
         import torch
 
-        from fuji.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
+        from flore.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
 
         self.torch = torch
         self.device = device
@@ -290,7 +290,7 @@ class LoadedModel:
 
             ns_path = ckpt_dir / "norm_stats.json"
             if ns_path.exists():
-                from fuji.s1_policy.data.norm_stats import load_norm_stats
+                from flore.s1_policy.data.norm_stats import load_norm_stats
 
                 self.norm_stats = load_norm_stats(ns_path)
 
@@ -320,7 +320,7 @@ class LoadedModel:
         (ref_frame / obs_history_len / stride / image norm) can be read from it."""
         import importlib.util
 
-        cfg_path = os.path.join(_FUJI_ROOT, "configs", "dp_flow_3pt.py")
+        cfg_path = os.path.join(_FLORE_ROOT, "configs", "dp_flow_3pt.py")
         spec = importlib.util.spec_from_file_location("dp_flow_3pt_cfg", cfg_path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -364,7 +364,7 @@ def build_batch_and_sample(lm: LoadedModel, ep: Episode, anchor: int) -> np.ndar
     base_pos, base_rot6d = (resolve_base(anchor_abs, lm.ref_frame) if shared else (None, None))
 
     # State history (To, 32) in the model's frame. per_keypoint: absolute obs poses.
-    from fuji.s1_policy.data.transforms import absolute_to_delta_ee
+    from flore.s1_policy.data.transforms import absolute_to_delta_ee
 
     for name, (pos_sl, rot_sl, grip_i, obs_pos, obs_rot6d, obs_grip) in per_kp_obs.items():
         if shared:
@@ -379,7 +379,7 @@ def build_batch_and_sample(lm: LoadedModel, ep: Episode, anchor: int) -> np.ndar
     # Normalize state exactly like the trainer (quantile stats when present).
     state_in = obs_state.copy()
     if "state" in lm.norm_stats:
-        from fuji.s1_policy.data.norm_stats import normalize_quantile
+        from flore.s1_policy.data.norm_stats import normalize_quantile
 
         state_in = normalize_quantile(state_in, lm.norm_stats["state"])
     if To == 1:
@@ -410,7 +410,7 @@ def build_batch_and_sample(lm: LoadedModel, ep: Episode, anchor: int) -> np.ndar
 
     # Unnormalize actions (inverse of the trainer's quantile normalize).
     if lm.action_key in lm.norm_stats:
-        from fuji.s1_policy.data.norm_stats import unnormalize_quantile
+        from flore.s1_policy.data.norm_stats import unnormalize_quantile
 
         chunk = unnormalize_quantile(chunk, lm.norm_stats[lm.action_key])
 
@@ -455,7 +455,7 @@ def _detect_hl_checkpoint(checkpoint: str) -> tuple[bool, str, str]:
 def _algo_config_key(algo: str) -> str:
     """The ``config.json`` block holding ``algo``'s REAL model config.
 
-    Delegates to :data:`fuji.s1_policy.training.config.ALGO_CONFIG_FIELD` so this tool
+    Delegates to :data:`flore.s1_policy.training.config.ALGO_CONFIG_FIELD` so this tool
     cannot drift from the trainer's own mapping. It used to be
     ``"diffusion" if algo == "diffusion" else "model"``, which read the FLOW block for any
     third algorithm — and because a flow-default block has ``layout_mode=""``, an HL
@@ -464,7 +464,7 @@ def _algo_config_key(algo: str) -> str:
     mismatched keys as WARNINGS. That is a silent garbage load, so an unknown algo raises
     here instead.
     """
-    from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+    from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
     try:
         return ALGO_CONFIG_FIELD[algo]
@@ -495,9 +495,9 @@ class HLLoadedModel:
 
         import torch
 
-        from fuji.s1_policy.data.hl_dataset import HLDataset
-        from fuji.s1_policy.data.layout import get_layout
-        from fuji.s1_policy.data.norm_stats import load_norm_stats
+        from flore.s1_policy.data.hl_dataset import HLDataset
+        from flore.s1_policy.data.layout import get_layout
+        from flore.s1_policy.data.norm_stats import load_norm_stats
 
         self.torch = torch
         self.device = device
@@ -514,14 +514,14 @@ class HLLoadedModel:
         model_cfg_raw = raw.get(_algo_config_key(algo), raw)
 
         if algo == "diffusion":
-            from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig as Cfg
-            from fuji.s1_policy.model.dp_diffusion import DPDiffusionModel as Model
+            from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig as Cfg
+            from flore.s1_policy.model.dp_diffusion import DPDiffusionModel as Model
         elif algo == "act":
-            from fuji.s1_policy.model.dp_act import DPACTConfig as Cfg
-            from fuji.s1_policy.model.dp_act import DPACTModel as Model
+            from flore.s1_policy.model.dp_act import DPACTConfig as Cfg
+            from flore.s1_policy.model.dp_act import DPACTModel as Model
         else:
-            from fuji.s1_policy.model.dp_flow import DPFlowConfig as Cfg
-            from fuji.s1_policy.model.dp_flow import DPFlowModel as Model
+            from flore.s1_policy.model.dp_flow import DPFlowConfig as Cfg
+            from flore.s1_policy.model.dp_flow import DPFlowModel as Model
 
         field_types = {f.name for f in dataclasses.fields(Cfg)}
         kwargs = {k: (tuple(v) if isinstance(v, list) else v)
@@ -609,9 +609,9 @@ def build_hl_batch_and_sample(hlm: "HLLoadedModel", ep: "Episode", anchor: int) 
     this mode leave their 32-dim slots at zero."""
     import torch
 
-    from fuji.s1_policy.data.norm_stats import normalize_quantile, unnormalize_quantile
-    from fuji.s1_policy.data.transforms import delta_ee_to_absolute
-    from fuji.s1_policy.training.trainer import collate_hl_batch
+    from flore.s1_policy.data.norm_stats import normalize_quantile, unnormalize_quantile
+    from flore.s1_policy.data.transforms import delta_ee_to_absolute
+    from flore.s1_policy.training.trainer import collate_hl_batch
 
     global_frame = int(ep._a) + int(anchor)  # episode-local -> global file frame
     idx = hlm._frame_to_idx.get(global_frame)
@@ -859,7 +859,7 @@ def _load_inv_tcp_extrinsic(zarr_path: str, ep: "Episode", override: str) -> np.
         return np.eye(4)
     d = json.load(open(path))
     T = np.asarray(d.get("T_tracker_tcp", np.eye(4).tolist()), dtype=np.float64)
-    print(f"[rollout-viz] tracker->TCP extrinsic from {os.path.relpath(path, _FUJI_ROOT)} "
+    print(f"[rollout-viz] tracker->TCP extrinsic from {os.path.relpath(path, _FLORE_ROOT)} "
           f"(translation {np.round(T[:3, 3], 3)} m).", flush=True)
     return np.linalg.inv(T)
 
@@ -989,7 +989,7 @@ def main(argv=None) -> int:
     # sits exactly on the rendered robot hand/torso it drove.
 
     # --- scene ---
-    server = viser.ViserServer(host=args.host, port=args.port, label="FUJI rollout viz")
+    server = viser.ViserServer(host=args.host, port=args.port, label="FLoRe rollout viz")
     server.scene.set_up_direction("+z")
     server.scene.add_grid("/grid", plane="xy", shadow_opacity=0.0, infinite_grid=True, cell_size=0.25)
 

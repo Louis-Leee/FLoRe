@@ -527,7 +527,7 @@ def test_the_body_relabel_is_the_committed_chest_extrinsic() -> None:
 
     import json
 
-    cal = Path.home() / "FUJI/third_party/UMI_collection/robot_assets/calibration/head_extrinsic.json"
+    cal = Path.home() / "FLoRe/third_party/UMI_collection/robot_assets/calibration/head_extrinsic.json"
     if not cal.is_file():
         pytest.skip(f"UMI_collection not checked out at {cal}")
     T = np.asarray(json.loads(cal.read_text())["T_tracker_head"], dtype=float)
@@ -922,7 +922,7 @@ def test_both_launchers_default_the_feet_to_this_rigs_paired_pucks() -> None:
 def test_the_collection_launcher_agrees_on_the_foot_assignment() -> None:
     """Cross-repo, by reading UMI_collection's own launcher: one room, one pair of pucks, one
     assignment. Skipped by name when that checkout is absent."""
-    umi = Path.home() / "FUJI/third_party/UMI_collection/run_collection_viz.sh"
+    umi = Path.home() / "FLoRe/third_party/UMI_collection/run_collection_viz.sh"
     if not umi.is_file():
         pytest.skip(f"UMI_collection not checked out at {umi}")
     src = umi.read_text()

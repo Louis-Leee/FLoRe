@@ -1,4 +1,4 @@
-"""In-process gRPC tests for FujiPolicyService.
+"""In-process gRPC tests for FlorePolicyService.
 
 Spins the REAL server on a random localhost port with a FAKE ChunkPolicy (no
 model, no GPU, no checkpoint), then drives Predict / PredictChunk / Reset /
@@ -11,9 +11,9 @@ import numpy as np
 import pytest
 
 import grpc
-from fuji.s1_policy.serving.proto import fuji_policy_pb2 as pb2
-from fuji.s1_policy.serving.proto import fuji_policy_pb2_grpc as pb2_grpc
-from fuji.s1_policy.serving.server import build_server, encode_image_jpeg, make_servicer
+from flore.s1_policy.serving.proto import flore_policy_pb2 as pb2
+from flore.s1_policy.serving.proto import flore_policy_pb2_grpc as pb2_grpc
+from flore.s1_policy.serving.server import build_server, encode_image_jpeg, make_servicer
 
 ACTION_DIM = 32
 ACTION_HORIZON = 8
@@ -75,7 +75,7 @@ def channel_and_fake(request):
 
 def test_predict_returns_single_action(channel_and_fake):
     channel, _fake = channel_and_fake
-    stub = pb2_grpc.FujiPolicyServiceStub(channel)
+    stub = pb2_grpc.FlorePolicyServiceStub(channel)
     resp = stub.Predict(_request(), timeout=10.0)
     assert len(resp.action) == ACTION_DIM
     # First action of the first chunk is all-zeros (chunk_idx=0, step 0).
@@ -92,7 +92,7 @@ def test_predict_drip_feeds_in_order_sync():
     channel = grpc.insecure_channel(f"127.0.0.1:{port}")
     grpc.channel_ready_future(channel).result(timeout=5.0)
     try:
-        stub = pb2_grpc.FujiPolicyServiceStub(channel)
+        stub = pb2_grpc.FlorePolicyServiceStub(channel)
         first_vals = [stub.Predict(_request(), timeout=10.0).action[0] for _ in range(ACTION_HORIZON)]
         # Within the first chunk the leading dim increments 0..H-1.
         assert first_vals == [float(i) for i in range(ACTION_HORIZON)]
@@ -103,7 +103,7 @@ def test_predict_drip_feeds_in_order_sync():
 
 def test_predict_chunk_returns_full_chunk(channel_and_fake):
     channel, _fake = channel_and_fake
-    stub = pb2_grpc.FujiPolicyServiceStub(channel)
+    stub = pb2_grpc.FlorePolicyServiceStub(channel)
     resp = stub.PredictChunk(_request(), timeout=10.0)
     assert resp.horizon == ACTION_HORIZON
     assert resp.action_dim == ACTION_DIM
@@ -117,7 +117,7 @@ def test_predict_chunk_returns_full_chunk(channel_and_fake):
 
 def test_get_policy_info(channel_and_fake):
     channel, _fake = channel_and_fake
-    stub = pb2_grpc.FujiPolicyServiceStub(channel)
+    stub = pb2_grpc.FlorePolicyServiceStub(channel)
     info = stub.GetPolicyInfo(pb2.PolicyInfoRequest(), timeout=10.0)
     assert info.action_dim == ACTION_DIM
     assert info.action_horizon == ACTION_HORIZON
@@ -128,7 +128,7 @@ def test_get_policy_info(channel_and_fake):
 
 def test_reset_clears_state_and_calls_policy_reset(channel_and_fake):
     channel, fake = channel_and_fake
-    stub = pb2_grpc.FujiPolicyServiceStub(channel)
+    stub = pb2_grpc.FlorePolicyServiceStub(channel)
     # Consume the whole first chunk.
     for _ in range(ACTION_HORIZON):
         stub.Predict(_request(), timeout=10.0)
@@ -142,7 +142,7 @@ def test_reset_clears_state_and_calls_policy_reset(channel_and_fake):
 
 def test_predict_rejects_empty_state(channel_and_fake):
     channel, _fake = channel_and_fake
-    stub = pb2_grpc.FujiPolicyServiceStub(channel)
+    stub = pb2_grpc.FlorePolicyServiceStub(channel)
     rgb = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
     bad = pb2.PredictRequest(state=[], image=encode_image_jpeg(rgb), prompt="")
     with pytest.raises(grpc.RpcError) as exc:
@@ -161,10 +161,10 @@ def test_chunk_to_absolute_inverts_training_transform():
     recover the targets. All H rows share the ONE anchor (obs state)."""
     from scipy.spatial.transform import Rotation
 
-    from fuji.s1_policy.data.transforms import absolute_to_delta_ee
-    from fuji.s1_policy.data.umi_dataset import _HEAD, _LEFT, _RIGHT
-    from fuji.s1_policy.serving.server import DPFlowChunkPolicy
-    from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d
+    from flore.s1_policy.data.transforms import absolute_to_delta_ee
+    from flore.s1_policy.data.umi_dataset import _HEAD, _LEFT, _RIGHT
+    from flore.s1_policy.serving.server import DPFlowChunkPolicy
+    from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d
 
     rng = np.random.default_rng(0)
     H = 5
@@ -220,7 +220,7 @@ def _write_min_checkpoint(ckpt_dir, data_cfg: dict, model_cfg: dict | None = Non
 def test_serving_rejects_shared_ref_frame_checkpoint(tmp_path):
     """A shared-frame model must be REFUSED at load (serving hardcodes per_keypoint
     un-relativization, so deploying it would silently corrupt absolute poses)."""
-    from fuji.s1_policy.serving.server import load_dpflow_chunk_policy
+    from flore.s1_policy.serving.server import load_dpflow_chunk_policy
 
     _write_min_checkpoint(tmp_path, {"ref_frame": "left"})
     with pytest.raises(NotImplementedError, match="ref_frame"):
@@ -233,7 +233,7 @@ def test_serving_rejects_history_checkpoint(tmp_path):
     MODEL (TrainConfig pushes it there for both pipelines) — HLDataConfig has no such
     field, so a real HL config.json carries it under `model`, NOT `data`. The guard must
     read model-first, so this test writes the REAL shape."""
-    from fuji.s1_policy.serving.server import load_dpflow_chunk_policy
+    from flore.s1_policy.serving.server import load_dpflow_chunk_policy
 
     _write_min_checkpoint(tmp_path, {"ref_frame": "per_keypoint"},
                           model_cfg={"obs_history_len": 2})
@@ -246,7 +246,7 @@ def test_serving_rejects_hl_layout_checkpoint(tmp_path):
     REFUSED at load even at To=1: serving still implements the pre-v2 32-dim layout
     (_chunk_to_absolute hardcodes it, predict_chunk builds no force_history / wrt_start
     state), so deploying it would crash opaquely or emit wrong targets."""
-    from fuji.s1_policy.serving.server import load_dpflow_chunk_policy
+    from flore.s1_policy.serving.server import load_dpflow_chunk_policy
 
     _write_min_checkpoint(tmp_path, {"ref_frame": "per_keypoint"},
                           model_cfg={"layout_mode": "left_only", "force_hist_channels": 6})
@@ -262,7 +262,7 @@ def test_serving_rejects_diffusion_checkpoint(tmp_path):
     must fire FIRST on the real (mis-serialized) shape."""
     import json
 
-    from fuji.s1_policy.serving.server import load_dpflow_chunk_policy
+    from flore.s1_policy.serving.server import load_dpflow_chunk_policy
 
     # The realistic shape a diffusion TrainConfig serializes: flow defaults under `model`,
     # the true config under `diffusion`, algo at top level.
@@ -311,7 +311,7 @@ class _FakeModel:
 def _real_chunk_policy(horizon=ACTION_HORIZON, action_dim=ACTION_DIM):
     """A DPFlowChunkPolicy with a fake model and NO norm stats (so state/actions pass
     through un-normalized) — real predict_chunk + real _chunk_to_absolute, no GPU."""
-    from fuji.s1_policy.serving.server import DPFlowChunkPolicy
+    from flore.s1_policy.serving.server import DPFlowChunkPolicy
 
     return DPFlowChunkPolicy(
         _FakeModel(horizon, action_dim),
@@ -339,7 +339,7 @@ def test_sync_drip_get_action_survives_real_unrelativize():
     """End-to-end through the REAL production drip wrapper: SyncChunkDripPolicy.get_action
     must not crash in _chunk_to_absolute (the (1, AD) anchor path) and must drip finite
     (AD,) actions across a chunk boundary."""
-    from fuji.s1_policy.serving.server import SyncChunkDripPolicy
+    from flore.s1_policy.serving.server import SyncChunkDripPolicy
 
     drip = SyncChunkDripPolicy(_real_chunk_policy())
     images = np.zeros((1, 224, 224, 3), dtype=np.uint8)
@@ -354,7 +354,7 @@ def test_sync_drip_get_action_survives_real_unrelativize():
 def test_rtc_get_action_survives_real_unrelativize():
     """Same guard on the RTC path: the background inference thread calls predict_chunk with
     state[None]; get_action must return a finite (AD,) action once the first chunk lands."""
-    from fuji.s1_policy.rtc import RealTimeChunkingPolicy
+    from flore.s1_policy.rtc import RealTimeChunkingPolicy
 
     rtc = RealTimeChunkingPolicy(_real_chunk_policy(), s_min=2, delay_estimate=2)
     try:
@@ -374,7 +374,7 @@ def test_resize_center_crop_matches_training_converter():
     (compute_crop_resize + INTER_AREA), so deploy frames match the trained distribution."""
     import cv2
 
-    from fuji.client.main import _resize_center_crop_224
+    from flore.client.main import _resize_center_crop_224
 
     rng = np.random.default_rng(0)
     for in_w, in_h in [(640, 480), (640, 360), (480, 270), (1280, 720), (224, 224)]:

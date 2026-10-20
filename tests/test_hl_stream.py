@@ -1,4 +1,4 @@
-"""``fuji.s1_policy.serving.hl_stream`` — HATO's asynchronous cadence, on a CPU with no model.
+"""``flore.s1_policy.serving.hl_stream`` — HATO's asynchronous cadence, on a CPU with no model.
 
 The three claims that make streaming safe on this wire, and nothing that needs a checkpoint:
 
@@ -19,22 +19,22 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.s1_policy.serving import hl_stream
-from fuji.s1_policy.serving.hl_dense import (
+from flore.s1_policy.serving import hl_stream
+from flore.s1_policy.serving.hl_dense import (
     FIVE_POINT_BODIES,
     FIVE_POINT_GATED,
     KeypointClutch,
     PostAnchorConfig,
 )
-from fuji.s1_policy.serving.hl_online import ChunkResult, RoleChunk
-from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
+from flore.s1_policy.serving.hl_online import ChunkResult, RoleChunk
+from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d
 
 ROLES = ("left", "right", "head", "left_foot", "right_foot")
 H = 12
 
 
 def _rotvec_to_rot6d(v):
-    from fuji.utils.rot6d import rotvec_to_rotmat
+    from flore.utils.rot6d import rotvec_to_rotmat
 
     return rotmat_to_rot6d(rotvec_to_rotmat(np.asarray(v, dtype=np.float64).reshape(1, 3)))[0]
 
@@ -360,7 +360,7 @@ def test_mini_chunk_row_1_is_base_plus_the_delta():
     clutch.commit((clutch.base[0], clutch.base[1]))          # arm the carry
     prev, cur = _steps(0.0, 0.0, 2, 5)
     mini = hl_stream.mini_chunk(prev, cur, ROLES)
-    from fuji.s1_policy.serving.hl_dense import KeypointReadout
+    from flore.s1_policy.serving.hl_dense import KeypointReadout
 
     readout = KeypointReadout(np.zeros(3))
     rows = {rc.role: {"position": rc.position, "rot6d": rc.rot6d} for rc in mini.roles}
@@ -381,7 +381,7 @@ def test_the_first_published_frame_lands_on_the_base():
     frame, which is where ``smoke_test_hl_5pt`` measures 0.0), but this synthetic chunk is a metre
     away and asserting bit-equality here would be asserting a property of the test's own numbers.
     """
-    from fuji.s1_policy.serving.hl_dense import KeypointReadout
+    from flore.s1_policy.serving.hl_dense import KeypointReadout
 
     clutch = _clutch()
     clutch.commit((clutch.base[0], clutch.base[1]))
@@ -397,7 +397,7 @@ def test_the_first_published_frame_lands_on_the_base():
 def test_the_rotation_offset_is_composed_on_the_left():
     """``R_pub = (R_base R_prev^T) R_cur``. Right-composing conjugates the offset by the chunk's own
     motion, so a turning hand would also drift — the trap ``KeypointClutch`` documents."""
-    from fuji.s1_policy.serving.hl_dense import KeypointReadout, _rotmats_from_quat_xyzw
+    from flore.s1_policy.serving.hl_dense import KeypointReadout, _rotmats_from_quat_xyzw
 
     n = len(FIVE_POINT_BODIES)
     base_pos = np.zeros(3 * n)
@@ -424,7 +424,7 @@ def _rot_quat(yaw: float) -> np.ndarray:
 
 
 def test_post_anchor_off_publishes_the_absolute_stream_unchanged():
-    from fuji.s1_policy.serving.hl_dense import KeypointReadout
+    from flore.s1_policy.serving.hl_dense import KeypointReadout
 
     n = len(FIVE_POINT_BODIES)
     clutch = KeypointClutch(np.zeros(3 * n), np.tile(np.array([0.0, 0.0, 0.0, 1.0]), n),
@@ -443,7 +443,7 @@ def test_integrating_a_stream_telescopes_to_one_constant_offset():
     """The whole safety argument for streaming's clutch: publishing per-step deltas from an advancing
     base is the SAME as one fixed offset held for the run, so ``--post-anchor``/``--carry`` keep
     their meaning and nothing accumulates that a chunked run would not."""
-    from fuji.s1_policy.serving.hl_dense import KeypointReadout
+    from flore.s1_policy.serving.hl_dense import KeypointReadout
 
     clutch = _clutch()
     clutch.commit((clutch.base[0], clutch.base[1]))

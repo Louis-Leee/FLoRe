@@ -5,14 +5,14 @@
 # to the low-level controller over the VIVE-bridge WS :8770, visualizing the rollout +
 # predicted force + gripper + low-level online/offline status in viser.
 #
-# ONE PROCESS for flow/diffusion/act: those models load in the SAME FUJI .venv that holds
+# ONE PROCESS for flow/diffusion/act: those models load in the SAME FLoRe .venv that holds
 # viser + mink + mujoco, so there is no backend subprocess and no base64-npz pipe.
 # scripts/hl_serving.py is the whole thing.
 #
 # --algo muse is the exception, and only in WHERE THE MODEL RUNS. The MuSe-on-UVA policy needs
 # the uvaforce env (torch 2.7.1 + hydra + the MAR/VAE trees), which is mutually exclusive with
 # this one, so it comes up as a child process and is spoken to over a pipe
-# (scripts/muse_hl_infer_server.py + fuji/s1_policy/serving/hl_muse.py). EVERYTHING ELSE is the
+# (scripts/muse_hl_infer_server.py + flore/s1_policy/serving/hl_muse.py). EVERYTHING ELSE is the
 # same code path: the same wire mapper, force gate, drip cadence, recorder, reach compensation,
 # ghost robot and joystick stop. Unlike run_muse_force_serving.sh, which put the whole planner
 # in the backend and therefore carries its own (older) copy of the deploy contract.
@@ -74,7 +74,7 @@
 #
 # WHY THIS IS FRAME-SAFE: the recorded chunk is fed in the model's OWN anchor-RELATIVE form,
 # so the recording's lighthouse world frame CANCELS and the demo replays from wherever the arm
-# actually is. Nothing aligns lighthouse-world to pelvis. See fuji/s1_policy/serving/hl_replay.py.
+# actually is. Nothing aligns lighthouse-world to pelvis. See flore/s1_policy/serving/hl_replay.py.
 #
 # The older ``ckpt_*_stamped`` symlink pair was trained on the 2026.07.30 clean99
 # session, whose puck->TCP extrinsic was the pre-fix (0.21, 0, 0) rather than the
@@ -86,7 +86,7 @@
 # real driver.) Always pass the ``_final`` pair for the live rig.
 #
 # Env knobs:
-#   FUJI_PY   python (default: <repo>/.venv/bin/python)
+#   FLORE_PY   python (default: <repo>/.venv/bin/python)
 #   PORT      viser port (default: 8088)
 #   DEVICE    torch device (default: cuda)
 #   TASK, H   a shorthand for --checkpoint (the 5pt launcher's, 2026-09-20): checkpoints/umi_5pt_${TASK}/h${H}
@@ -100,7 +100,7 @@
 #   RECORD_CAMERA_EVERY=N   record every N-th camera frame into each run folder (--rollout-camera-every; 0 = none)
 #   ROLLOUT_DIR=DIR         the run recorder's root (default data/rollouts; --rollout-dir). NOT the deploy
 #                           take's --record-dir — see "THE ⏺ RUN RECORDER" below.
-#   FUJI_ACTION_HORIZON  DO NOT SET IT — this script DERIVES the action-chunk length from
+#   FLORE_ACTION_HORIZON  DO NOT SET IT — this script DERIVES the action-chunk length from
 #             --checkpoint's own config.json and exports it (an H=30 checkpoint pins 30, an
 #             H=50 one pins 50), because the constant is resolved at IMPORT time and only a
 #             launcher can still reach it. Set it explicitly and a disagreement with the
@@ -160,7 +160,7 @@
 # did not overlap the sampler, it interleaved with it: one Predict measured 46 ms with the ghost
 # idle and 3543 ms with it solving (77x), at ~1.3% GPU utilization — the device was starved because
 # the thread that feeds it could not get the interpreter. Fixed by a cooperative yield gate
-# (fuji/s1_policy/serving/gil_yield.py: the IK stands back per step while an inference is in
+# (flore/s1_policy/serving/gil_yield.py: the IK stands back per step while an inference is in
 # flight), an analytic Jacobian for that IK (646 -> 150 ms/chunk), and not solving at all while the
 # ghost is hidden. All three are VIZ-ONLY — the wire, the drip cadence and the freshness gates are
 # untouched. If a preview ever gets expensive again, UNTICK "Show ghost robot" in the page: that is
@@ -196,9 +196,9 @@
 # Needs RECORD=1 on the low level for the measured streams (the same knob the arm gate needs).
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
-UMI="$FUJI_ROOT/third_party/UMI_collection"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
+UMI="$FLORE_ROOT/third_party/UMI_collection"
 IK_SRC="$UMI/third_party/humi_ik"
 VIZ_SRC="$UMI/viz"
 REPLAY_SRC="$UMI/replay"
@@ -216,13 +216,13 @@ esac
 ANCHOR_ARGS=(--anchor-mode "$ANCHOR")
 if [ -n "${ANCHOR_EPS:-}" ]; then ANCHOR_ARGS+=(--anchor-eps "$ANCHOR_EPS"); fi
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
   exit 2
 fi
 
 # ACTION-CHUNK PIN, DERIVED FROM THE CHECKPOINT. -----------------------------------------
-# fuji/s1_policy/data/layout.py resolves ACTION_HORIZON from FUJI_ACTION_HORIZON at IMPORT
+# flore/s1_policy/data/layout.py resolves ACTION_HORIZON from FLORE_ACTION_HORIZON at IMPORT
 # time, and hl_serving.py sizes its execute-N-of-S choices, its clamps and its status text
 # from that module constant — so a shell launcher is the only place that can still set it.
 #
@@ -263,7 +263,7 @@ done
 # both pages: `TASK=wipe_board_new` here and on run_hl_serving_5pt.sh serve checkpoints/umi_5pt_wipe_board_new/h50.
 TASK_EXTRA=()
 if [ -z "$CKPT" ] && [ -n "${TASK:-}" ]; then
-  CKPT="$FUJI_ROOT/checkpoints/umi_5pt_${TASK}/h${H:-50}"
+  CKPT="$FLORE_ROOT/checkpoints/umi_5pt_${TASK}/h${H:-50}"
   if [ ! -f "$CKPT/config.json" ]; then
     echo "[run] FATAL: TASK=$TASK H=${H:-50} names $CKPT, which is not on disk. Pull it with" >&2
     echo "[run]     scripts/fetch_checkpoint.sh ${TASK}_5pt_h${H:-50}" >&2
@@ -290,8 +290,8 @@ if [ "$ALGO" = "muse" ]; then
     exit 2
   fi
   # shellcheck source=scripts/lib/muse_pin.sh
-  source "$FUJI_ROOT/scripts/lib/muse_pin.sh"
-  muse_pin_action_horizon "$BACKEND_PY" "$FUJI_ROOT" "$CKPT" || exit 2
+  source "$FLORE_ROOT/scripts/lib/muse_pin.sh"
+  muse_pin_action_horizon "$BACKEND_PY" "$FLORE_ROOT" "$CKPT" || exit 2
   set -- "$@" --backend-python "$BACKEND_PY"
 elif [ -n "$CKPT" ]; then
   # Omitting --checkpoint is legal (model-free replay), and then there is no checkpoint to
@@ -300,12 +300,12 @@ elif [ -n "$CKPT" ]; then
     echo "[run] FATAL: --checkpoint '$CKPT' has no config.json" >&2
     exit 2
   fi
-  if ! _CKPT_PIN="$("$FUJI_PY" - "$CKPT/config.json" <<'PY'
+  if ! _CKPT_PIN="$("$FLORE_PY" - "$CKPT/config.json" <<'PY'
 import json, sys
 # Imported, not duplicated: a second copy of the algo->block map here would drift silently.
 # This is a THROWAWAY process — its own ACTION_HORIZON resolution cannot affect the run,
 # which is launched afterwards with the env already set.
-from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
 raw = json.load(open(sys.argv[1]))
 algo = raw.get("algo")
@@ -332,13 +332,13 @@ PY
     TASK_EXTRA+=(--algo "$ALGO")
     echo "[run]   --algo $ALGO (read off $CKPT/config.json)"
   fi
-  if [ -n "${FUJI_ACTION_HORIZON:-}" ] && [ "$FUJI_ACTION_HORIZON" != "$CKPT_H" ]; then
-    echo "[run] FATAL: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON in the environment, but" >&2
+  if [ -n "${FLORE_ACTION_HORIZON:-}" ] && [ "$FLORE_ACTION_HORIZON" != "$CKPT_H" ]; then
+    echo "[run] FATAL: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON in the environment, but" >&2
     echo "[run]        $CKPT declares action_horizon=$CKPT_H. Refusing to guess which is meant." >&2
-    echo "[run]        Unset FUJI_ACTION_HORIZON and let the checkpoint decide." >&2
+    echo "[run]        Unset FLORE_ACTION_HORIZON and let the checkpoint decide." >&2
     exit 2
   fi
-  export FUJI_ACTION_HORIZON="$CKPT_H"
+  export FLORE_ACTION_HORIZON="$CKPT_H"
 fi
 
 # The ⏺ RUN RECORDER's knobs (the page's --rollout-every-run / --rollout-camera-every / --rollout-dir;
@@ -368,17 +368,17 @@ if [ -n "${RECORD_DIR:-}" ]; then
 fi
 
 echo "[run] HL-v2 PLANNER on http://localhost:$PORT  (Ctrl-C to stop)"
-echo "[run]   python: $FUJI_PY (device=$DEVICE)"
+echo "[run]   python: $FLORE_PY (device=$DEVICE)"
 if [ "$ALGO" = "muse" ]; then
   echo "[run]   muse BACKEND: $BACKEND_PY (uvaforce env; the model runs there, not here)"
-  echo "[run]   action chunk: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON steps (from the checkpoint's num_actions)"
+  echo "[run]   action chunk: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON steps (from the checkpoint's num_actions)"
   echo "[run]   NOTE: the first Predict waits on the backend's cold start (~1 min: hydra + MAR + the VAE)."
 elif [ -n "$CKPT" ]; then
-  echo "[run]   action chunk: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON steps (from $CKPT/config.json)"
+  echo "[run]   action chunk: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON steps (from $CKPT/config.json)"
 fi
 echo "[run]   REMINDER: run T2 as 'bash 2_ft_bridge.sh --pipeline' (6-DoF force for the planner),"
 echo "[run]            and launch the LOW-LEVEL in ABSOLUTE mode (pure position — force wire OFF):"
-echo "[run]     cd $FUJI_ROOT/third_party/holosoma_extensions/force_deploy && \\"
+echo "[run]     cd $FLORE_ROOT/third_party/holosoma_extensions/force_deploy && \\"
 echo "[run]       MODE=3pt-unified-anneal HOLOSOMA_VIVE_RELATIVE=0 RECORD=1 \\"
 echo "[run]       ONNX=logs/WBT-Holosoma/<force-qualified-run>/model_XXXXX.onnx bash 3_run_policy_vive_force.sh"
 echo "[run]   PHASE 0 (above) = PURE POSITION: no FORCE_CMD_WIRE, so the low level IGNORES the wire's"
@@ -406,8 +406,8 @@ if [ "$ANCHOR" = "command" ]; then
   echo "[run]      in contact (>=1.5 N) — UNCLAMPED it diverges ~22 cm, so do not raise the leak."
   echo "[run]      Applies to act / diffusion / flow / muse alike. ANCHOR=measured to go back."
 fi
-PYTHONPATH="$IK_SRC:$VIZ_SRC:$REPLAY_SRC:${PYTHONPATH:-}" "$FUJI_PY" \
-  "$FUJI_ROOT/scripts/hl_serving.py" \
+PYTHONPATH="$IK_SRC:$VIZ_SRC:$REPLAY_SRC:${PYTHONPATH:-}" "$FLORE_PY" \
+  "$FLORE_ROOT/scripts/hl_serving.py" \
   --device "$DEVICE" \
   --port "$PORT" \
   "${ANCHOR_ARGS[@]}" \

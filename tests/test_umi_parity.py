@@ -1,6 +1,6 @@
 """UMI training-recipe parity: train-time image augmentation and the reduced encoder LR.
 
-Both knobs were added after diffing FUJI against the pristine upstream clone at
+Both knobs were added after diffing FLoRe against the pristine upstream clone at
 ``third_party/universal_manipulation_interface``. They are OFF by default, so the first
 thing every test here pins is that a default-configured model is untouched.
 
@@ -15,9 +15,9 @@ import pytest
 import torch
 import torch.nn as nn
 
-from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
-from fuji.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
-from fuji.s1_policy.model.umi_parity import (
+from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
+from flore.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
+from flore.s1_policy.model.umi_parity import (
     ImageAugment,
     build_image_augment,
     encoder_lr_param_groups,
@@ -270,7 +270,7 @@ def test_augmentation_adds_no_checkpoint_keys(model_cls, config_cls):
 # TrainConfig + checkpoint back-compat
 # ---------------------------------------------------------------------------
 def _hl_config(**overrides):
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     kwargs = dict(algo="diffusion", pipeline="hl",
                   hl_data=HLDataConfig(norm_stats_path="s.json"))
@@ -282,7 +282,7 @@ def test_train_config_pushes_the_dataset_image_affine_onto_flow_and_diffusion():
     """ImageAugment inverts this affine before ColorJitter; a drift makes every jitter
     strength mean something other than UMI's value. So it is PUSHED, like every other
     layout-derived field, never set independently."""
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
     hl = HLDataConfig(norm_stats_path="s.json", image_mean=0.4, image_std=0.2)
     for algo, field in (("diffusion", "diffusion"), ("flow", "model"), ("act", "act")):
@@ -321,7 +321,7 @@ def test_older_checkpoints_stay_loadable_without_the_new_fields():
     """``dataclass_config`` refuses a checkpoint missing any field — deliberately, since a
     defaulted DIMENSION means serving weights that disagree with their config. These fields
     are exempt because they are train-time only. Everything else must still be refused."""
-    from fuji.s1_policy.inference.common import dataclass_config
+    from flore.s1_policy.inference.common import dataclass_config
 
     full = dataclasses.asdict(DPDiffusionConfig(action_dim=16, layout_mode="left_only"))
     new_fields = {"image_aug", "image_aug_crop_ratio", "image_aug_brightness",
@@ -346,8 +346,8 @@ def test_act_still_requires_its_image_affine():
     frozen-BatchNorm trunk), so defaulting them would feed the trunk out-of-distribution
     input — the exact bug the re-normalization exists to prevent. The exemption is keyed on
     the absence of ``imagenet_renormalize``, not on a class name."""
-    from fuji.s1_policy.inference.common import dataclass_config
-    from fuji.s1_policy.model.dp_act import DPACTConfig
+    from flore.s1_policy.inference.common import dataclass_config
+    from flore.s1_policy.model.dp_act import DPACTConfig
 
     full = dataclasses.asdict(DPACTConfig())
     for field in ("dataset_image_mean", "dataset_image_std"):

@@ -111,9 +111,9 @@ from pathlib import Path
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
@@ -123,15 +123,15 @@ if _HERE not in sys.path:
 # main()); it also installs the UMI viz/replay/humi_ik paths this process wants anyway.
 import hl_serving as HL  # noqa: E402
 
-from fuji.client.s0_driver import S0Driver  # noqa: E402
-from fuji.s1_policy.data.layout import ACTION_DT, ACTION_HZ  # noqa: E402
-from fuji.s1_policy.inference import ready_pose as RP  # noqa: E402
-from fuji.s1_policy.inference.display import (  # noqa: E402
+from flore.client.s0_driver import S0Driver  # noqa: E402
+from flore.s1_policy.data.layout import ACTION_DT, ACTION_HZ  # noqa: E402
+from flore.s1_policy.inference import ready_pose as RP  # noqa: E402
+from flore.s1_policy.inference.display import (  # noqa: E402
     read_stored_extrinsic,
     wrist_pose_from_stored,
 )
-from fuji.s1_policy.serving import hl_anchor, hl_dense  # noqa: E402
-from fuji.s1_policy.serving.hl_online import (  # noqa: E402
+from flore.s1_policy.serving import hl_anchor, hl_dense  # noqa: E402
+from flore.s1_policy.serving.hl_online import (  # noqa: E402
     ACTION_HORIZON,
     OBS_MAX_AGE_S,
     LivePlanner,
@@ -139,7 +139,7 @@ from fuji.s1_policy.serving.hl_online import (  # noqa: E402
     load_hl_model,
     snap_exec_steps,
 )
-from fuji.s1_policy.serving.live_robot import (  # noqa: E402
+from flore.s1_policy.serving.live_robot import (  # noqa: E402
     G1_29DOF_SDK_DOF_NAMES,
     JAW_JOINT_OPEN_M,
     build_sdk_to_urdf_index,
@@ -147,8 +147,8 @@ from fuji.s1_policy.serving.live_robot import (  # noqa: E402
     parse_record_frame,
     remap_dof_to_urdf,
 )
-from fuji.utils.force_frame import cmd_from_meas_force  # noqa: E402
-from fuji.utils.rot6d import (  # noqa: E402
+from flore.utils.force_frame import cmd_from_meas_force  # noqa: E402
+from flore.utils.rot6d import (  # noqa: E402
     quat_xyzw_to_wxyz,
     rot6d_to_rotmat,
     rotmat_to_quat_xyzw,
@@ -208,7 +208,7 @@ IDLE_HB_HZ = 60.0
 
 #: Execute-N-of-S choices offered in the page, DERIVED from this process's horizon rather than
 #: hardcoded — see :func:`hl_online.exec_step_choices`. ``ACTION_HORIZON`` is resolved from
-#: ``FUJI_ACTION_HORIZON`` at import time and ``run_hl_serving_mc.sh`` exports it from the
+#: ``FLORE_ACTION_HORIZON`` at import time and ``run_hl_serving_mc.sh`` exports it from the
 #: checkpoint's own ``config.json``, so an H=100 checkpoint offers 100 and an H=200 one offers
 #: 100 and 200 with no flag. The pin is what makes deriving it here sound: a checkpoint whose
 #: horizon disagrees with the constant is refused outright by ``validate_model_layout``, so this
@@ -364,7 +364,7 @@ def build_parser() -> argparse.ArgumentParser:
                         "pose. Only correct against HOLOSOMA_INIT_READY_POSE=0.")
     d.set_defaults(zero_arms=True)
     d.add_argument("--yam-urdf", default=os.path.join(
-        _FUJI_ROOT, "third_party", "UMI_collection", "robot_assets", "g1_yam",
+        _FLORE_ROOT, "third_party", "UMI_collection", "robot_assets", "g1_yam",
         "g1_29dof_yam.urdf"), help="URDF for the drawn robot + the FK cross-check")
 
     f = p.add_argument_group("force + gripper")
@@ -927,7 +927,7 @@ def _run_viser(args, loaded, planner, completer, wire, subs, s0, anchor,
         before the socket: the low level validates only WIDTH and ``json.dumps`` serializes NaN
         unchecked, so a bad joint target or a de-normalised quaternion would reach the robot. On
         a refusal we send NOTHING and let the freshness gate (S0Driver 0.5 s -> the low level's
-        0.25 s) hold the robot, which is the same policy ``fuji.client.is_safe_to_send``
+        0.25 s) hold the robot, which is the same policy ``flore.client.is_safe_to_send``
         implements for the 3-point wire.
         """
         ok, reason = wire.publish(s0, frame, fcmd)
@@ -1033,7 +1033,7 @@ def _run_viser(args, loaded, planner, completer, wire, subs, s0, anchor,
 
     # ---------------- the scene ----------------
     server = viser.ViserServer(host=args.host, port=args.port,
-                              label="FUJI 3-tracker PLANNER (motion completion -> dense)")
+                              label="FLoRe 3-tracker PLANNER (motion completion -> dense)")
     server.scene.set_up_direction("+z")
     server.scene.add_grid("/grid", plane="xy", shadow_opacity=0.0, infinite_grid=True,
                           cell_size=0.25)
@@ -1222,8 +1222,8 @@ def _run_viser(args, loaded, planner, completer, wire, subs, s0, anchor,
             eef_t_wrist=eef_t_wrist, eef_R_wrist=eef_R_wrist, dt=ACTION_DT,
             grip_width={r: decoded[r]["gripper_m"] for r in grip_roles
                         if decoded[r]["gripper_m"] is not None},
-            src={"fuji_checkpoint": os.path.basename(args.checkpoint),
-                 "fuji_seed": seed_ctl["n"], "fuji_anchor": anchor.source})
+            src={"flore_checkpoint": os.path.basename(args.checkpoint),
+                 "flore_seed": seed_ctl["n"], "flore_anchor": anchor.source})
         try:
             completed = completer.complete(cond)
         except Exception as exc:  # noqa: BLE001 - a failed completion must not publish

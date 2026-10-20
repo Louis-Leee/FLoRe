@@ -8,7 +8,7 @@ import types
 import numpy as np
 import pytest
 
-from fuji.s1_policy.inference import keypoint_humanoid as KH
+from flore.s1_policy.inference import keypoint_humanoid as KH
 
 
 class _Geom:

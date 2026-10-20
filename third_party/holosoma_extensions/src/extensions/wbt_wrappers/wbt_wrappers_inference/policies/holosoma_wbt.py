@@ -726,7 +726,7 @@ class HolosomaWBTPolicy(WholeBodyTrackingPolicy):
 
         # Optional LIVE F^cmd from the :8770 WIRE (the HL-v2 online planner streams a
         # per-hand force command in the raw Bota SENSOR frame alongside the pose target;
-        # see ViveLiveSource.latest_force + fuji/client/s0_driver.send's f_cmd field).
+        # see ViveLiveSource.latest_force + flore/client/s0_driver.send's f_cmd field).
         # OFF by default → the wire's f_cmd is IGNORED and F^cmd stays 0 (pure position),
         # so the VIVE-teleop / keyboard-F^cmd / position-only-planner paths are all
         # byte-identical. This is the HARD guarantee the operator asked for: force can
@@ -812,7 +812,7 @@ class HolosomaWBTPolicy(WholeBodyTrackingPolicy):
         # `_VR_5POINT_OPERATOR_PLACED` upper points. The caps exist to turn a far hand/head
         # target into a glide; a GAIT is a far foot target by definition — a walking clip's feet
         # demand 19-46 mm/tick against a 5 mm cap, so slewing them does not slow a walk, it
-        # replaces it with a 5 mm/tick crawl toward a target that keeps running away (FUJI's
+        # replaces it with a 5 mm/tick crawl toward a target that keeps running away (FLoRe's
         # walk skill measured a 287 mm mean / 601 mm max lag on a mock at the launcher's cap).
         # Only the 5pt family has feet; every other preset ignores this. What is GIVEN UP with 0:
         # a stale→fresh bridge recovery and a mid-armed wire discontinuity are no longer ramped
@@ -826,7 +826,7 @@ class HolosomaWBTPolicy(WholeBodyTrackingPolicy):
             "off",
         )
         # Does a 5pt keypoint frame's OPTIONAL `ref_joints` field (29 reference joint targets +
-        # velocities BY NAME — FUJI's walk skill sends the gait clip's own joints while it plays)
+        # velocities BY NAME — FLoRe's walk skill sends the gait clip's own joints while it plays)
         # override the `command_lower_body` obs term? Default 1 = yes. That term is the reference
         # motion's 12 leg joints + velocities and on the live path it is read from the FROZEN idle
         # clip (the ready stance, zero velocity) — so during a walk the legs were told "stand" by a
@@ -836,7 +836,7 @@ class HolosomaWBTPolicy(WholeBodyTrackingPolicy):
         # (a stale frame FREEZES the last fed override exactly as the keypoint target freezes),
         # never slewed (a slewed reference is the crawl the feet were exempted from), and a frame
         # WITHOUT the field is the byte-identical frozen-clip path. Reported per tick on RecordTap
-        # as `ref_joints_live`. 0 = ignore the field (A/B on the robot without touching FUJI).
+        # as `ref_joints_live`. 0 = ignore the field (A/B on the robot without touching FLoRe).
         self._vive_ref_joints = os.environ.get("HOLOSOMA_VIVE_REF_JOINTS", "1").strip().lower() not in (
             "0",
             "false",
@@ -911,9 +911,9 @@ class HolosomaWBTPolicy(WholeBodyTrackingPolicy):
         # ABSOLUTE-mode ARM CLUTCH (HOLOSOMA_VIVE_ABS_CLUTCH, default ON). Absolute
         # mode feeds the incoming wire as the hand target DIRECTLY, so at the arm
         # instant the obs target steps from the held FK reference to the wire. When
-        # a planner (FUJI) runs the low level with HOLOSOMA_INIT_READY_POSE, the
+        # a planner (FLoRe) runs the low level with HOLOSOMA_INIT_READY_POSE, the
         # policy's steady-state standing pose sits a few cm off that arm-zeroed
-        # reference, so wire (== the robot's MEASURED pose, published by FUJI's
+        # reference, so wire (== the robot's MEASURED pose, published by FLoRe's
         # measured-EE clutch) ≠ FK(reference) and that step is an uncommanded arm
         # lurch (the reported "LEFT hand jerks up-left on start"). This clutch
         # removes it WITHOUT switching to relative mode (which would mis-anchor the
@@ -2698,7 +2698,7 @@ class HolosomaWBTPolicy(WholeBodyTrackingPolicy):
         ``_handle_stop_policy`` is called rather than a bespoke shutdown so the resulting
         machine state is EXACTLY the one the operator's own B press produces — stiff hold
         at the current pose, VIVE/planner arming dropped, F^cmd zeroed, motion clip reset,
-        debug log saved. One state to reason about, and the FUJI planner's
+        debug log saved. One state to reason about, and the FLoRe planner's
         "low level lost" watchdog (which detects B by the RecordTap stream stopping)
         detects this identically, with no new wire field.
 
@@ -5209,7 +5209,7 @@ class HolosomaWBTPolicy(WholeBodyTrackingPolicy):
                     vr_cmd_slewed=vr_cmd_slewed,
                     # Did the wire's `ref_joints` drive command_lower_body this tick? None on every
                     # preset that is not 5pt (the field is read nowhere else); False = the frozen
-                    # clip's legs; True = the walk skill's reference legs. FUJI prints it next to
+                    # clip's legs; True = the walk skill's reference legs. FLoRe prints it next to
                     # the walk so "the legs were told to stand" is a fact read off the robot.
                     ref_joints_live=getattr(self, "_ref_joints_applied", None),
                     # The soft contact label the actor consumed this tick — gated on the

@@ -1,4 +1,4 @@
-"""Tests for the reach compensator (fuji.s1_policy.serving.hl_reach).
+"""Tests for the reach compensator (flore.s1_policy.serving.hl_reach).
 
 The properties pinned here are the ones that make it safe to switch on while a physical G1 is
 holding a target: OFF is an exact identity, the extra reach is hard-bounded, the gate fires ONLY
@@ -16,7 +16,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.s1_policy.serving.hl_reach import MAX_CLAMP_M, ReachCompensator, ReachConfig
+from flore.s1_policy.serving.hl_reach import MAX_CLAMP_M, ReachCompensator, ReachConfig
 
 STEP = np.array([0.002, 0.0, 0.0])  # 2 mm/step of commanded motion ≈ 6 cm/s at 30 Hz
 
@@ -276,8 +276,8 @@ def test_gate_choice_validated_on_recorded_deploy_data():
     session = Path("data/deploy_takes/20260814_235118")
     if not session.is_dir():
         pytest.skip("recorded deploy takes not present (rig data, not in git)")
-    from fuji.s1_policy.model.act.temporal_ensemble import TemporalEnsembler
-    from fuji.s1_policy.serving.hl_take import DeployTake, find_takes
+    from flore.s1_policy.model.act.temporal_ensemble import TemporalEnsembler
+    from flore.s1_policy.serving.hl_take import DeployTake, find_takes
 
     W = 9
     shortfalls, realized = [], []

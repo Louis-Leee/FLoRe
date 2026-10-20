@@ -130,7 +130,7 @@
 # form, so the recording's lighthouse world frame CANCELS exactly and the demo replays from
 # wherever the arm actually is. Nothing aligns lighthouse-world to pelvis, and there is no
 # extra Rx(180) flip (the recorded poses are already puck-frame, like the planner's anchor).
-# See fuji/s1_policy/serving/hl_replay.py.
+# See flore/s1_policy/serving/hl_replay.py.
 #
 # ⚠ EXPECT THE DEMO TO LOOK REORIENTED — but only by ~55°, not ~107°. Because the chunk is
 # anchor-relative, the stroke is rigidly rotated by R_wrist_robot @ R_wrist_handheld^T: measured
@@ -152,10 +152,10 @@
 #
 # A world-oriented replay was separately measured and rejected: it destroys the tool-relative
 # geometry, makes the command depend on lighthouse calibration (13 cm), and drives episodes into
-# the torso. Full measurements: fuji/s1_policy/serving/hl_replay.py::_body_vs_world_transport.
+# the torso. Full measurements: flore/s1_policy/serving/hl_replay.py::_body_vs_world_transport.
 #
 # Env knobs:
-#   FUJI_PY   python (default: <repo>/.venv/bin/python)
+#   FLORE_PY   python (default: <repo>/.venv/bin/python)
 #   PORT      viser port (default: 8088)
 #   OFFLINE   1 = viz only, no low level / no bridges / no publish (see above). Default 0.
 #   RAW_CROUCH  1 = seed at the RAW home_anchor default_qpos instead of the arms-zeroed ready pose.
@@ -176,9 +176,9 @@
 #   --no-selfcheck           skip the bridge probe entirely
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
-UMI="$FUJI_ROOT/third_party/UMI_collection"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
+UMI="$FLORE_ROOT/third_party/UMI_collection"
 IK_SRC="$UMI/third_party/humi_ik"
 VIZ_SRC="$UMI/viz"
 REPLAY_SRC="$UMI/replay"
@@ -209,8 +209,8 @@ esac
 # --hl-force-hist-len 8 --hl-action-horizon 16 --hl-action-hz 16 --hl-force-hist-span-s 1.0.
 ZARR="${ZARR:-$UMI/data/datasets/session_2026.08.07_1556_v3.zarr.zip}"
 
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY (create .venv, then: uv pip install -e \".[viz]\")" >&2
   exit 2
 fi
 if [ ! -e "$ZARR" ]; then
@@ -225,7 +225,7 @@ EXTRA_ARGS=()
 if [ "$OFFLINE" = "1" ]; then
   EXTRA_ARGS+=(--offline)
   echo "[run] OFFLINE FRAME VIZ on http://localhost:$PORT  (Ctrl-C to stop)"
-  echo "[run]   python: $FUJI_PY  —  NO model, NO GPU, NO low level, NO bridges, NOTHING published"
+  echo "[run]   python: $FLORE_PY  —  NO model, NO GPU, NO low level, NO bridges, NOTHING published"
   echo "[run]   dataset: $ZARR"
   echo "[run]   The page shows the yam URDF at the low level's REAL ready pose with the three"
   echo "[run]   triads (tcp / tracker / wrist_yaw_link) on its LEFT wrist. 'tracker' renders the"
@@ -235,11 +235,11 @@ if [ "$OFFLINE" = "1" ]; then
   echo "[run]   EXECUTE IS DISABLED in this mode. Drop OFFLINE=1 to drive the rig."
 else
   echo "[run] RECORDED-DATA REPLAY on http://localhost:$PORT  (Ctrl-C to stop)"
-  echo "[run]   python: $FUJI_PY  —  NO model, NO GPU (this is a data playback)"
+  echo "[run]   python: $FLORE_PY  —  NO model, NO GPU (this is a data playback)"
   echo "[run]   dataset: $ZARR"
   echo "[run]   TIP: OFFLINE=1 $0  — inspect the frame first, with no hardware at all."
   echo "[run]   REQUIRED: the LOW-LEVEL in ABSOLUTE mode with RECORD=1 (pure position — force wire OFF):"
-  echo "[run]     cd $FUJI_ROOT/third_party/holosoma_extensions/force_deploy && \\"
+  echo "[run]     cd $FLORE_ROOT/third_party/holosoma_extensions/force_deploy && \\"
   echo "[run]       MODE=3pt-unified-anneal HOLOSOMA_VIVE_RELATIVE=0 RECORD=1 bash 3_run_policy_vive_force.sh"
   echo "[run]   OPTIONAL: F/T (:8771) + camera (:8773) bridges — DISPLAY only; replay does not read them."
   echo "[run]   ⚠ ARM BEFORE EXECUTE: the low level IGNORES this wire until you ARM it. On the joystick:"
@@ -249,8 +249,8 @@ else
   echo "[run]   SAFETY: '⏩ Play episode' moves the arm CONTINUOUSLY to the episode end after one press."
   echo "[run]           Keep the hardware E-stop in hand; ⏹ Stop retires the loop after the current chunk."
 fi
-PYTHONPATH="$IK_SRC:$VIZ_SRC:$REPLAY_SRC:${PYTHONPATH:-}" "$FUJI_PY" \
-  "$FUJI_ROOT/scripts/hl_serving.py" \
+PYTHONPATH="$IK_SRC:$VIZ_SRC:$REPLAY_SRC:${PYTHONPATH:-}" "$FLORE_PY" \
+  "$FLORE_ROOT/scripts/hl_serving.py" \
   --replay-zarr "$ZARR" \
   --layout-mode "$LAYOUT" \
   --port "$PORT" \

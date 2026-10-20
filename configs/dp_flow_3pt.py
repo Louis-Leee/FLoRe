@@ -1,6 +1,6 @@
 """Reference DP-Flow 3-point training config.
 
-This is a plain-Python config (the FUJI config system is tyro dataclasses, not YAML):
+This is a plain-Python config (the FLoRe config system is tyro dataclasses, not YAML):
 ``build()`` returns a fully-populated :class:`TrainConfig`. Import and pass it to
 ``Trainer``, or use it as a template for CLI overrides with ``scripts/train_s1.py``.
 
@@ -10,8 +10,8 @@ decoder (RTC-capable) with train-time RTC enabled (delay 0..5).
 
 from __future__ import annotations
 
-from fuji.s1_policy.model.dp_flow import DPFlowConfig
-from fuji.s1_policy.training.config import DataConfig, TrainConfig
+from flore.s1_policy.model.dp_flow import DPFlowConfig
+from flore.s1_policy.training.config import DataConfig, TrainConfig
 
 
 def build(zarr_paths: tuple[str, ...] = (), norm_stats_path: str = "") -> TrainConfig:

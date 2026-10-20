@@ -36,7 +36,7 @@ esac
 # ~4.7x wider, so reusing the 0808 stats would compress every force label toward zero. The
 # trainer's split-provenance check refuses a mismatch, but this makes the right file default.
 # FH is the force-history bin count baked into that file. It is derived from SESSION and
-# EXPORTED, never taken from the caller: the zarr's hl_force_hist_len attr and FUJI's
+# EXPORTED, never taken from the caller: the zarr's hl_force_hist_len attr and FLoRe's
 # resolved FORCE_HIST_LEN must agree or hl_dataset._check_file refuses the file, and
 # pairing them here makes the mismatch impossible instead of merely detected.
 #
@@ -46,8 +46,8 @@ esac
 # The loader takes a list, and episode order is the CONCATENATION order -- the val split is a
 # tail of it -- so the order inside a case is load-bearing, not cosmetic.
 #
-# H is the ACTION-CHUNK length, exported as FUJI_ACTION_HORIZON the same way FH is exported as
-# FUJI_FORCE_HIST_LEN. UNLIKE FH it is not a property of the file: every shipped dataset stores
+# H is the ACTION-CHUNK length, exported as FLORE_ACTION_HORIZON the same way FH is exported as
+# FLORE_FORCE_HIST_LEN. UNLIKE FH it is not a property of the file: every shipped dataset stores
 # 50 steps at 30 Hz, and a shorter H trains on a strict PREFIX of that same chunk (t0-inclusive
 # grid, unchanged dt), so an H=30 vs H=50 A/B needs no re-convert. It still belongs in the
 # SESSION key rather than in the caller's environment, because NS/RUN/OUT are all derived from
@@ -153,7 +153,7 @@ case "$SESSION" in
     # 13.5-18.8 s of sustained wiping, 1817 anchors = 5.3% of the 34293 usable.
     #
     # The _h30 twin is the SAME file (a 30-step chunk is a strict PREFIX of the stored 50 on the
-    # t0-inclusive grid) with its OWN norm stats, fitted with FUJI_ACTION_HORIZON=30 exported
+    # t0-inclusive grid) with its OWN norm stats, fitted with FLORE_ACTION_HORIZON=30 exported
     # (norm_stats_hl_left_wipe_board_new_h30.json) -- exactly the wipe_board_h30 / 0823_merged_h30 rule.
     wipe_board_new)     DS=(third_party/UMI_collection/data/datasets/session_2026.09.13_wipe_board_new_v3_left_clean181.zarr.zip); FH=1; VAL_EPS=4 ;;
     wipe_board_new_h30) DS=(third_party/UMI_collection/data/datasets/session_2026.09.13_wipe_board_new_v3_left_clean181.zarr.zip); FH=1; H=30; VAL_EPS=4 ;;
@@ -163,15 +163,15 @@ case "$SESSION" in
             "0823_merged 0823_merged_h30 wipe_board wipe_board_new wipe_board_new_h30," \
             "got '$SESSION'" >&2; exit 1 ;;
 esac
-export FUJI_FORCE_HIST_LEN="$FH"
-export FUJI_ACTION_HORIZON="$H"
+export FLORE_FORCE_HIST_LEN="$FH"
+export FLORE_ACTION_HORIZON="$H"
 NS=checkpoints/norm_stats_hl_left_${SESSION}.json
 RUN="${ALGO}_${SESSION}"
 # Checkpoints go to /data (6.4 TB) -- the repo disk is 92% full and three runs at
 # --save-every 10000 want ~80 GB.
 # CKPT_ROOT is overridable because /data exists only on the 8-GPU workstation; on a box
 # without it every guard below passes and the run dies at the first save.
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 OUT="$CKPT_ROOT/$RUN"
 [[ -d "$CKPT_ROOT" ]] || mkdir -p "$CKPT_ROOT" 2>/dev/null || {
     echo "FATAL: checkpoint root '$CKPT_ROOT' is missing and not creatable." >&2

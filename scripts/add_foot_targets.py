@@ -14,7 +14,7 @@ The chunk entries are ``KeypointFK(wb_action_joints[t, k])``'s ``*_ankle_roll_li
 anchors are ``KeypointFK(wb_state_joints[t])``'s. Five consequences of that definition, all
 deliberate:
 
-* **One FK, the deploy one.** :class:`~fuji.s1_policy.inference.ready_pose.KeypointFK` is the
+* **One FK, the deploy one.** :class:`~flore.s1_policy.inference.ready_pose.KeypointFK` is the
   same class ``hl_dense``'s command anchor, the ready-pose frame and ``wb_geom``'s state
   reduction use, off the same ``g1_29dof_yam.urdf``. The ankles get NO lever (holosoma's
   ``VR_5POINT_OFFSETS_TCP`` is zero there and ``mc_frames.KEYPOINT_OFFSETS`` agrees), so the
@@ -66,7 +66,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 
-from fuji.s1_policy.data.layout import FOOT_ACTION_KEYS, JOINT_DIM, _FOOT_ZARR_KEYS
+from flore.s1_policy.data.layout import FOOT_ACTION_KEYS, JOINT_DIM, _FOOT_ZARR_KEYS
 
 #: The two roles, and the URDF body each reads. Same bodies as
 #: ``ready_pose._FOOT_BODIES`` and holosoma's ``VR_5POINT_FEET_BODIES``.
@@ -85,7 +85,7 @@ _FK = None
 
 def _worker_init(urdf_path: str | None, anchor_path: str | None) -> None:
     global _FK  # noqa: PLW0603 - one per process, by design (see _FK)
-    from fuji.s1_policy.data.wb_geom import load_geom_fk
+    from flore.s1_policy.data.wb_geom import load_geom_fk
 
     fk, why = load_geom_fk(urdf_path=urdf_path, home_anchor_path=anchor_path)
     if fk is None:
@@ -132,11 +132,11 @@ def build(src_path: str, out_path: str, *, jobs: int, rows_per_task: int,
           urdf_path: str | None, anchor_path: str | None, overwrite: bool) -> int:
     import zarr
 
-    from fuji.s1_policy.data.hl_dataset import _register_image_codecs
-    from fuji.s1_policy.data.wb_geom import load_geom_fk
+    from flore.s1_policy.data.hl_dataset import _register_image_codecs
+    from flore.s1_policy.data.wb_geom import load_geom_fk
 
     # The SAME registration HLDataset uses (`imagecodecs.numcodecs`; UMI's vendored
-    # `imagecodecs_numcodecs` lives in the submodule and is not importable from FUJI's venv).
+    # `imagecodecs_numcodecs` lives in the submodule and is not importable from FLoRe's venv).
     # Must run before the first array-metadata load or the read raises
     # "codec not available: 'imagecodecs_jpegxl'".
     _register_image_codecs()
@@ -252,7 +252,7 @@ def report(path: str) -> int:
     """Verify + describe an already-written file. No FK, no GPU, no model."""
     import zarr
 
-    from fuji.s1_policy.data.hl_dataset import _register_image_codecs
+    from flore.s1_policy.data.hl_dataset import _register_image_codecs
 
     _register_image_codecs()
     g = zarr.open(path, "r")

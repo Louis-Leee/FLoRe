@@ -69,7 +69,7 @@ from pathlib import Path
 
 import numpy as np
 
-_DEFAULT_UMI_DIR = os.path.expanduser("~/FUJI/third_party/UMI_collection")
+_DEFAULT_UMI_DIR = os.path.expanduser("~/FLoRe/third_party/UMI_collection")
 #: Sphere radii: the gated points must read as "aim at these", the derived ones as "ignore".
 _R_GATED = 0.035
 _R_DERIVED = 0.018

@@ -1,4 +1,4 @@
-"""Tests for the GIL yield gate (fuji.s1_policy.serving.gil_yield).
+"""Tests for the GIL yield gate (flore.s1_policy.serving.gil_yield).
 
 The property that matters is the one that was measured on the rig: a pure-Python viz thread must
 not be able to stretch an inference. So these tests do not merely check the latch bits — the
@@ -14,7 +14,7 @@ import time
 
 import pytest
 
-from fuji.s1_policy.serving.gil_yield import YieldGate
+from flore.s1_policy.serving.gil_yield import YieldGate
 
 
 def _burn(n: int) -> float:

@@ -1,4 +1,4 @@
-"""Terminal hotkeys for the 5pt page (``fuji/s1_policy/serving/tty_keys.py``) and their wiring.
+"""Terminal hotkeys for the 5pt page (``flore/s1_policy/serving/tty_keys.py``) and their wiring.
 
 The pure half (key → action → note, escape-sequence swallowing, the binding validator) is checked
 directly; the terminal half against a real PTY pair from the stdlib (``pty.openpty``), which is a TTY
@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from fuji.s1_policy.serving import tty_keys as K
+from flore.s1_policy.serving import tty_keys as K
 
 _PAGE = Path(__file__).resolve().parents[1] / "scripts" / "hl_serving_5pt.py"
 
@@ -255,7 +255,7 @@ def test_the_page_exposes_no_keys_and_hands_the_four_actions_to_one_reader():
                      r'\s*"jaws_close": _key_jaws_close, "jaws_open": _key_jaws_open\},', s)
     # One import statement hands the page every serving module (single-line or parenthesized — the
     # 2026-09-19 replay batch made it the latter); tty_keys must be among them, not a second import.
-    m = re.search(r"from fuji\.s1_policy\.serving import (\([^)]*\)|[^\n]*)", s)
+    m = re.search(r"from flore\.s1_policy\.serving import (\([^)]*\)|[^\n]*)", s)
     assert m, "the page imports the serving package once"
     for name in ("hl_5pt", "hl_dense", "hl_stream", "rollout_record", "tty_keys", "walk_skill"):
         assert re.search(rf"\b{name}\b", m.group(1)), name

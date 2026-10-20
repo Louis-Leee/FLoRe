@@ -45,8 +45,8 @@ import logging
 
 import tyro
 
-from fuji.s1_policy.training.config import TrainConfig
-from fuji.s1_policy.training.trainer import Trainer
+from flore.s1_policy.training.config import TrainConfig
+from flore.s1_policy.training.trainer import Trainer
 
 
 def main() -> None:

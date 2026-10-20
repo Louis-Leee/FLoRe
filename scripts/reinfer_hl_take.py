@@ -15,7 +15,7 @@ sample. Two halves, and they are deliberately the same page:
      On a frame where the policy really ran, the stored observation is fed back verbatim, so
      the SAME checkpoint + seed reproduces the deploy chunk and any difference is a real
      difference. On any other frame the observation is rebuilt from the readback (see
-     :meth:`~fuji.s1_policy.serving.hl_take.DeployTake.obs_at`, which states exactly what that
+     :meth:`~flore.s1_policy.serving.hl_take.DeployTake.obs_at`, which states exactly what that
      can and cannot reconstruct).
 
 WHY THIS IS NOT ``run_hl_replay_data.sh``. That drives the ROBOT from a recorded UMI
@@ -38,8 +38,8 @@ from pathlib import Path
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_UMI = os.path.join(_FUJI_ROOT, "third_party", "UMI_collection")
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_UMI = os.path.join(_FLORE_ROOT, "third_party", "UMI_collection")
 for _p in (
     os.path.join(_UMI, "third_party", "humi_ik"),
     os.path.join(_UMI, "viz"),
@@ -47,14 +47,14 @@ for _p in (
 ):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 
-from fuji.s1_policy.data.layout import ACTION_DT, ACTION_HZ  # noqa: E402
-from fuji.s1_policy.inference.display import TRIAD_DRAW_SIZES, triad_offsets_from_tcp  # noqa: E402
-from fuji.s1_policy.serving.hl_take import DeployTake, find_takes  # noqa: E402
-from fuji.s1_policy.serving.hl_trace import rotation_geodesic_deg  # noqa: E402
-from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d  # noqa: E402
+from flore.s1_policy.data.layout import ACTION_DT, ACTION_HZ  # noqa: E402
+from flore.s1_policy.inference.display import TRIAD_DRAW_SIZES, triad_offsets_from_tcp  # noqa: E402
+from flore.s1_policy.serving.hl_take import DeployTake, find_takes  # noqa: E402
+from flore.s1_policy.serving.hl_trace import rotation_geodesic_deg  # noqa: E402
+from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rot6d  # noqa: E402
 
 _TRACE_RED = (235, 60, 60)        # MEASURED path — what the arm actually did
 _PLAN_YELLOW = (255, 232, 20)     # the chunk that WAS executed (re-decoded)
@@ -97,7 +97,7 @@ class ReinferSession:
         if checkpoint:
             if not algo:
                 raise SystemExit("--checkpoint needs --algo (flow | diffusion | act)")
-            from fuji.s1_policy.serving.hl_online import load_hl_model
+            from flore.s1_policy.serving.hl_online import load_hl_model
 
             _log(f"loading {algo} checkpoint {checkpoint} on {device} …")
             self.loaded = load_hl_model(checkpoint, algo, device=device, num_steps=num_steps)
@@ -122,7 +122,7 @@ class ReinferSession:
         """
         if self.loaded is None:
             raise SystemExit("re-inference needs --checkpoint/--algo")
-        from fuji.s1_policy.serving.hl_online import batch_from_obs, sample_chunk
+        from flore.s1_policy.serving.hl_online import batch_from_obs, sample_chunk
 
         preds = self.take.predictions
         if not preds:
@@ -149,7 +149,7 @@ class ReinferSession:
         """Re-run the checkpoint at measured TICK ``frame``, from a rebuilt observation."""
         if self.loaded is None:
             raise SystemExit("re-inference needs --checkpoint/--algo")
-        from fuji.s1_policy.serving.hl_online import batch_from_obs, sample_chunk
+        from flore.s1_policy.serving.hl_online import batch_from_obs, sample_chunk
 
         obs, anchor_pos, anchor_rot6d = self.take.obs_at(frame, self.loaded)
         batch = batch_from_obs(self.loaded, obs)
@@ -187,7 +187,7 @@ class ReinferSession:
                 "rotation_deg_max": float(np.max(rot)),
             }
             if slots.gripper is not None:
-                from fuji.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
+                from flore.s1_policy.data.transforms import GRIPPER_WIDTH_REF_M
 
                 g = np.abs(new[:, slots.gripper] - old[:, slots.gripper]) * GRIPPER_WIDTH_REF_M
                 entry["gripper_mm_mean"] = float(np.mean(g) * 1000.0)
@@ -202,10 +202,10 @@ class ReinferSession:
     def decode_positions(self, chunk: np.ndarray, anchor_pos, anchor_rot6d,
                          role: str = "left") -> np.ndarray:
         """A chunk → absolute pelvis-frame TCP positions against a given anchor."""
-        from fuji.s1_policy.data.transforms import delta_ee_to_absolute
+        from flore.s1_policy.data.transforms import delta_ee_to_absolute
 
         layout = (self.loaded.layout if self.loaded is not None
-                  else __import__("fuji.s1_policy.data.layout", fromlist=["get_layout"])
+                  else __import__("flore.s1_policy.data.layout", fromlist=["get_layout"])
                   .get_layout(str(self.take.meta.get("layout_mode", "left_only"))))
         ri = layout.roles.index(role)
         slots = layout.slots(role)
@@ -378,13 +378,13 @@ def _run_viewer(session: ReinferSession, args) -> None:
     from viser.extras import ViserUrdf
 
     import replay_common as rc  # third_party/UMI_collection/replay (on sys.path above)
-    from fuji.s1_policy.serving.live_robot import (
+    from flore.s1_policy.serving.live_robot import (
         JAW_JOINT_OPEN_M,
         build_sdk_to_urdf_index,
         jaw_joint_from_width_m,
         remap_dof_to_urdf,
     )
-    from fuji.utils.force_frame import (
+    from flore.utils.force_frame import (
         CMD_FROM_MEAS_NOTE,
         TCP_FROM_SENSOR_NOTE,
         cmd_from_meas_wrench,
@@ -395,7 +395,7 @@ def _run_viewer(session: ReinferSession, args) -> None:
         raise SystemExit(f"{take.path} has no measured frames to replay (was the low level "
                          "running with RECORD=1 when this take was made?)")
 
-    server = viser.ViserServer(host=args.host, port=args.port, label="FUJI deploy-take replay")
+    server = viser.ViserServer(host=args.host, port=args.port, label="FLoRe deploy-take replay")
     server.scene.set_up_direction("+z")
     server.scene.add_grid("/grid", plane="xy", shadow_opacity=0.0, infinite_grid=True,
                           cell_size=0.25)
@@ -443,7 +443,7 @@ def _run_viewer(session: ReinferSession, args) -> None:
     # MEASURED wrist — the same three triads the collection viz, the zarr replay and the
     # online planner draw, so this viewer can be compared to them triad-for-triad.
     follow = server.scene.add_frame("/follow", show_axes=False, origin_radius=0.0)
-    from fuji.s1_policy.inference.display import PUCK_TO_WRIST_RELABEL
+    from flore.s1_policy.inference.display import PUCK_TO_WRIST_RELABEL
 
     for name, off in triad_offsets_from_tcp().items():
         length, radius, origin = TRIAD_DRAW_SIZES[name]

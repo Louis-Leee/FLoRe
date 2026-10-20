@@ -70,7 +70,7 @@ GPUS=$(IFS=,; echo "${ALL_GPUS[*]:0:$N_GPUS}")
 #
 # FH (force look-back) and H (action-chunk length) are EXPORTED, not taken from the caller:
 # torchrun passes the environment to every rank, and both are resolved at IMPORT by
-# fuji.s1_policy.data.layout, so every rank must agree on them before the first collective.
+# flore.s1_policy.data.layout, so every rank must agree on them before the first collective.
 VAL_EPS=4
 H=50
 SESSION=${SESSION:-0823_merged}
@@ -131,7 +131,7 @@ case "$SESSION" in
     # 13.5-18.8 s of sustained wiping, 1817 anchors = 5.3% of the 34293 usable.
     #
     # The _h30 twin is the SAME file (a 30-step chunk is a strict PREFIX of the stored 50 on the
-    # t0-inclusive grid) with its OWN norm stats, fitted with FUJI_ACTION_HORIZON=30 exported
+    # t0-inclusive grid) with its OWN norm stats, fitted with FLORE_ACTION_HORIZON=30 exported
     # (norm_stats_hl_left_wipe_board_new_h30.json) -- exactly the wipe_board_h30 / 0823_merged_h30 rule.
     wipe_board_new)     DS=(third_party/UMI_collection/data/datasets/session_2026.09.13_wipe_board_new_v3_left_clean181.zarr.zip); FH=1; VAL_EPS=4 ;;
     wipe_board_new_h30) DS=(third_party/UMI_collection/data/datasets/session_2026.09.13_wipe_board_new_v3_left_clean181.zarr.zip); FH=1; H=30; VAL_EPS=4 ;;
@@ -141,8 +141,8 @@ case "$SESSION" in
             "0823_merged 0823_merged_h30 wipe_board wipe_board_new wipe_board_new_h30," \
             "got '$SESSION'" >&2; exit 1 ;;
 esac
-export FUJI_FORCE_HIST_LEN="$FH"
-export FUJI_ACTION_HORIZON="$H"
+export FLORE_FORCE_HIST_LEN="$FH"
+export FLORE_ACTION_HORIZON="$H"
 
 # Same two recipes as the single-GPU launcher; see its header for what each bundles and why
 # `umi` bundles three changes at once.
@@ -175,7 +175,7 @@ WB_NAME="diffusion-${SESSION}-${RECIPE}-ddp${N_GPUS}"
 # six force ACTION columns stay supervised exactly as before. It asks: is force useful as an
 # input, or is it already predictable from vision + state?
 #
-# Distinct from ACT's NOFORCE=1 (FUJI_DROP_FORCE), which also stops supervising those columns.
+# Distinct from ACT's NOFORCE=1 (FLORE_DROP_FORCE), which also stops supervising those columns.
 # The table in layout._resolve_drop_force_input spells out all three switches.
 #
 # EXPORTED so every torchrun rank resolves the same widths: layout.py reads this at IMPORT,
@@ -186,13 +186,13 @@ WB_NAME="diffusion-${SESSION}-${RECIPE}-ddp${N_GPUS}"
 # bit-identical -- so this run shares the force-ful run's stats file, which is what makes the
 # two directly comparable metric for metric, including val/force.
 if [[ "${NOFORCEIN:-0}" == "1" ]]; then
-    export FUJI_DROP_FORCE_INPUT=1
+    export FLORE_DROP_FORCE_INPUT=1
     RUN="${RUN}_noforcein"
     WB_NAME="${WB_NAME}-noforcein"
 fi
 # CKPT_ROOT is overridable because /data exists only on the 8-GPU workstation. Keep it OFF
 # `/`: a diffusion step dir is ~3.1 GB (weights + optimizer moments + EMA shadow).
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 OUT="$CKPT_ROOT/$RUN"
 [[ -d "$CKPT_ROOT" ]] || mkdir -p "$CKPT_ROOT" 2>/dev/null || {
     echo "FATAL: checkpoint root '$CKPT_ROOT' is missing and not creatable." >&2
@@ -311,7 +311,7 @@ fi
 mkdir -p logs
 set -o pipefail
 # --standalone: single-node rendezvous, no external etcd. Each rank gets RANK/LOCAL_RANK/
-# WORLD_SIZE from torchrun, which is exactly what fuji...training.distributed reads.
+# WORLD_SIZE from torchrun, which is exactly what flore...training.distributed reads.
 CUDA_VISIBLE_DEVICES="$GPUS" .venv/bin/torchrun \
     --standalone --nnodes 1 --nproc-per-node "$N_GPUS" \
     scripts/train_s1.py \

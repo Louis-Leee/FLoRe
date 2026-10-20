@@ -32,13 +32,13 @@
 # Env knobs:
 #   PORT      viser port (default: 8088, the script's own)
 #   DEVICE    torch device (default: cuda)
-#   FUJI_PY   python (default: <repo>/.venv/bin/python)
+#   FLORE_PY   python (default: <repo>/.venv/bin/python)
 # Everything after the checkpoint is forwarded (--sample-index / --seed / --num-steps /
 # --zarr-path / --yam-urdf / --self-test; `--help` on the script lists them).
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
 DEVICE="${DEVICE:-cuda}"
 
 if [ "$#" -lt 1 ]; then
@@ -46,8 +46,8 @@ if [ "$#" -lt 1 ]; then
   echo "   e.g. ./scripts/run_infer_s1_wholebody.sh checkpoints/ckpt_0831_wb --sample-index 4200" >&2
   exit 2
 fi
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY" >&2
   echo "      (create .venv, then: uv pip install --python .venv/bin/python -e \".[viz]\")" >&2
   exit 2
 fi
@@ -62,7 +62,7 @@ fi
 # in its constructor), but that costs a dataset rebuild and a model load first — and the likely
 # mistake is reaching for this launcher with a 3-tracker checkpoint, which has its own working
 # launcher one file over.
-CKPT_MODE="$("$FUJI_PY" -c \
+CKPT_MODE="$("$FLORE_PY" -c \
   "import json,sys; print(json.load(open(sys.argv[1])).get('hl_data',{}).get('mode',''))" \
   "$CKPT/config.json")"
 if [ "$CKPT_MODE" != "wholebody" ]; then
@@ -75,13 +75,13 @@ if [ "$CKPT_MODE" != "wholebody" ]; then
 fi
 
 # ACTION-CHUNK PIN, DERIVED FROM THE CHECKPOINT — identical reasoning (and identical helper
-# import) to run_infer_s1_mc.sh: fuji/s1_policy/data/layout.py resolves ACTION_HORIZON at IMPORT
+# import) to run_infer_s1_mc.sh: flore/s1_policy/data/layout.py resolves ACTION_HORIZON at IMPORT
 # time from this env var, and inference/common.validate_model_layout pins it unconditionally, so
 # an H=30 checkpoint on an unpinned build REFUSES TO LOAD. The block must be the ACTIVE algo's:
 # the trainer leaves the other two at their dataclass defaults.
-if ! CKPT_H="$("$FUJI_PY" - "$CKPT/config.json" <<'PY'
+if ! CKPT_H="$("$FLORE_PY" - "$CKPT/config.json" <<'PY'
 import json, sys
-from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
 raw = json.load(open(sys.argv[1]))
 algo = raw.get("algo")
@@ -100,18 +100,18 @@ PY
   echo "[run] FATAL: could not read the action horizon from $CKPT/config.json (above)" >&2
   exit 2
 fi
-if [ -n "${FUJI_ACTION_HORIZON:-}" ] && [ "$FUJI_ACTION_HORIZON" != "$CKPT_H" ]; then
-  echo "[run] FATAL: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON in the environment, but" >&2
+if [ -n "${FLORE_ACTION_HORIZON:-}" ] && [ "$FLORE_ACTION_HORIZON" != "$CKPT_H" ]; then
+  echo "[run] FATAL: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON in the environment, but" >&2
   echo "[run]        $CKPT declares action_horizon=$CKPT_H. Refusing to guess which is meant." >&2
   exit 2
 fi
-export FUJI_ACTION_HORIZON="$CKPT_H"
+export FLORE_ACTION_HORIZON="$CKPT_H"
 
 PORT_ARGS=()
 if [ -n "${PORT:-}" ]; then PORT_ARGS=(--port "$PORT"); fi
 
 echo "[run] offline WHOLEBODY inference: device=$DEVICE"
-echo "[run]   checkpoint: $CKPT  layout=$CKPT_MODE  (action chunk $FUJI_ACTION_HORIZON steps @ 30 Hz)"
+echo "[run]   checkpoint: $CKPT  layout=$CKPT_MODE  (action chunk $FLORE_ACTION_HORIZON steps @ 30 Hz)"
 echo "[run]   🟪 violet body = the PREDICTED 29 joints   ⬜ pale body = the dataset's TARGET"
 echo "[run]   no motion completion, no second process: the policy already outputs joints."
 echo "[run]   the floor is FK'd from the target's step 0 and HELD, so a predicted crouch shows"
@@ -120,7 +120,7 @@ echo "[run]     channel to place it with — that is complete, not missing (the 
 echo "[run]     positions + 29 finite-differenced velocities)."
 echo "[run]   ⚠️ ABSOLUTE joints in the dataset's cond_mode=home posture space. Deploy publishes"
 echo "[run]     base + (q[i] - q[0]) through a joint clutch — see run_hl_serving_wholebody.sh."
-exec "$FUJI_PY" "$FUJI_ROOT/scripts/infer_s1_wholebody.py" "$CKPT" \
+exec "$FLORE_PY" "$FLORE_ROOT/scripts/infer_s1_wholebody.py" "$CKPT" \
   --device "$DEVICE" \
   "${PORT_ARGS[@]}" \
   "$@"

@@ -13,8 +13,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fuji.s1_policy.model.act import TemporalEnsembler
-from fuji.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d, rotvec_to_rotmat
+from flore.s1_policy.model.act import TemporalEnsembler
+from flore.utils.rot6d import rot6d_to_rotmat, rotmat_to_rot6d, rotvec_to_rotmat
 
 _IDENT6 = rotmat_to_rot6d(np.eye(3))
 
@@ -68,7 +68,7 @@ def test_blending_absolutely_survives_a_moving_anchor():
     """THE reason this port takes ABSOLUTE poses rather than the raw chunk.
 
     Upstream's actions are ABSOLUTE joint targets, so two chunks predicted one step apart
-    share a frame. FUJI's chunk is ANCHOR-RELATIVE, so blending raw values would mix frames
+    share a frame. FLoRe's chunk is ANCHOR-RELATIVE, so blending raw values would mix frames
     — measured up to 82 cm of error at the H=50 window's oldest survivor at 0.5 m/s.
 
     Here every chunk agrees on the same ABSOLUTE path while its own anchor marches along it.
@@ -239,9 +239,9 @@ def test_the_config_default_is_ON_for_act_and_absent_for_the_siblings():
     """Ensembling is ACT's own published mechanism and is default-ON because this data is
     measurably bimodal. The siblings must not acquire the field: flow has RTC and diffusion
     has a plain sampler, and a stray attribute would make LivePlanner's inert path live."""
-    from fuji.s1_policy.model.dp_act import DPACTConfig
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig
-    from fuji.s1_policy.model.dp_flow import DPFlowConfig
+    from flore.s1_policy.model.dp_act import DPACTConfig
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig
+    from flore.s1_policy.model.dp_flow import DPFlowConfig
 
     assert DPACTConfig().temporal_ensemble is True
     assert DPACTConfig().temporal_ensemble_k == 0.01
@@ -252,7 +252,7 @@ def test_the_config_default_is_ON_for_act_and_absent_for_the_siblings():
 def test_a_non_ensembling_checkpoint_refuses_the_ensembled_entry_point():
     """A caller must not silently get single-chunk behavior while believing it is
     ensembling."""
-    from fuji.s1_policy.serving.hl_online import LivePlanner, replay_only_model
+    from flore.s1_policy.serving.hl_online import LivePlanner, replay_only_model
 
     planner = LivePlanner(replay_only_model("left_only"), obs_hz=30.0)
     assert planner.temporal_ensemble_enabled is False
@@ -267,7 +267,7 @@ def test_the_planner_caches_one_ensembler_per_role_and_reset_reaches_it():
     the silent-no-op failure again, this time at the serving seam."""
     import types
 
-    from fuji.s1_policy.serving.hl_online import LivePlanner, replay_only_model
+    from flore.s1_policy.serving.hl_online import LivePlanner, replay_only_model
 
     loaded = replay_only_model("left_only")
     # replay_only_model has config=None; stand in the ACT knobs the planner reads.
@@ -447,8 +447,8 @@ def _ensembling_planner():
     """A LivePlanner on a real (tiny) ACT model with ensembling on, fed a plausible obs."""
     import torch
 
-    from fuji.s1_policy.model.dp_act import DPACTConfig, DPACTModel
-    from fuji.s1_policy.serving.hl_online import LivePlanner, replay_only_model
+    from flore.s1_policy.model.dp_act import DPACTConfig, DPACTModel
+    from flore.s1_policy.serving.hl_online import LivePlanner, replay_only_model
 
     torch.manual_seed(0)
     cfg = DPACTConfig(

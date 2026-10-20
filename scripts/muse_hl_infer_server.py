@@ -4,8 +4,8 @@
 Runs INSIDE the UVA model env (the ``uvaforce`` conda env: torch 2.7.1+cu128, hydra,
 diffusers — and NO viser/mink). Its ONLY job is "one observation in, one action+force chunk
 out". Every bit of rig logic — the pelvis frame, the TCP lever, the ``:8770`` wire, the force
-gate, the recorder, reach compensation — stays in the FUJI-side planner
-(``scripts/hl_serving.py`` + ``fuji/s1_policy/serving/hl_muse.py``), which runs in FUJI's own
+gate, the recorder, reach compensation — stays in the FLoRe-side planner
+(``scripts/hl_serving.py`` + ``flore/s1_policy/serving/hl_muse.py``), which runs in FLoRe's own
 ``.venv``. The two environments are mutually exclusive; that hard split is the whole reason
 this is a subprocess talking over a pipe rather than an import.
 
@@ -18,20 +18,20 @@ owner of the deploy contract.
 
 Wire protocol
 -------------
-:mod:`fuji.utils.muse_wire` (numpy-only, imported from FUJI's source tree so there is exactly
+:mod:`flore.utils.muse_wire` (numpy-only, imported from FLoRe's source tree so there is exactly
 ONE copy of the codec). ``stdout`` is a PURE protocol channel: hydra, MAR and the VAE print a
 lot, so ``sys.stdout`` is pointed at stderr at import time and protocol lines go to the
 stashed real fd 1.
 
 Two request kinds
 -----------------
-``live``  the FUJI planner sends a FULLY RELATIVIZED observation assembled from the rig's
+``live``  the FLoRe planner sends a FULLY RELATIVIZED observation assembled from the rig's
           sensor rings (anchor-relative pose history, ``wrt_start`` rotation, gripper metres,
           PHYSICAL wrench, 0-1 CHW images). We lay it into the length-``2H`` window the model
           was trained on, apply the ``÷ft_scale`` input pre-scale, and sample.
 ``zarr``  offline inference: we build the window from the TRAINING dataset at an explicit
           ``(episode, anchor)``, which is the eval path step for step, and additionally return
-          the anchor's ABSOLUTE pose so the FUJI side can cross-check that its own dataset's
+          the anchor's ABSOLUTE pose so the FLoRe side can cross-check that its own dataset's
           anchor agrees (that check is what validates the frame contract end to end).
 
 Both go through the same ``prepare_data_predict_action`` + ``sample_tokens(task_mode=
@@ -54,7 +54,7 @@ and ``process_data`` chunks it in half, so the HISTORY half is rows ``[0..H-1]``
     real bug in the older serving backend.)
 
 With no ``--checkpoint`` the model is random-initialised from the config: a wiring check only,
-and the handshake says ``random_init`` so the FUJI side can refuse to arm.
+and the handshake says ``random_init`` so the FLoRe side can refuse to arm.
 """
 from __future__ import annotations
 
@@ -71,17 +71,17 @@ _REAL_STDOUT = sys.stdout
 sys.stdout = sys.stderr
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_UVA = os.path.join(_FUJI_ROOT, "third_party", "unified_video_action")
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_UVA = os.path.join(_FLORE_ROOT, "third_party", "unified_video_action")
 
-# FUJI root on sys.path up front: the wire codec and the rot6d helpers live there and are
-# pure numpy (fuji/utils/__init__.py is empty), so this env can import them without pulling
+# FLoRe root on sys.path up front: the wire codec and the rot6d helpers live there and are
+# pure numpy (flore/utils/__init__.py is empty), so this env can import them without pulling
 # in torch-2.13 / grpc / zarr. Same trick muse_force_serving_server.py already relies on.
-if _FUJI_ROOT not in sys.path:
-    sys.path.insert(0, _FUJI_ROOT)
+if _FLORE_ROOT not in sys.path:
+    sys.path.insert(0, _FLORE_ROOT)
 
-from fuji.utils import muse_wire as wire  # noqa: E402
-from fuji.utils.rot6d import rotmat_to_rot6d, rotvec_to_rotmat  # noqa: E402
+from flore.utils import muse_wire as wire  # noqa: E402
+from flore.utils.rot6d import rotmat_to_rot6d, rotvec_to_rotmat  # noqa: E402
 
 
 def _emit(tag: str, meta: dict | None = None, **arrays: np.ndarray) -> None:
@@ -192,7 +192,7 @@ class Backend:
             ``uva_hl_force`` co-trains over five sessions, so the default would open five zarr
             handles AND make ``datasets[0]`` — which every ``zarr`` request indexes — whichever
             member happened to be first. That is not merely wasteful: it silently answers with
-            windows from a DIFFERENT session than the one the FUJI side is comparing against,
+            windows from a DIFFERENT session than the one the FLoRe side is comparing against,
             which the frontend then catches as an anchor mismatch. Pin it instead.
             """
             if not zarr_path:
@@ -416,7 +416,7 @@ class Backend:
         self.episode_starts = np.concatenate([[0], ends[:-1]]).astype(np.int64)
         self.episode_frame_nums = (ends - self.episode_starts).astype(np.int64)
         # UVA holds out episodes by RATIO (`used_episode_indices` are the ones trained on), which
-        # is a different split from FUJI's last-N convention — so report it and let the frontend
+        # is a different split from FLoRe's last-N convention — so report it and let the frontend
         # say whether a scrubbed episode was in-distribution.
         used = sorted(int(i) for i in getattr(lazy, "used_episode_indices", []) or [])
         self.train_episodes = np.asarray(used, dtype=np.int64)
@@ -571,7 +571,7 @@ class Backend:
                 # this should never fire, so it means a gap — but a per-request line would
                 # bury the rest of the log if the bridge is flapping. UVA has no per-window
                 # validity input (`force_allow_missing: false`), so the samples go in as-is
-                # with the older bins edge-held; the FUJI planner's own freshness gate is what
+                # with the older bins edge-held; the FLoRe planner's own freshness gate is what
                 # refuses a Predict on a DEAD bridge.
                 self._force_invalid_n += 1
                 if self._force_invalid_n in (1, 10) or self._force_invalid_n % 100 == 0:
@@ -664,7 +664,7 @@ class Backend:
         obs = {k: torch.as_tensor(v)[None].to(self.device) for k, v in sample["obs"].items()}
         action_rel, force_pred = self._sample(obs, int(meta.get("seed", 0)))
 
-        # The anchor's ABSOLUTE pose, straight off the raw zarr. The FUJI side cross-checks it
+        # The anchor's ABSOLUTE pose, straight off the raw zarr. The FLoRe side cross-checks it
         # against its OWN dataset's anchor for the same (episode, frame) — the two loaders
         # relativize independently, so an agreement here is what proves both are decoding in
         # the same absolute frame (a non-identity `world_align` on one side would show up as a
@@ -688,8 +688,8 @@ class Backend:
 def print_meta(checkpoint: str, config_name: str, key: str = "") -> int:
     """Print one JSON line describing the checkpoint's grid, then exit.
 
-    The launchers need ``num_actions`` BEFORE FUJI's python starts, because
-    ``ACTION_HORIZON`` is resolved from ``FUJI_ACTION_HORIZON`` at import time. A UVA
+    The launchers need ``num_actions`` BEFORE FLoRe's python starts, because
+    ``ACTION_HORIZON`` is resolved from ``FLORE_ACTION_HORIZON`` at import time. A UVA
     checkpoint keeps its config as a pickled OmegaConf inside the ``.pt``, so only this
     interpreter can read it — hence a probe subprocess rather than a local JSON read.
 
@@ -730,10 +730,10 @@ def print_meta(checkpoint: str, config_name: str, key: str = "") -> int:
     }
     if dss != 1:
         # Refused HERE, in the probe, so a launcher never even exports a horizon for a
-        # checkpoint whose model step is several recorded frames: FUJI's grid is one step per
+        # checkpoint whose model step is several recorded frames: FLoRe's grid is one step per
         # frame, so every predicted step would be published at the wrong instant.
         raise SystemExit(
-            f"checkpoint was trained with down_sample_steps={dss}; FUJI's action grid is one "
+            f"checkpoint was trained with down_sample_steps={dss}; FLoRe's action grid is one "
             "step per recorded frame (ACTION_DT), so this checkpoint cannot be served here.")
     if key:
         if key not in meta:
@@ -771,7 +771,7 @@ def main(argv=None) -> int:
                    help="override the checkpoint's fusion mode (ablation only).")
     p.add_argument("--print-meta", action="store_true",
                    help="print one JSON line with the checkpoint's grid and exit (no model, "
-                        "no GPU). Used by the launchers to derive FUJI_ACTION_HORIZON.")
+                        "no GPU). Used by the launchers to derive FLORE_ACTION_HORIZON.")
     p.add_argument("--print-meta-key", default="",
                    help="like --print-meta but print ONLY this field's value, so a shell "
                         "launcher needs no JSON parsing (e.g. num_actions).")

@@ -21,7 +21,7 @@
 # subprocess, no panel). This script is only the flag plus the paths the flag needs.
 #
 # PREREQUISITES, all of them the SAME ones the zarr replay's --motion-completion uses (nothing
-# extra is installed for FUJI — the model runs in ITS env, this process never imports torch 2.8):
+# extra is installed for FLoRe — the model runs in ITS env, this process never imports torch 2.8):
 #   1. the Motion_Completion peer checkout + its g1_mosyn conda env + its checkpoint:
 #        cd third_party/Motion_Completion
 #        bash scripts/setup_env.sh
@@ -32,7 +32,7 @@
 # Overrides, all reported when they fail: MOTION_COMPLETION_{DIR,CKPT,PY,STEP}.
 #
 # TWO PROCESSES, same split as `--algo muse`: the model lives only in g1_mosyn (torch 2.8 +
-# pytorch3d + JAX, no zarr) and this viewer only in FUJI's .venv, so the overlay spawns
+# pytorch3d + JAX, no zarr) and this viewer only in FLoRe's .venv, so the overlay spawns
 # `motion_completion/mc_infer_server.py` under the conda interpreter and speaks a base64-npz
 # line protocol over its pipe. NEVER install g1_mosyn's deps into .venv.
 #
@@ -58,13 +58,13 @@
 #   ALGO      diffusion (default) | flow | act   — picks which infer_s1_*.py runs
 #   PORT      viser port (default: the chosen script's own)
 #   DEVICE    torch device for the POLICY (default: cuda). The completion picks its own.
-#   FUJI_PY   python (default: <repo>/.venv/bin/python)
+#   FLORE_PY   python (default: <repo>/.venv/bin/python)
 # Everything after the checkpoint is forwarded, so every --mc-* flag and --sample-index /
 # --seed / --num-steps work unchanged (`--help` on the chosen script lists them).
 set -eo pipefail
 
-FUJI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FUJI_PY="${FUJI_PY:-$FUJI_ROOT/.venv/bin/python}"
+FLORE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLORE_PY="${FLORE_PY:-$FLORE_ROOT/.venv/bin/python}"
 ALGO="${ALGO:-diffusion}"
 DEVICE="${DEVICE:-cuda}"
 
@@ -78,8 +78,8 @@ if [ "$#" -lt 1 ]; then
   echo "   e.g. ./scripts/run_infer_s1_mc.sh ckpt_0831_best --sample-index 21000" >&2
   exit 2
 fi
-if [ ! -x "$FUJI_PY" ]; then
-  echo "[run] FUJI venv python not found at $FUJI_PY" >&2
+if [ ! -x "$FLORE_PY" ]; then
+  echo "[run] FLoRe venv python not found at $FLORE_PY" >&2
   echo "      (create .venv, then: uv pip install --python .venv/bin/python -e \".[viz]\")" >&2
   exit 2
 fi
@@ -91,16 +91,16 @@ if [ ! -f "$CKPT/config.json" ]; then
 fi
 
 # ACTION-CHUNK PIN, DERIVED FROM THE CHECKPOINT — identical reasoning (and identical helper
-# import) to run_hl_serving.sh: fuji/s1_policy/data/layout.py resolves ACTION_HORIZON at IMPORT
+# import) to run_hl_serving.sh: flore/s1_policy/data/layout.py resolves ACTION_HORIZON at IMPORT
 # time from this env var, and inference/common.validate_model_layout pins it unconditionally, so
 # an H=30 checkpoint on an unpinned build REFUSES TO LOAD. The checkpoint states its own
 # horizon, so derive the pin from the very file about to be read and the mismatch becomes
 # impossible rather than merely detected. The block must be the ACTIVE algo's: the trainer
 # leaves the other two at their dataclass defaults, so an H=30 diffusion checkpoint really does
 # read {model: 50, diffusion: 30, act: 50}.
-if ! CKPT_H="$("$FUJI_PY" - "$CKPT/config.json" <<'PY'
+if ! CKPT_H="$("$FLORE_PY" - "$CKPT/config.json" <<'PY'
 import json, sys
-from fuji.s1_policy.training.config import ALGO_CONFIG_FIELD
+from flore.s1_policy.training.config import ALGO_CONFIG_FIELD
 
 raw = json.load(open(sys.argv[1]))
 algo = raw.get("algo")
@@ -119,14 +119,14 @@ PY
   echo "[run] FATAL: could not read the action horizon from $CKPT/config.json (above)" >&2
   exit 2
 fi
-if [ -n "${FUJI_ACTION_HORIZON:-}" ] && [ "$FUJI_ACTION_HORIZON" != "$CKPT_H" ]; then
-  echo "[run] FATAL: FUJI_ACTION_HORIZON=$FUJI_ACTION_HORIZON in the environment, but" >&2
+if [ -n "${FLORE_ACTION_HORIZON:-}" ] && [ "$FLORE_ACTION_HORIZON" != "$CKPT_H" ]; then
+  echo "[run] FATAL: FLORE_ACTION_HORIZON=$FLORE_ACTION_HORIZON in the environment, but" >&2
   echo "[run]        $CKPT declares action_horizon=$CKPT_H. Refusing to guess which is meant." >&2
   exit 2
 fi
-export FUJI_ACTION_HORIZON="$CKPT_H"
+export FLORE_ACTION_HORIZON="$CKPT_H"
 
-SCRIPT="$FUJI_ROOT/scripts/infer_s1_$ALGO.py"
+SCRIPT="$FLORE_ROOT/scripts/infer_s1_$ALGO.py"
 PORT_ARGS=()
 if [ -n "${PORT:-}" ]; then PORT_ARGS=(--port "$PORT"); fi
 
@@ -136,7 +136,7 @@ if [ -n "${PORT:-}" ]; then PORT_ARGS=(--port "$PORT"); fi
 # inserting those dirs at the FRONT of sys.path would shadow generically-named modules
 # (collection_viz, replay_common, test_*) for this whole process.
 echo "[run] offline inference + G1 motion completion: algo=$ALGO  device=$DEVICE"
-echo "[run]   checkpoint: $CKPT  (action chunk $FUJI_ACTION_HORIZON steps, from its config.json)"
+echo "[run]   checkpoint: $CKPT  (action chunk $FLORE_ACTION_HORIZON steps, from its config.json)"
 echo "[run]   needs a 3-tracker layout; a left-only checkpoint disables the humanoid by name."
 echo "[run]   placement: the G1's DEPLOY READY POSE (--motion-completion implies"
 echo "[run]     --display-frame g1-ready-pose). Pass --display-frame display-home for the old,"
@@ -144,7 +144,7 @@ echo "[run]     uncalibrated display homes — which fold the arms behind the to
 echo "[run]   ⚠️ the completion is a SECOND model, downstream of the policy: it changes no"
 echo "[run]     Metrics number and no drawn line. --mc-series target completes the dataset's"
 echo "[run]     own chunk instead, as the control."
-exec "$FUJI_PY" "$SCRIPT" "$CKPT" \
+exec "$FLORE_PY" "$SCRIPT" "$CKPT" \
   --device "$DEVICE" \
   "${PORT_ARGS[@]}" \
   --motion-completion \

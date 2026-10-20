@@ -8,7 +8,7 @@
 #   1. EVERY CELL NEEDS ITS OWN NORM STATS. `mode` is in the exact-equality dataset_knobs and
 #      the action quantiles depend on the horizon, so a cell cannot borrow another's file --
 #      and the trainer's refusal arrives AFTER the queue has moved on. This fits any missing
-#      one first, with FUJI_ACTION_HORIZON exported before the fit (the pin is resolved at
+#      one first, with FLORE_ACTION_HORIZON exported before the fit (the pin is resolved at
 #      import, so exporting it afterwards silently fits the wrong horizon).
 #   2. A CELL THAT ALREADY HAS AN OUTPUT DIR IS SKIPPED, not overwritten and not fatal. So
 #      re-running after an interruption resumes the QUEUE instead of dying on cell 1 -- the
@@ -74,7 +74,7 @@ BATCH=${BATCH:-24}
 WB_TARGET=${WB_TARGET:-absolute}
 NOISE_XY_M=${NOISE_XY_M:-0.010}
 NOISE_RPY_DEG=${NOISE_RPY_DEG:-2.0}
-CKPT_ROOT=${CKPT_ROOT:-/data/fuji/checkpoints}
+CKPT_ROOT=${CKPT_ROOT:-/data/flore/checkpoints}
 DSDIR=${DSDIR:-third_party/UMI_collection/data/datasets}
 GRID_LOG=${GRID_LOG:-logs/wb_geom_grid.log}
 VAL_EPS=4
@@ -175,11 +175,11 @@ for i in "${!PLAN_STATE[@]}"; do
         continue
     fi
     # Norm stats FIRST, and with the horizon pin exported into the fit: the quantiles depend on
-    # H, and fuji.s1_policy.data.layout resolves FUJI_ACTION_HORIZON at IMPORT, so a pin set
+    # H, and flore.s1_policy.data.layout resolves FLORE_ACTION_HORIZON at IMPORT, so a pin set
     # after the process starts cannot reach the fitter's def-time defaults.
     if [[ ! -f "${PLAN_NS[$i]}" ]]; then
         echo "[grid] fitting norm stats for $cell -> ${PLAN_NS[$i]}"
-        if ! FUJI_ACTION_HORIZON="$horizon" FUJI_FORCE_HIST_LEN=1 \
+        if ! FLORE_ACTION_HORIZON="$horizon" FLORE_FORCE_HIST_LEN=1 \
                 .venv/bin/python scripts/fit_hl_norm_stats.py \
                     --zarr-paths "${PLAN_DS[$i]}" \
                     --mode "${PLAN_MODE[$i]}" \

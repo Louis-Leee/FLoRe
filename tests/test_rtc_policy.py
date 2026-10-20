@@ -11,7 +11,7 @@ four load-bearing RTC behaviors can be asserted deterministically on CPU:
   (d) reset() discards an in-flight inference's result (generation counter).
 
 The RTC semantics here are a verbatim port of rfm_heavy's production RTC; these
-tests are the FUJI-local subset that pins the behaviors called out in the port
+tests are the FLoRe-local subset that pins the behaviors called out in the port
 task. See the source repo's test_rtc_policy.py for the full timeline suite.
 """
 
@@ -23,7 +23,7 @@ import time
 import numpy as np
 import pytest
 
-from fuji.s1_policy.rtc import RealTimeChunkingPolicy
+from flore.s1_policy.rtc import RealTimeChunkingPolicy
 
 ACTION_DIM = 32
 

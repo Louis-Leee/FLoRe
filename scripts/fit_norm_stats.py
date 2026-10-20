@@ -3,7 +3,7 @@
 
 The DP-Flow trainer (``scripts/train_s1.py``) can bake a ``norm_stats.json`` into
 its checkpoints and normalize ``state`` + ``actions`` to ~[-1, 1] before the DiT
-(``fuji/s1_policy/training/trainer.py::_apply_norm``). Under the default
+(``flore/s1_policy/training/trainer.py::_apply_norm``). Under the default
 ``ref_frame=per_keypoint`` the ``state`` is the RAW absolute EE pose (metres, can be
 several metres from the world origin), which is poorly scaled for AdaLN conditioning
 — so fitting stats first is strongly recommended for any real (non-smoke) run.
@@ -31,8 +31,8 @@ import logging
 
 import numpy as np
 
-from fuji.s1_policy.data.norm_stats import compute_quantile_stats, save_norm_stats
-from fuji.s1_policy.data.umi_dataset import UMIDataset
+from flore.s1_policy.data.norm_stats import compute_quantile_stats, save_norm_stats
+from flore.s1_policy.data.umi_dataset import UMIDataset
 
 logger = logging.getLogger("fit_norm_stats")
 

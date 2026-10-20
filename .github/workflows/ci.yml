@@ -45,40 +45,40 @@ jobs:
 
       - name: Verify generated protobuf stubs
         run: |
-          .venv/bin/python -m fuji.s1_policy.serving.compile_protos
-          git diff --exit-code -- fuji/s1_policy/serving/proto
+          .venv/bin/python -m flore.s1_policy.serving.compile_protos
+          git diff --exit-code -- flore/s1_policy/serving/proto
 
       - name: Verify installed wheel and protobuf imports
         working-directory: ${{ runner.temp }}
         run: |
-          FUJI_PACKAGE="$("$GITHUB_WORKSPACE/.venv/bin/python" -I -c \
-            'import pathlib, fuji; print(pathlib.Path(fuji.__file__).resolve().parent)')"
-          chmod -R a-w "$FUJI_PACKAGE"
+          FLORE_PACKAGE="$("$GITHUB_WORKSPACE/.venv/bin/python" -I -c \
+            'import pathlib, flore; print(pathlib.Path(flore.__file__).resolve().parent)')"
+          chmod -R a-w "$FLORE_PACKAGE"
           PYTHONDONTWRITEBYTECODE=1 "$GITHUB_WORKSPACE/.venv/bin/python" -I - <<'PY'
           import os
           from pathlib import Path
 
-          import fuji
+          import flore
           import zarr
-          from fuji.s1_policy.data import UMIDataset
-          from fuji.s1_policy.serving.proto import fuji_policy_pb2
-          from fuji.s1_policy.serving.proto import fuji_policy_pb2_grpc
+          from flore.s1_policy.data import UMIDataset
+          from flore.s1_policy.serving.proto import flore_policy_pb2
+          from flore.s1_policy.serving.proto import flore_policy_pb2_grpc
 
-          source_package = (Path(os.environ["GITHUB_WORKSPACE"]) / "fuji").resolve()
-          installed_package = Path(fuji.__file__).resolve().parent
+          source_package = (Path(os.environ["GITHUB_WORKSPACE"]) / "flore").resolve()
+          installed_package = Path(flore.__file__).resolve().parent
           assert installed_package != source_package
           assert UMIDataset is not None
-          assert "FujiPolicyService" in fuji_policy_pb2.DESCRIPTOR.services_by_name
-          assert hasattr(fuji_policy_pb2_grpc, "FujiPolicyServiceStub")
+          assert "FlorePolicyService" in flore_policy_pb2.DESCRIPTOR.services_by_name
+          assert hasattr(flore_policy_pb2_grpc, "FlorePolicyServiceStub")
           PY
 
       - name: CLI smoke tests
         run: |
           git ls-files --error-unmatch \
-            fuji/s1_policy/data/__init__.py \
-            fuji/s1_policy/data/norm_stats.py \
-            fuji/s1_policy/data/transforms.py \
-            fuji/s1_policy/data/umi_dataset.py
+            flore/s1_policy/data/__init__.py \
+            flore/s1_policy/data/norm_stats.py \
+            flore/s1_policy/data/transforms.py \
+            flore/s1_policy/data/umi_dataset.py
           .venv/bin/python scripts/train_s1.py --help >/dev/null
           .venv/bin/python scripts/serve_s1.py --help >/dev/null
           .venv/bin/python scripts/run_client.py --help >/dev/null

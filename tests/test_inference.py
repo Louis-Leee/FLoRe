@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data.layout import ACTION_HORIZON, ACTION_HZ
+from flore.s1_policy.data.layout import ACTION_HORIZON, ACTION_HZ
 import torch
 from torch import nn
 
@@ -83,12 +83,12 @@ def _make_bundle(
     production: bool = False,
     history_len: int | None = None,
 ) -> _Bundle:
-    from fuji.s1_policy.data.hl_dataset import HLDataset
-    from fuji.s1_policy.data.norm_stats import NormStats, save_norm_stats
-    from fuji.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
-    from fuji.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
-    from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
-    from fuji.s1_policy.training.trainer import save_checkpoint
+    from flore.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.norm_stats import NormStats, save_norm_stats
+    from flore.s1_policy.model.dp_diffusion import DPDiffusionConfig, DPDiffusionModel
+    from flore.s1_policy.model.dp_flow import DPFlowConfig, DPFlowModel
+    from flore.s1_policy.training.config import HLDataConfig, TrainConfig
+    from flore.s1_policy.training.trainer import save_checkpoint
 
     zarr_path = _write_hl_zarr(
         tmp_path / f"{algorithm}.zarr.zip",
@@ -127,14 +127,14 @@ def _make_bundle(
             replace(config.model, pretrained=False),
             encoder=None if production else _StubEncoder(),
         )
-        import fuji.s1_policy.inference.flow as module
+        import flore.s1_policy.inference.flow as module
 
-        from fuji.s1_policy.inference.flow import FlowInferenceSession as session_type
+        from flore.s1_policy.inference.flow import FlowInferenceSession as session_type
 
         if not production:
             monkeypatch.setattr(module, "DPFlowModel", lambda loaded: model_type(loaded, encoder=_StubEncoder()))
     elif algorithm == "act":
-        from fuji.s1_policy.model.dp_act import DPACTConfig, DPACTModel
+        from flore.s1_policy.model.dp_act import DPACTConfig, DPACTModel
 
         # ACT does not share the DiT/UNet knobs (no decoder channels, no zero-pad state
         # slot), so it takes its own tiny-config kwargs rather than `shared`. hidden_dim is
@@ -151,9 +151,9 @@ def _make_bundle(
             replace(config.act, pretrained=False),
             encoder=None if production else _ACTStubBackbone(config.act.hidden_dim),
         )
-        import fuji.s1_policy.inference.act as module
+        import flore.s1_policy.inference.act as module
 
-        from fuji.s1_policy.inference.act import ACTInferenceSession as session_type
+        from flore.s1_policy.inference.act import ACTInferenceSession as session_type
 
         if not production:
             monkeypatch.setattr(
@@ -175,9 +175,9 @@ def _make_bundle(
             replace(config.diffusion, pretrained=False),
             encoder=None if production else _StubEncoder(),
         )
-        import fuji.s1_policy.inference.diffusion as module
+        import flore.s1_policy.inference.diffusion as module
 
-        from fuji.s1_policy.inference.diffusion import DiffusionInferenceSession as session_type
+        from flore.s1_policy.inference.diffusion import DiffusionInferenceSession as session_type
 
         if not production:
             monkeypatch.setattr(module, "DPDiffusionModel", lambda loaded: model_type(loaded, encoder=_StubEncoder()))
@@ -548,7 +548,7 @@ def test_weight_dtype_must_match_checkpoint_config(tmp_path, monkeypatch):
 
 
 def test_masked_segments_do_not_bridge_invalid_steps():
-    from fuji.s1_policy.inference.viewer import _segments
+    from flore.s1_policy.inference.viewer import _segments
 
     points = np.arange(15, dtype=np.float32).reshape(5, 3)
     valid = np.array([True, True, False, True, True])
@@ -561,7 +561,7 @@ def test_masked_segments_do_not_bridge_invalid_steps():
 def test_viewer_rotation_and_sample_index_guards():
     import socket
 
-    from fuji.s1_policy.inference.viewer import (
+    from flore.s1_policy.inference.viewer import (
         _checked_gui_integer,
         _checked_port,
         _checked_sample_index,
@@ -591,7 +591,7 @@ def test_viewer_rotation_and_sample_index_guards():
 
 
 def test_conditioning_image_round_trip_is_exact():
-    from fuji.s1_policy.inference.common import conditioning_images
+    from flore.s1_policy.inference.common import conditioning_images
 
     pixels = np.array([[[1, 127, 254], [255, 3, 128]]], dtype=np.uint8)
     normalized = (pixels.astype(np.float32) / 255.0 - 0.5) / 0.5
@@ -601,7 +601,7 @@ def test_conditioning_image_round_trip_is_exact():
 
 
 def test_native_bimanual_head_layout_and_masks(tmp_path):
-    from fuji.s1_policy.inference.common import HLSampleSource, build_rollout_result
+    from flore.s1_policy.inference.common import HLSampleSource, build_rollout_result
 
     zarr_path = _write_hl_zarr(
         tmp_path / "three.zarr.zip",
@@ -671,7 +671,7 @@ def test_episode_forward_positions_connect_to_target_and_stop_at_episode_end(tmp
     """The green rest-of-episode path is the raw recording from the sampled frame to its
     episode end, in the SAME absolute frame as the blue target line (row 0 == target
     step 0), and it never crosses an episode boundary."""
-    from fuji.s1_policy.inference.common import HLSampleSource, build_rollout_result
+    from flore.s1_policy.inference.common import HLSampleSource, build_rollout_result
 
     # n_frames=8, n_episodes=2 -> episode_ends [4, 8]; drop_glitch_windows off so sample
     # index i is anchor (fi=0, frame=i). Left base 0: anchor_pos[f] = [f*.01, f*.02, f*.03].
@@ -722,7 +722,7 @@ def test_episode_forward_positions_connect_to_target_and_stop_at_episode_end(tmp
 
 def test_episode_forward_positions_route_per_role(tmp_path):
     """Each role reads its OWN camera-grid position array (no cross-wiring)."""
-    from fuji.s1_policy.data.hl_dataset import HLDataset
+    from flore.s1_policy.data.hl_dataset import HLDataset
 
     zarr_path = _write_hl_zarr(
         tmp_path / "three_forward.zarr.zip",
@@ -750,7 +750,7 @@ def test_episode_forward_positions_route_per_role(tmp_path):
 
 
 def test_physical_metrics_have_expected_units(tmp_path):
-    from fuji.s1_policy.inference.common import HLSampleSource, build_rollout_result
+    from flore.s1_policy.inference.common import HLSampleSource, build_rollout_result
 
     zarr_path = _write_hl_zarr(tmp_path / "metrics.zarr.zip", n_frames=8, n_episodes=2)
     hl_data = {
@@ -791,7 +791,7 @@ def test_physical_metrics_have_expected_units(tmp_path):
 
 
 def test_degenerate_predicted_rotation_is_rejected(tmp_path):
-    from fuji.s1_policy.inference.common import HLSampleSource, build_rollout_result
+    from flore.s1_policy.inference.common import HLSampleSource, build_rollout_result
 
     zarr_path = _write_hl_zarr(tmp_path / "degenerate.zarr.zip", n_frames=8, n_episodes=2)
     hl_data = {
@@ -827,7 +827,7 @@ def test_degenerate_predicted_rotation_is_rejected(tmp_path):
 
 
 def test_masked_svg_chart_splits_target_runs():
-    from fuji.s1_policy.inference.viewer import _chart_svg
+    from flore.s1_policy.inference.viewer import _chart_svg
 
     times = np.arange(5, dtype=np.float64) / 16.0
     values = np.arange(15, dtype=np.float64).reshape(5, 3)
@@ -855,13 +855,13 @@ def test_the_three_algorithm_imports_are_isolated():
     """
     root = Path(__file__).resolve().parents[1]
     checks = (
-        ("fuji.s1_policy.inference.flow", "fuji.s1_policy.model.dp_diffusion"),
-        ("fuji.s1_policy.inference.flow", "fuji.s1_policy.model.dp_act"),
-        ("fuji.s1_policy.inference.diffusion", "fuji.s1_policy.model.dp_flow"),
-        ("fuji.s1_policy.inference.diffusion", "fuji.s1_policy.model.dp_act"),
-        ("fuji.s1_policy.inference.act", "fuji.s1_policy.model.dp_flow"),
-        ("fuji.s1_policy.inference.act", "fuji.s1_policy.model.dp_diffusion"),
-        ("fuji.s1_policy.inference.act", "diffusers"),
+        ("flore.s1_policy.inference.flow", "flore.s1_policy.model.dp_diffusion"),
+        ("flore.s1_policy.inference.flow", "flore.s1_policy.model.dp_act"),
+        ("flore.s1_policy.inference.diffusion", "flore.s1_policy.model.dp_flow"),
+        ("flore.s1_policy.inference.diffusion", "flore.s1_policy.model.dp_act"),
+        ("flore.s1_policy.inference.act", "flore.s1_policy.model.dp_flow"),
+        ("flore.s1_policy.inference.act", "flore.s1_policy.model.dp_diffusion"),
+        ("flore.s1_policy.inference.act", "diffusers"),
     )
     for imported, forbidden in checks:
         code = f"import sys; import {imported}; assert {forbidden!r} not in sys.modules, sorted(sys.modules)"
@@ -871,12 +871,12 @@ def test_the_three_algorithm_imports_are_isolated():
 def test_lazy_model_exports_support_introspection_and_cache():
     root = Path(__file__).resolve().parents[1]
     code = (
-        "import sys; import fuji.s1_policy.model as model; "
+        "import sys; import flore.s1_policy.model as model; "
         "assert set(model.__all__) <= set(dir(model)); "
-        "assert 'fuji.s1_policy.model.dp_flow' not in sys.modules; "
+        "assert 'flore.s1_policy.model.dp_flow' not in sys.modules; "
         "value = model.DPFlowConfig; "
         "assert model.__dict__['DPFlowConfig'] is value; "
-        "assert 'fuji.s1_policy.model.dp_diffusion' not in sys.modules"
+        "assert 'flore.s1_policy.model.dp_diffusion' not in sys.modules"
     )
     subprocess.run([sys.executable, "-c", code], cwd=root, check=True)
 
@@ -884,8 +884,8 @@ def test_lazy_model_exports_support_introspection_and_cache():
 def test_inference_imports_no_third_party_or_viser_runtime():
     root = Path(__file__).resolve().parents[1]
     code = (
-        "import pathlib, sys; import fuji.s1_policy.inference.flow; "
-        "import fuji.s1_policy.inference.diffusion; "
+        "import pathlib, sys; import flore.s1_policy.inference.flow; "
+        "import flore.s1_policy.inference.diffusion; "
         "bad = {name: str(getattr(module, '__file__', '')) for name, module in sys.modules.items() "
         "if '/third_party/' in str(getattr(module, '__file__', '')).replace('\\\\', '/')}; "
         "assert not bad, bad; assert 'viser' not in sys.modules; assert 'mink' not in sys.modules; "

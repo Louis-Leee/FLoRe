@@ -28,8 +28,8 @@ import os
 import numpy as np
 import pytest
 
-from fuji.s1_policy.data import wb_geom
-from fuji.s1_policy.data.layout import (
+from flore.s1_policy.data import wb_geom
+from flore.s1_policy.data.layout import (
     FOOT_ACTION_KEYS,
     FOOT_ROLES,
     POSE_ONLY_ROLES,
@@ -394,7 +394,7 @@ def test_loader_refuses_a_world_frame_foot(fivept_zarr):
 def test_foot_frame_attr_names_the_derivation(fivept_zarr):
     import zarr
 
-    from fuji.s1_policy.data.hl_dataset import _register_image_codecs
+    from flore.s1_policy.data.hl_dataset import _register_image_codecs
 
     _register_image_codecs()
     with zarr.ZipStore(fivept_zarr, mode="r") as store:
@@ -570,7 +570,7 @@ def test_launcher_refuses_a_joints_state():
 # 5. The deploy-side wire flags
 # ---------------------------------------------------------------------------
 def test_five_point_wire_source_flags_are_validated():
-    from fuji.s1_policy.serving import hl_dense
+    from flore.s1_policy.serving import hl_dense
 
     readout = hl_dense.KeypointReadout(pelvis_pos=(0.0, 0.0, 0.7567))
     pos = np.zeros(15)
@@ -590,8 +590,8 @@ def test_five_point_wire_source_flags_are_validated():
 def test_upper_from_decoded_matches_a_hand_relativized_by_hand():
     """The substitution must be the SAME relativization the completion path gets — one frozen
     pelvis, positions translated+rotated, rotations left-composed, scalar-positive quats."""
-    from fuji.s1_policy.serving import hl_dense
-    from fuji.utils.rot6d import rotmat_to_rot6d
+    from flore.s1_policy.serving import hl_dense
+    from flore.utils.rot6d import rotmat_to_rot6d
 
     pelvis = np.array([0.0, 0.0, 0.7567])
     readout = hl_dense.KeypointReadout(pelvis_pos=pelvis)

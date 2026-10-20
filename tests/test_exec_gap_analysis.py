@@ -275,7 +275,7 @@ def test_divergence_replay_clamp_bounds_the_carried_anchor_lead():
 def test_wire_force_reader_undoes_the_command_sign_flip():
     """``F_cmd = -F_meas``. If the reader does not undo it, a perfectly tracked force reads as
     twice the force in error."""
-    from fuji.utils.force_frame import CMD_FROM_MEAS_SIGN
+    from flore.utils.force_frame import CMD_FROM_MEAS_SIGN
 
     class _FakeTake:
         def commanded_force_sensor(self):

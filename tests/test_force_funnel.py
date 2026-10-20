@@ -11,7 +11,7 @@ What is pinned here, and why each one earned a test:
    (``x^1 = x_init, x^T = x_goal``), not as penalties, and a penalty would let the trajectory
    end somewhere the policy was never meant to land.
 3. **The solve preserves ``T = r x F``.** This is the load-bearing property behind the fix in
-   :func:`~fuji.utils.force_funnel.sample_start`: the solve is linear and shares one matrix
+   :func:`~flore.utils.force_funnel.sample_start`: the solve is linear and shares one matrix
    across all six axes, so a consistent input implies a consistent output *exactly*. If a
    future edit weights force and torque differently, or solves them with different matrices,
    this test is what catches it — and the consequence would be a 50% rejection rate, which is
@@ -26,7 +26,7 @@ What is pinned here, and why each one earned a test:
    (numpy only) — the same arrangement, pinned the same way, as ``SENSOR_TO_TCP`` in
    ``test_force_frame.py``.
 7. **The module really is numpy-only**, by AST, so a future convenience import of torch or of
-   ``fuji.s1_policy`` cannot silently break the replay viewer that imports it across the venv
+   ``flore.s1_policy`` cannot silently break the replay viewer that imports it across the venv
    split.
 """
 
@@ -40,7 +40,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fuji.utils.force_funnel import (
+from flore.utils.force_funnel import (
     FORCE_SLICE,
     LAMBDA_ACC_BY_TARGET_MODE,
     MIN_HORIZON,
@@ -181,7 +181,7 @@ def test_both_lambdas_zero_is_refused_because_it_is_not_a_funnel():
 
 def test_singular_system_backstop_names_its_cause():
     """The numerical guard behind that refusal, reached with weights that underflow to zero."""
-    from fuji.utils.force_funnel import _funnel_system
+    from flore.utils.force_funnel import _funnel_system
 
     weights = funnel_weights(H, w_min=0.0, w_max=1.0, power=400.0)
     assert weights[1] == 0.0                       # genuinely underflowed, not merely tiny
@@ -511,7 +511,7 @@ def test_project_torque_makes_it_consistent_but_moves_the_endpoint():
 # ---------------------------------------------------------------------------
 def test_wrench_dim_matches_the_action_layout():
     """``WRENCH_DIM`` is a hand copy of ``layout.FORCE_DIM``; keep them equal."""
-    from fuji.s1_policy.data import layout
+    from flore.s1_policy.data import layout
 
     assert WRENCH_DIM == layout.FORCE_DIM
     # And the slices must match how a hand block actually lays force out.
@@ -525,10 +525,10 @@ def test_wrench_dim_matches_the_action_layout():
 def test_module_is_numpy_only_so_the_collection_venv_can_import_it():
     """The replay viewer imports this module from a DIFFERENT venv (no torch, no zarr).
 
-    Checked by AST rather than by importing, because the import would succeed in FUJI's own
+    Checked by AST rather than by importing, because the import would succeed in FLoRe's own
     venv and prove nothing about the collection one.
     """
-    src = Path(__file__).resolve().parents[1] / "fuji" / "utils" / "force_funnel.py"
+    src = Path(__file__).resolve().parents[1] / "flore" / "utils" / "force_funnel.py"
     tree = ast.parse(src.read_text())
     imported: set[str] = set()
     for node in ast.walk(tree):

@@ -51,7 +51,7 @@ bridge runs in, deliberately, so the measurement is of the deploy path::
     third_party/UMI_collection/.venv-vive/bin/python scripts/probe_rig_usb.py \\
         --seconds 40 --label "two extension cables"
 
-``--inventory-only`` needs no camera env at all and can run under FUJI's ``.venv``.
+``--inventory-only`` needs no camera env at all and can run under FLoRe's ``.venv``.
 """
 
 from __future__ import annotations

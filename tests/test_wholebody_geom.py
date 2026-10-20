@@ -20,7 +20,7 @@ Why these particular things are pinned: every one of them fails silently otherwi
   dataset it would jitter the validation objective and the norm-stats fit, which no shape and no
   loss curve would reveal, and the sigma must land on the geometric columns only.
 
-The FK itself is not re-tested here (``fuji/s1_policy/inference/ready_pose.py`` owns it and
+The FK itself is not re-tested here (``flore/s1_policy/inference/ready_pose.py`` owns it and
 cross-checks against holosoma's own bake). These tests inject a STUB whose ``bodies()`` returns
 known poses, so they run with no URDF, no yourdfpy and no submodule — the same reason the
 model tests use ``TinyEncoder`` instead of downloading a ViT.
@@ -33,9 +33,9 @@ import pytest
 import torch
 from scipy.spatial.transform import Rotation
 
-from fuji.s1_policy.data import wb_geom
-from fuji.s1_policy.data.hl_dataset import StateNoise
-from fuji.s1_policy.data.layout import (
+from flore.s1_policy.data import wb_geom
+from flore.s1_policy.data.hl_dataset import StateNoise
+from flore.s1_policy.data.layout import (
     GRIPPER_DIM,
     JOINT_DIM,
     WB_STATE_BLOCK_DIM,
@@ -43,7 +43,7 @@ from fuji.s1_policy.data.layout import (
     hands_flag,
     tracker_roles_required,
 )
-from fuji.s1_policy.training.config import HLDataConfig, TrainConfig
+from flore.s1_policy.training.config import HLDataConfig, TrainConfig
 
 from tests.test_diffusion_umi_wholebody import _augment, _wb_ds, dual_zarr  # noqa: F401
 
@@ -156,7 +156,7 @@ def test_the_widths_table_and_the_column_order_table_agree():
 
 @pytest.mark.parametrize("bad", [("rel_xy", "rel_xy"), ("joints", "joints"), ("nope",)])
 def test_a_bad_state_block_tuple_is_refused(bad):
-    from fuji.s1_policy.data.layout import _build_wholebody
+    from flore.s1_policy.data.layout import _build_wholebody
 
     with pytest.raises(ValueError):
         _build_wholebody("x", state_geom=bad)
@@ -341,7 +341,7 @@ def wb_zarr(tmp_path, dual_zarr):  # noqa: F811
 @pytest.fixture()
 def stub_fk(monkeypatch):
     """Inject ``_FKStub`` so the dataset needs no URDF, yourdfpy or submodule."""
-    monkeypatch.setattr("fuji.s1_policy.data.hl_dataset.load_geom_fk",
+    monkeypatch.setattr("flore.s1_policy.data.hl_dataset.load_geom_fk",
                         lambda **kw: (_FKStub(), ""))
 
 
@@ -393,7 +393,7 @@ def test_a_missing_fk_is_refused_by_name_not_zero_filled(wb_zarr, monkeypatch):
     """The geometry IS this mode's proprioception, so an unavailable FK must stop the run. A
     zero block would be a plausible posture that no shape, mask or metric would flag."""
     path, _ = wb_zarr
-    monkeypatch.setattr("fuji.s1_policy.data.hl_dataset.load_geom_fk",
+    monkeypatch.setattr("flore.s1_policy.data.hl_dataset.load_geom_fk",
                         lambda **kw: (None, "yourdfpy is unavailable (test)"))
     with pytest.raises(ValueError, match="yourdfpy is unavailable"):
         _wb_ds(path, mode="wholebody_geom_xy_rpy")

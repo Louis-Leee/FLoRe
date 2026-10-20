@@ -5,12 +5,12 @@ This process runs INSIDE the UVA model environment (the `uvaforce` conda env:
 torch 2.7.1+cu128, hydra, diffusers — and NO viser/mink). Its only job is to
 turn a scrubbed episode+anchor into ONE UVA action/force chunk and hand it back
 to the viser frontend (``scripts/muse_force_rollout_viz.py``), which runs in
-FUJI's own ``.venv`` (viser + mink + mujoco, and NO torch-2.7/hydra). The two
+FLoRe's own ``.venv`` (viser + mink + mujoco, and NO torch-2.7/hydra). The two
 environments are mutually exclusive — that hard split is the whole reason this
 is a separate process talking over a pipe instead of one script like the
 flow-matching ``scripts/rollout_viz.py``.
 
-Wire protocol (deliberately dependency-free — FUJI's .venv has no zmq/msgpack,
+Wire protocol (deliberately dependency-free — FLoRe's .venv has no zmq/msgpack,
 but both envs have numpy):
 
   * stdout (fd 1) is a PURE protocol channel: one line per message,
@@ -71,8 +71,8 @@ _REAL_STDOUT = sys.stdout
 sys.stdout = sys.stderr
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_FUJI_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_UVA = os.path.join(_FUJI_ROOT, "third_party", "unified_video_action")
+_FLORE_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_UVA = os.path.join(_FLORE_ROOT, "third_party", "unified_video_action")
 
 
 def _emit(tag: str, **arrays) -> None:

@@ -8,7 +8,7 @@ import os
 import numpy as np
 import pytest
 
-from fuji.s1_policy.serving.live_robot import (
+from flore.s1_policy.serving.live_robot import (
     G1_29DOF_SDK_DOF_NAMES,
     JAW_APERTURE_PER_M,
     JAW_JOINT_CLOSED_M,

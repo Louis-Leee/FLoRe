@@ -23,8 +23,8 @@ import json
 import numpy as np
 import pytest
 
-from fuji.client.s0_driver import S0Driver
-from fuji.s1_policy.serving import hl_dense
+from flore.client.s0_driver import S0Driver
+from flore.s1_policy.serving import hl_dense
 
 _NAMES = tuple(f"joint_{i:02d}" for i in range(hl_dense.G1_DOF))
 
@@ -595,7 +595,7 @@ def test_the_keypoint_carry_offsets_position_and_rotation_by_a_constant():
     """The 5pt integrator. Step 0 lands on the base, and the ROTATION offset must be a fixed
     pelvis-frame rotation — composing on the wrong side conjugates it by the chunk's own motion,
     so a hand that turns would also drift."""
-    from fuji.utils.rot6d import quat_xyzw_to_rotmat, rotmat_to_quat_xyzw, rotvec_to_rotmat
+    from flore.utils.rot6d import quat_xyzw_to_rotmat, rotmat_to_quat_xyzw, rotvec_to_rotmat
 
     n = len(hl_dense.FIVE_POINT_BODIES)
     base_pos = np.tile([0.40, 0.10, 0.05], n)
@@ -681,7 +681,7 @@ def test_the_keypoint_leak_is_bounded_against_the_measured_frame():
     assert wire.clutch.drift_m() <= 0.02 + 1e-9      # drift excludes the feet for that reason
 
     # A big carried ROTATION is clamped on the geodesic, not silently accepted.
-    from fuji.utils.rot6d import quat_xyzw_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rotvec, rotvec_to_rotmat
+    from flore.utils.rot6d import quat_xyzw_to_rotmat, rotmat_to_quat_xyzw, rotmat_to_rotvec, rotvec_to_rotmat
 
     turned = rotmat_to_quat_xyzw(
         np.stack([rotvec_to_rotmat(np.array([0.0, 0.0, 1.0]))] * n)).reshape(-1)

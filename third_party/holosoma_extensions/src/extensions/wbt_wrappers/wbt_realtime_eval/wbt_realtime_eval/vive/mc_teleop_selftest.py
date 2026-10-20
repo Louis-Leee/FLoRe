@@ -25,7 +25,7 @@ Two envs, as everywhere in this pipeline: this script needs ZARR, which lives in
 UMI_collection's `.venv`, not in hssim. The module under test is numpy-only on purpose so
 either interpreter can import it.
 
-    ~/FUJI/third_party/UMI_collection/.venv/bin/python \
+    ~/FLoRe/third_party/UMI_collection/.venv/bin/python \
         .../wbt_realtime_eval/vive/mc_teleop_selftest.py <take>.zarr.zip [--episode 0]
 
 Run as a PLAIN SCRIPT, not `python -m wbt_realtime_eval.vive....`: the `-m` form executes
@@ -45,7 +45,7 @@ import time
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_UMI_DEFAULT = os.path.expanduser("~/FUJI/third_party/UMI_collection")
+_UMI_DEFAULT = os.path.expanduser("~/FLoRe/third_party/UMI_collection")
 
 # Import the module under test off THIS directory, not through the package: importing
 # `wbt_realtime_eval.vive.mc_teleop_source` would execute the top-level
