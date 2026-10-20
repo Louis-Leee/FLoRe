@@ -1,14 +1,21 @@
 <p align="center">
-  <img src="assets/cover.png" alt="FLoRe: Learning Force-Reactive Humanoid Loco-Manipulation" width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/title_dark.png">
+    <img src="assets/title_light.png" alt="FLoRe" height="75">
+  </picture>
 </p>
-
-<h1 align="center">FLoRe <img src="assets/rose.png" alt="" height="30"></h1>
 
 <h3 align="center">Learning Force-Reactive Humanoid Loco-Manipulation</h3>
 
 <p align="center">
-  Sihang Li<sup>1,2§</sup>, Xiaofeng Guo<sup>1</sup>, Jinkun Cao<sup>1</sup>, Charlie Cheng<sup>1</sup>,<br>
-  Ruihan Yang<sup>1</sup>, Chen Feng<sup>1,2†</sup>, Guanya Shi<sup>1,3†</sup>, Haozhi Qi<sup>1,4†</sup>
+  <a href="https://scholar.google.com/citations?user=90IoeJsAAAAJ">Sihang Li</a><sup>1,2§</sup>,
+  <a href="https://scholar.google.com/citations?user=XGBg7wEAAAAJ">Xiaofeng Guo</a><sup>1</sup>,
+  <a href="https://scholar.google.com/citations?user=xDtTbmQAAAAJ">Jinkun Cao</a><sup>1</sup>,
+  <a href="https://charlietcheng.github.io/">Charlie Cheng</a><sup>1</sup>,<br>
+  <a href="https://scholar.google.com/citations?user=b-o1o7cAAAAJ">Ruihan Yang</a><sup>1</sup>,
+  <a href="https://scholar.google.com/citations?user=YeG8ZM0AAAAJ">Chen Feng</a><sup>1,2†</sup>,
+  <a href="https://scholar.google.com/citations?user=joR1Z4UAAAAJ">Guanya Shi</a><sup>1,3†</sup>,
+  <a href="https://scholar.google.com/citations?user=iyVHKkcAAAAJ">Haozhi Qi</a><sup>1,4†</sup>
 </p>
 
 <p align="center">
@@ -23,7 +30,8 @@
 <p align="center">
   <a href="https://louis-leee.github.io/FLoRe">🌐 Project Page</a> &nbsp;|&nbsp;
   <a href="assets/FLoRe.pdf">📄 Paper</a> &nbsp;|&nbsp;
-  <a href="https://louis-leee.github.io/FLoRe/#video">🎬 Video</a>
+  <a href="https://louis-leee.github.io/FLoRe/#video">🎬 Video</a> &nbsp;|&nbsp;
+  <a href="https://louis-leee.github.io/FLoRe/demo/">🎮 Demo</a>
 </p>
 
 FLoRe learns **force-reactive humanoid loco-manipulation from robot-free demonstrations**. A UMI-style
@@ -44,8 +52,7 @@ collection interface**.
   deployment on the Unitree G1, and the 3D-printable parts of the robot-free data collection interface.
 - **2026-09-28** — Initial code release: training of the 5-keypoint unified force–position whole-body
   controller, and its interactive browser evaluation (mjswan). The source of the high-level
-  force-reactive diffusion policy (`fuji/`) is included; its guides, the datasets and the checkpoints will
-  follow.
+  force-reactive diffusion policy (`fuji/`) is included; its guide will follow.
 
 # ✅ Release Plan
 
@@ -54,9 +61,7 @@ collection interface**.
 - [x] High-level policy: source code of the force-reactive diffusion policy (`fuji/`)
 - [ ] High-level policy: training and deployment guide
 - [x] Pretrained low-level controller (ONNX)
-- [ ] Pretrained high-level policies
 - [x] Robot-free data collection interface (3D-printable parts)
-- [ ] Datasets
 - [x] Real-robot deployment on the Unitree G1
 
 # 📑 Content Table
@@ -224,7 +229,8 @@ Checkpoints and their ONNX exports are written to `logs/WBT-Holosoma/<run>/model
 The trained ONNX policy runs **in your browser**: physics (MuJoCo) and inference (ONNX Runtime) are
 compiled to WebAssembly, so the page is a static site that needs no GPU and no Python while it runs.
 The browser twin reproduces the training force model: a virtual spring wall per hand, the simulated F/T
-reading, the contact phase and the integrator.
+reading, the contact phase and the integrator. To try it without installing anything, open the
+[interactive demo](https://louis-leee.github.io/FLoRe/demo/) on the project page.
 
 ```bash
 MODEL=$PWD/logs/WBT-Holosoma/<run>/model_<step>.onnx SRC=$HOME/flore_motions \
