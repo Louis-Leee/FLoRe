@@ -21,7 +21,7 @@
   setTimeout(() => { if (!window.revealReady) document.documentElement.classList.remove('js'); }, 3000)</script>
 <!-- The controller's equations, typeset once by scripts/render_math.py (KaTeX 0.19.0, MIT). -->
 <link rel="stylesheet" href="./static/katex/katex.min.css?v=0.19.0">
-<link rel="stylesheet" href="./static/css/style.css?v=20">
+<link rel="stylesheet" href="./static/css/style.css?v=21">
 </head>
 <body>
 
@@ -38,6 +38,7 @@
     <li><a href="#controller"><span>Controller</span></a></li>
     <li><a href="#experiments"><span>Experiments</span></a></li>
     <li><a href="#data"><span>Data Collection</span></a></li>
+    <li><a href="#bibtex"><span>BibTeX</span></a></li>
   </ol>
 </nav>
 
@@ -86,8 +87,8 @@
 
     <div class="buttons">
       <a class="btn" href="#video">Video</a>
-      <span class="btn disabled" title="coming soon">Paper</span>
-      <span class="btn disabled" title="coming soon">arXiv</span>
+      <a class="btn" href="https://arxiv.org/pdf/2610.35862">Paper</a>
+      <a class="btn" href="https://arxiv.org/abs/2610.35862">arXiv</a>
       <span class="btn disabled" title="coming soon">Code (coming soon)</span>
     </div>
   </div>
@@ -475,11 +476,23 @@ c100.7 8.3 195.3 44 280 108 55.3 42 101.7 93 139 153l9 14c2.7-4 5.7-8.7 9-14
   </div>
 </section>
 
-</main>
+<section id="bibtex" class="section alt">
+  <div class="wrap narrow">
+    <h2 class="reveal center">BibTeX</h2>
+    <pre class="bibtex reveal"><code>@misc{li2026learningforcereactivehumanoidlocomanipulation,
+  title         = {Learning Force-Reactive Humanoid Loco-Manipulation},
+  author        = {Sihang Li and Xiaofeng Guo and Jinkun Cao and Charlie Cheng and
+                   Ruihan Yang and Chen Feng and Guanya Shi and Haozhi Qi},
+  year          = {2026},
+  eprint        = {2610.35862},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.RO},
+  url           = {https://arxiv.org/abs/2610.35862}
+}</code></pre>
+  </div>
+</section>
 
-<footer>
-  <p>The paper and arXiv links follow shortly.</p>
-</footer>
+</main>
 
 <script src="./static/js/site.js?v=13" onerror="document.documentElement.classList.remove('js')"></script>
 </body>

@@ -176,7 +176,6 @@ html:not(.js) #nav ol::after { display: none; }
   z-index: 1; background: #141413;
 }
 main { position: relative; z-index: 2; background: var(--bg); }        /* slides up over the hero */
-footer { position: relative; z-index: 2; background: var(--bg); }
 .hero :is(.hero-teaser, .hero-bg) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .hero-bg { transform: scale(calc(1 + var(--lift, 0) * 0.08)); will-change: transform; }
 .hero-shade {
@@ -558,12 +557,12 @@ html:not(.js) .gains-key { display: none; }
 :is(video, .tile .full, .bleed a, .wide, .law .eq):focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .tile .seek:focus-visible { outline: 2px solid #fff; outline-offset: 0; box-shadow: 0 0 0 4px rgba(0,0,0,.55); }
 
-footer {
-  padding: 2.5rem 1.25rem 3.5rem; text-align: center;
-  color: var(--muted); font-size: .88rem; border-top: 1px solid var(--line);
+/* the citation, as arXiv exports it, on a white card; a narrow screen scrolls it sideways */
+.bibtex {
+  margin: 0; padding: 1.3rem 1.5rem; overflow-x: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card);
+  font: .84rem/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--fg);
 }
-footer p { margin: 0 0 .3rem; }
-footer a { color: inherit; }
 
 /* the hero is either full screen or out of the way, and the page glides to where it goes */
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }

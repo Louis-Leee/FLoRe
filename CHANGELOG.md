@@ -1,3 +1,18 @@
+## [2.2.0] - 2026-10-30
+### Features
+- The paper is out, as arXiv 2610.35862 (user request): the title's Paper button opens its PDF
+  and the arXiv button its abstract page, where both said "coming soon".
+- A BibTeX section ends the page, with its own mark in the index: arXiv's own entry, set on a
+  white card in a monospace face. The footer, which said the paper and arXiv links would follow,
+  is gone.
+### Design Rationale
+- The entry keeps arXiv's key, fields and title (without "FLoRe:"), so it matches what Google
+  Scholar and arXiv's export give; only its layout differs, the author list broken over two lines
+  so that it fits the column.
+### Notes & Caveats
+- Code stays "coming soon" for now: the code goes to its organisation's repository, which is
+  private until its release review.
+
 ## [2.1.4] - 2026-10-17
 ### Features
 - The pipeline figure is the paper's PDF itself, `ppt/main.pdf`, as vector SVG (user request):
