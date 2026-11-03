@@ -1,3 +1,16 @@
+## [2.2.1] - 2026-11-03
+### Features
+- The code is public, at github.com/amazon-far/FLoRe (user request): the title's Code button opens
+  it, where it read "Code (coming soon)" and led nowhere.
+### Design Rationale
+- The button is a plain link again, as Paper and arXiv are, and as it was before 1.9.0.
+- With the short label the four buttons fit one row again on phones 360 px wide and up, so the
+  smaller margin that 1.9.0 gave the note above them on phones is gone, and so is the unused
+  `.btn.disabled` style. At 360×640 the title now spans 72–592 px of the screen.
+### Notes & Caveats
+- At 320 px the buttons still take two rows, and at 320×568 the hero still overflows, as before.
+- The stylesheet is now `style.css?v=22`. The two reverts in the README stop on the same conflicts.
+
 ## [2.2.0] - 2026-10-30
 ### Features
 - The paper is out, as arXiv 2610.35862 (user request): the title's Paper button opens its PDF

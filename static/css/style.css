@@ -267,8 +267,6 @@ main { position: relative; z-index: 2; background: var(--bg); }        /* slides
   border: 1px solid transparent; transition: transform .12s, background-color .2s;
 }
 .btn:hover { transform: translateY(-1px); background: #fff; }
-.btn.disabled { background: rgba(250,249,245,.08); color: #c2c0b6; border-color: rgba(250,249,245,.24); cursor: not-allowed; }
-.btn.disabled:hover { transform: none; }
 
 /* ---------- sections ---------- */
 
@@ -587,5 +585,4 @@ html:not(.js) .gains-key { display: none; }
   .law.compare { padding: 1rem 1rem .3rem; }
   .buttons { gap: .5rem; }
   .btn { padding: .55rem .9rem; font-size: .9rem; }
-  .hero .note { margin-bottom: 1.1rem; }   /* "Code (coming soon)" takes the buttons a second row */
 }
